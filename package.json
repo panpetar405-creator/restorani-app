@@ -1,0 +1,19 @@
+{
+  "name": "sto",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "STO? Račun prije stola — izbor restorana prema stvarnom računu po osobi",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test",
+    "db:local": "wrangler d1 migrations apply DB --local",
+    "db:remote": "wrangler d1 migrations apply DB --remote",
+    "owner-key": "node scripts/owner-key.js"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
