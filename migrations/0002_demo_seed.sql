@@ -1,0 +1,42 @@
+-- DEMO podaci: restorani, cijene i ocjene su izmišljeni primjeri (kao u originalnom prototipu).
+-- Prije javnog lansiranja zamijeni ih pravim podacima.
+
+INSERT INTO restaurants (id,slug,name,city,rating,review_count,tags,amenities,moods,why,ambience,art,km,lat,lng) VALUES (1,'konoba-akustik','Konoba Akustik','Tivat',4.7,324,'["Mediteranska", "Riba", "Morska hrana"]','["Parking", "Terasa", "Wi-Fi", "Porodice"]','["rom", "fam"]','["Svježa riba i lokalni sastojci", "Predivan pogled na more", "Odličan omjer cijene i kvaliteta"]','Terasa, pogled','terasa',0.8,42.4339,18.69);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (1,'Grilovana orada','Sa povrćem i krompirom',1500,'orada','g',0);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (1,'Mediteranska salata','Sa feta sirom i maslinama',700,'salata','p',1);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (1,'Tuna steak','Sa sezonskim povrćem',1800,'tuna','g',2);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (1,'Pasta sa plodovima mora','',1200,'pasta','g',3);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (1,'Pizza Margherita','',1000,'pizza','g',4);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (1,'Domaća limunada','Svježe cijeđena',300,'salata','d',5);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (1,'Bruskete','Sa paradajzom i bosiljkom',600,'salata','p',6);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (1,'Palačinke','Sa domaćim džemom',500,'salata','z',7);
+INSERT INTO restaurants (id,slug,name,city,rating,review_count,tags,amenities,moods,why,ambience,art,km,lat,lng) VALUES (2,'boka-bay-restaurant','Boka Bay Restaurant','Tivat',4.5,212,'["Mediteranska", "Meso", "Pasta"]','["Parking", "Terasa", "Wi-Fi"]','["rom"]','["Odlična pasta i meso sa roštilja", "Moderan ambijent", "Prostrana terasa"]','Moderan, terasa','zaliv',1.2,42.4372,18.6958);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (2,'Grilovana orada','Sa povrćem i krompirom',1700,'orada','g',0);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (2,'Mediteranska salata','Sa feta sirom i maslinama',800,'salata','p',1);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (2,'Tuna steak','Sa sezonskim povrćem',2000,'tuna','g',2);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (2,'Pasta sa plodovima mora','',1300,'pasta','g',3);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (2,'Pizza Margherita','',1100,'pizza','g',4);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (2,'Domaća limunada','Svježe cijeđena',300,'salata','d',5);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (2,'Bruskete','Sa paradajzom i bosiljkom',700,'salata','p',6);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (2,'Palačinke','Sa domaćim džemom',600,'salata','z',7);
+INSERT INTO restaurants (id,slug,name,city,rating,review_count,tags,amenities,moods,why,ambience,art,km,lat,lng) VALUES (3,'caffe-bar-konoba','Caffe Bar Konoba','Tivat',4.3,156,'["Domaća kuhinja", "Pizza", "Riba"]','["Parking", "Wi-Fi", "Porodice"]','["fam"]','["Domaća jela po povoljnim cijenama", "Prijatan ambijent za porodice", "Brza usluga"]','Domaći, opušten','kafic',1.5,42.44,18.7);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (3,'Grilovana orada','Sa povrćem i krompirom',1200,'orada','g',0);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (3,'Mediteranska salata','Sa feta sirom i maslinama',600,'salata','p',1);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (3,'Tuna steak','Sa sezonskim povrćem',1400,'tuna','g',2);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (3,'Pasta sa plodovima mora','',1000,'pasta','g',3);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (3,'Pizza Margherita','',800,'pizza','g',4);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (3,'Domaća limunada','Svježe cijeđena',200,'salata','d',5);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (3,'Bruskete','Sa paradajzom i bosiljkom',500,'salata','p',6);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (3,'Palačinke','Sa domaćim džemom',400,'salata','z',7);
+INSERT INTO restaurants (id,slug,name,city,rating,review_count,tags,amenities,moods,why,ambience,art,km,lat,lng) VALUES (4,'restaurant-riva','Restaurant Riva','Kotor',4.6,198,'["Riba", "Morska hrana"]','["Terasa", "Wi-Fi", "Porodice"]','["rom"]','["Svježa riba iz Boke", "Terasa na samoj obali", "Pažljiva usluga"]','Kamena terasa, more','riva',12,42.4268,18.771);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (4,'Grilovana orada','Sa povrćem i krompirom',1700,'orada','g',0);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (4,'Mediteranska salata','Sa feta sirom i maslinama',800,'salata','p',1);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (4,'Tuna steak','Sa sezonskim povrćem',2100,'tuna','g',2);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (4,'Pasta sa plodovima mora','',1400,'pasta','g',3);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (4,'Pizza Margherita','',1200,'pizza','g',4);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (4,'Domaća limunada','Svježe cijeđena',300,'salata','d',5);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (4,'Bruskete','Sa paradajzom i bosiljkom',700,'salata','p',6);
+INSERT INTO menu_items (restaurant_id,name,description,price_cents,art,kind,sort) VALUES (4,'Palačinke','Sa domaćim džemom',600,'salata','z',7);
+INSERT INTO offers (restaurant_id,title) VALUES (1,'Ponedjeljkom jagnjetina −15%');
+INSERT INTO offers (restaurant_id,title) VALUES (3,'Pizza + piće 9 €');
+INSERT INTO offers (restaurant_id,title) VALUES (2,'Večera za dvoje 35 €');
