@@ -23,6 +23,7 @@ const dmy=s=>{const m=/^(\d{4})-(\d\d)-(\d\d)/.exec(s||'');return m?`${m[3]}.${m
 const pr=r=>r.lo==null?'Cijena uskoro':`${r.lo} – ${r.hi} €`;
 const vfb=r=>r.vf?`<span class="vf">${ic('check',14)}<span>Provjereno<br><small style="color:#14783f">Ažurirano: ${dmy(r.vf)}</small></span></span>`:`<span class="vf nv">${ic('bulb',14)}<span>Cijene još nisu potvrđene</span></span>`;
 const ERR='<div class="scr"><h2>Ne mogu učitati restorane</h2><p class="sub">Provjeri vezu i pokušaj ponovo.</p><button class="cta" data-retry="1">Pokušaj ponovo</button></div>';
+const SKEL=`<div class="scr" role="status" aria-busy="true" aria-label="Učitavam restorane"><div class="hd"><div class="logo" style="flex:1">STO<i>?</i></div></div><div class="sk" style="height:26px;width:60%;margin:6px 0 18px"></div>${'<div class="rc skc"><div class="sk ph"></div><div class="tx"><div class="sk l1"></div><div class="sk l2"></div><div class="sk l3"></div></div></div>'.repeat(4)}</div>`;
 let R=[],OFF=[];
 const api=async(p,o={})=>{const r=await fetch('/api'+p,{...o,headers:{'content-type':'application/json',...(o.headers||{})}});if(!r.ok){const e=new Error((await r.json().catch(()=>({}))).error||'Greška');e.status=r.status;throw e}return r.status===204?null:r.json()};
 const ping=(slug,type)=>{try{fetch('/api/restaurants/'+encodeURIComponent(slug)+'/event',{method:'POST',keepalive:true,headers:{'content-type':'application/json'},body:JSON.stringify({type})}).catch(()=>{})}catch{}};
@@ -35,7 +36,7 @@ async function loadData(){try{const[a,b]=await Promise.all([api('/restaurants?li
  loadSaved();if(!S.loaded){S.cmp=[0,1].filter(i=>R[i]);S.loaded=true}else S.cmp=S.cmp.filter(i=>R[i]);S.err=false}catch{S.err=true}
  render()}
 async function shareIt(){const r=R[S.rid];if(!r)return;try{if(navigator.share){await navigator.share({title:r.raw+' · STO?',text:r.raw+': račun po osobi '+pr(r),url:location.origin});return}await navigator.clipboard.writeText(location.origin);toast('Link kopiran')}catch{}}
-const S={scr:'splash',hist:[],tab:'home',cat:'Sve',loc:'Tivat i okolina',maxP:25,mood:'',q:'',rid:0,mt:'Najpopularnije',cmp:[],sv:new Set(),n:2,cs:{glavno:1,pice:1,prilog:1,dezert:0},cr:0,svt:'r',ms:0,ot:'Pregled',err:false,loaded:false,ow:{key:(()=>{try{return sessionStorage.getItem('sto.owner')||''}catch{return ''}})(),data:null,err:'',edits:{}}};
+const S={scr:'splash',hist:[],tab:'home',cat:'Sve',loc:'Tivat i okolina',maxP:25,mood:'',q:'',rid:0,mt:'Najpopularnije',sort:'pop',cmp:[],sv:new Set(),n:2,cs:{glavno:1,pice:1,prilog:1,dezert:0},cr:0,svt:'r',ms:0,ot:'Pregled',err:false,loaded:false,ow:{key:(()=>{try{return sessionStorage.getItem('sto.owner')||''}catch{return ''}})(),data:null,err:'',edits:{}}};
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2300)}
 const bk=(t,r='')=>`<div class="hd"><button class="ib" data-b="1" aria-label="Nazad">${ic('back',24)}</button><h1>${t}</h1>${r}</div>`;
 const heart=r=>`<button class="hrt${S.sv.has(r.id)?'':' off'}" data-h="${r.id}" aria-label="Sačuvaj">${ic('heart',22,'currentColor',S.sv.has(r.id)?'currentColor':'none')}</button>`;
@@ -49,11 +50,21 @@ function home(){const mo=[['Do 15 €','p'],['Romantična večera','rom'],['Poro
  <h2>Za danas</h2><div class="chips">${mo.map(m=>`<button class="chip${(m[1]==='p'?S.maxP===15:S.mood===m[1])?' on':''}" data-m="${m[1]}">${m[0]}</button>`).join('')}</div>
  <button class="hero" data-c2="Riba"><img src="${art('terasa')}" alt="Restorani uz more"><span class="bd">Preporuka za vas</span><span class="cp"><div><b>Restorani uz more</b><small>Riba · Mediteranska kuhinja</small></div>${ic('chr',20)}</span></button>
  <h2>Najpopularnije u Tivtu</h2><div class="pop">${R.filter(r=>r.city==='Tivat').map(r=>`<button class="pc" data-r="${r.id}"><img src="${art(r.img)}" alt="${r.n}"><b>${r.n}</b><small>${star()} ${r.r} · ${pr(r)}</small></button>`).join('')}</div></div>`}
-function list(){const L=filt();
+const SORTS=[['pop','Najpopularnije'],['cheap','Najjeftinije'],['near','Najbliže'],['rate','Najbolje ocijenjeni']];
+const bv=()=>S.maxP>=99?60:Math.max(10,Math.min(60,S.maxP));
+const bl=()=>S.maxP>=99?'Bez limita':`do ${S.maxP} €`;
+const cn=n=>`${n} ${n%10===1&&n%100!==11?'restoran':'restorana'}`;
+const srt=L=>{const k={cheap:(x,y)=>(x.lo??1e9)-(y.lo??1e9)||(x.hi??1e9)-(y.hi??1e9),near:(x,y)=>(x.km??1e9)-(y.km??1e9),rate:(x,y)=>(y.r||0)-(x.r||0)||(y.c||0)-(x.c||0)}[S.sort];return k?[...L].sort(k):L};
+const sortChips=()=>SORTS.map(([k,l])=>`<button class="chip${S.sort===k?' on':''}" data-so="${k}" aria-pressed="${S.sort===k}">${l}</button>`).join('');
+const card=r=>`<div class="rc" role="button" tabindex="0" data-r="${r.id}"><img src="${art(r.img)}" alt=""><div class="tx"><h3><span>${r.n}</span>${heart(r)}</h3><div class="rt">${star()}<b>${r.r}</b> (${r.c} recenzije)</div><div class="tg">${r.tags.slice(0,3).map(t=>`<span>${t}</span>`).join('')}</div><div class="pr">${pr(r)} <small>po osobi</small></div><div class="km">${r.km} km · ${r.city}</div></div></div>`;
+const listBody=L=>L.length?L.map(card).join(''):`<div class="emp"><p class="sub">Nema restorana za ove filtere.</p><button class="chip on" data-rs="1">Poništi filtere</button></div>`;
+function upd(){const n=$('#rl');if(!n)return;const L=srt(filt());n.innerHTML=listBody(L);$('#cnt').textContent=cn(L.length);$('#bl').textContent=bl();$('#srt').innerHTML=sortChips()}
+function list(){const L=srt(filt());
  return `<div class="scr">${bk('Restorani',`<button class="ib" data-g="map" aria-label="Mapa">${ic('map',24)}</button>`)}
- <div class="chips" style="margin-bottom:10px">${['Cijena','Kuhinja','Ambijent','Više'].map(c=>`<button class="chip" data-x="${c}">${c} ${ic('chd',14)}</button>`).join('')}</div>
- <div style="margin-bottom:14px"><button class="chip on" data-pc="1">Do ${S.maxP>=99?'∞':S.maxP} € ${ic('chd',14)}</button></div>
- ${L.length?L.map(r=>`<div class="rc" role="button" tabindex="0" data-r="${r.id}"><img src="${art(r.img)}" alt=""><div class="tx"><h3><span>${r.n}</span>${heart(r)}</h3><div class="rt">${star()}<b>${r.r}</b> (${r.c} recenzije)</div><div class="tg">${r.tags.slice(0,3).map(t=>`<span>${t}</span>`).join('')}</div><div class="pr">${pr(r)} <small>po osobi</small></div><div class="km">${r.km} km · ${r.city}</div></div></div>`).join(''):`<p class="sub" style="text-align:center;padding:30px 0">Nema restorana za ove filtere. Promijeni budžet ili kuhinju.</p>`}</div>`}
+ <div class="bud"><div class="row"><label for="bud" style="flex:1">Budžet po osobi</label><b id="bl">${bl()}</b></div><input id="bud" type="range" min="10" max="60" step="5" value="${bv()}"><small><span>10 €</span><span>60 € i više</span></small></div>
+ <div class="chips srt" id="srt" role="group" aria-label="Sortiranje">${sortChips()}</div>
+ <p class="cnt" id="cnt" aria-live="polite">${cn(L.length)}</p>
+ <div id="rl">${listBody(L)}</div></div>`}
 function detail(){const r=R[S.rid];
  return `<div class="scr"><div class="dh"><img src="${art(r.img)}" alt="${r.n}"><button class="ib" style="left:14px" data-b="1" aria-label="Nazad">${ic('back',22)}</button><button class="ib" style="right:62px" data-h="${r.id}" aria-label="Sačuvaj">${ic('heart',20,S.sv.has(r.id)?'#1d4f91':'currentColor',S.sv.has(r.id)?'#1d4f91':'none')}</button><button class="ib" style="right:14px" data-sh="1" aria-label="Podijeli">${ic('share',20)}</button></div>
  <div class="sheet"><h1>${r.n}</h1><div class="rt" style="font-size:14px;margin:4px 0 8px">${star()}<b>${r.r}</b> (${r.c} recenzije)</div><div class="tg">${r.tags.map(t=>`<span>${t}</span>`).join('')}</div>
@@ -116,7 +127,7 @@ function owner(){const o=S.ow,d=o.data,r=d&&d.restaurant,tabs=[['Pregled','doc']
 const NAV=[['home','Početna','home','home'],['list','Restorani','fork','list'],['compare','Poredi','cmp','cmp'],['saved','Sačuvano','heart','saved'],['more','Još','more','more']];
 function render(){let h,nv='';const s=S.scr;
  if(s==='splash')h=`<div class="sp"><svg viewBox="0 0 400 800" preserveAspectRatio="xMidYMid slice"><image href="${SPL}" width="400" height="800"/></svg><div class="logo">STO<i>?</i></div><div class="tl">Račun prije stola.</div><h1>Pametan izbor restorana u Crnoj Gori.</h1><p>Stvarne cijene, provjereni meniji i preporuke prema tvom budžetu, ukusu i prilici.</p><button class="cta" data-g="home">Počni</button><small>Manje pretraživanja. <u>Više</u> sigurnosti u izbor.</small></div>`;
- else{const nd=!R.length&&!['own','more'].includes(s);h=nd?(S.err?ERR:'<div class="scr"><p class="sub">Učitavam restorane…</p></div>'):{home,list,detail,menu,compare,calc,saved,map:mapv,more,own:owner}[s]();
+ else{const nd=!R.length&&!['own','more'].includes(s);h=nd?(S.err?ERR:SKEL):{home,list,detail,menu,compare,calc,saved,map:mapv,more,own:owner}[s]();
   const cur={home:'home',list:'list',detail:'list',menu:'list',map:'list',saved:'saved',more:'more',compare:'compare'}[s];
   if(s==='own')nv=`<nav class="bn d" aria-label="Glavna navigacija">${[['home','Početna','home'],['list','Restorani','fork'],['ot','Izvještaji','chart'],['more','Profil','user']].map(([g,l,i])=>`<button data-g="${g==='ot'?'own':g}" ${g==='ot'?'aria-current="page"':''}>${ic(i,22)}${l}</button>`).join('')}</nav>`;
   else if(cur)nv=`<nav class="bn" aria-label="Glavna navigacija">${NAV.map(n=>`<button data-g="${n[0]}"${cur===n[0]?' aria-current="page"':''}>${ic(n[2],22)}${n[1]}</button>`).join('')}</nav>`}
@@ -125,9 +136,9 @@ function goTo(s,push=true){if(push&&S.scr!==s)S.hist.push(S.scr);S.scr=s;if(s===
 function back(){S.scr=S.hist.pop()||'home';render();scrollTo(0,0)}
 document.addEventListener('change',e=>{const i=e.target.id;if(i==='loc'){S.loc=e.target.value;S.q=($('#q')||{}).value||S.q;render()}else if(i==='addc'&&e.target.value!==''){S.cmp.push(+e.target.value);render()}});
 document.addEventListener('keydown',e=>{if(e.target.id==='q'&&e.key==='Enter'){S.q=e.target.value.trim();goTo('list')}else if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&(e.target.dataset.r||e.target.dataset.pin)&&e.target.getAttribute('role')==='button'){e.preventDefault();e.target.click()}});
-document.addEventListener('input',e=>{const d=e.target.dataset;if(d.pi!==undefined){S.ow.edits[d.pi]=e.target.value===''?NaN:+e.target.value}});
+document.addEventListener('input',e=>{const d=e.target.dataset;if(e.target.id==='bud'){const v=+e.target.value;S.maxP=v>=60?99:v;upd();return}if(d.pi!==undefined){S.ow.edits[d.pi]=e.target.value===''?NaN:+e.target.value}});
 document.addEventListener('submit',e=>{if(e.target.id==='ownf'){e.preventDefault();const k=(e.target.elements.k.value||'').trim();if(k.length<20||k.length>100){S.ow.err='Ključ nije ispravan.';render();return}S.ow.key=k;try{sessionStorage.setItem(OS,k)}catch{}S.ow.data=null;render();ownerLoad()}});
-document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b],[data-h],[data-r],[data-c],[data-c2],[data-m],[data-x],[data-pc],[data-mt],[data-ac],[data-xc],[data-n],[data-cs],[data-cr],[data-sv],[data-st],[data-pin],[data-ot],[data-ok],[data-sh],[data-retry],[data-lo],[data-call],[data-navl]');if(!t)return;const d=t.dataset;
+document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b],[data-h],[data-r],[data-c],[data-c2],[data-m],[data-so],[data-rs],[data-mt],[data-ac],[data-xc],[data-n],[data-cs],[data-cr],[data-sv],[data-st],[data-pin],[data-ot],[data-ok],[data-sh],[data-retry],[data-lo],[data-call],[data-navl]');if(!t)return;const d=t.dataset;
  if(d.h!==undefined){e.stopPropagation();const i=+d.h;S.sv.has(i)?S.sv.delete(i):S.sv.add(i);persist();render();return}
  if(d.g!==undefined){const q=$('#q');if(q)S.q=q.value.trim();goTo(d.g)}
  else if(d.b)back()
@@ -135,8 +146,8 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b
  else if(d.c!==undefined){S.cat=d.c;render()}
  else if(d.c2){S.cat=d.c2;S.maxP=25;goTo('list')}
  else if(d.m!==undefined){if(d.m==='p'){S.maxP=S.maxP===15?25:15;S.mood=''}else S.mood=S.mood===d.m?'':d.m;render();if(S.maxP===15||S.mood)goTo('list')}
- else if(d.x)toast(d.x+': uskoro')
- else if(d.pc){const o=[15,25,40,99];S.maxP=o[(o.indexOf(S.maxP)+1)%4];render()}
+ else if(d.so){S.sort=d.so;upd()}
+ else if(d.rs){S.maxP=99;S.cat='Sve';S.mood='';S.q='';S.sort='pop';S.loc='Cijela Boka';render()}
  else if(d.mt){S.mt=d.mt;render()}
  else if(d.ac!==undefined){const i=+d.ac;if(!S.cmp.includes(i))S.cmp=[...S.cmp,i].slice(-2);toast('Dodato u poređenje');S.hist.push(S.scr);S.scr='compare';render();scrollTo(0,0)}
  else if(d.xc!==undefined){S.cmp=S.cmp.filter(i=>i!==+d.xc);render()}

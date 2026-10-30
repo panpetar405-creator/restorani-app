@@ -98,5 +98,17 @@ h2{font-size:18px;margin:18px 0 10px;font-weight:700}.sub{color:var(--mt);margin
 .pin{position:absolute;transform:translate(-50%,-100%);width:34px;height:34px;padding:0;display:grid;place-items:center;transition:transform .15s}
 .pin.on{transform:translate(-50%,-100%) scale(1.3);z-index:2}
 .att{position:absolute;right:0;bottom:0;background:rgba(255,255,255,.85);color:#333;font-size:10px;padding:1px 5px}
+/* budžet, sortiranje, skeleton */
+.bud{background:var(--sf);border:1px solid var(--ln);border-radius:16px;padding:12px 14px 10px;margin-bottom:12px}
+.bud .row{font-weight:600}.bud b{color:var(--bl)}
+.bud input[type=range]{width:100%;margin:10px 0 2px;height:28px;accent-color:var(--bl)}
+.bud small{display:flex;justify-content:space-between;color:var(--mt);font-size:12px}
+.srt{margin-bottom:10px}.cnt{color:var(--mt);font-size:13px;margin:0 0 10px}
+.emp{text-align:center;padding:30px 0}.emp .sub{margin-bottom:14px}
+.sk{background:linear-gradient(90deg,var(--ch) 25%,var(--ln) 50%,var(--ch) 75%);background-size:200% 100%;border-radius:8px;animation:shm 1.4s linear infinite}
+.skc .ph{width:104px;height:118px;border-radius:12px;flex:none}
+.skc .tx{display:flex;flex-direction:column;gap:10px;padding-top:6px}
+.sk.l1{height:16px;width:70%}.sk.l2{height:12px;width:45%}.sk.l3{height:14px;width:55%}
+@keyframes shm{to{background-position:-200% 0}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
