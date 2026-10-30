@@ -13,7 +13,7 @@
       "binding": "DB",
       "database_name": "sto-db",
       // Zamijeni ID-om koji dobiješ od: npx wrangler d1 create sto-db
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_id":"97d38eaf-4875-4488-b2d3-ed2664e621e9", 
       "migrations_dir": "migrations"
     }
   ],
