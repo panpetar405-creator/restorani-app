@@ -145,7 +145,7 @@ document.addEventListener('input',e=>{const d=e.target.dataset;if(e.target.id===
 document.addEventListener('submit',e=>{if(e.target.id==='ownf'){e.preventDefault();const k=(e.target.elements.k.value||'').trim();if(k.length<20||k.length>100){S.ow.err='Ključ nije ispravan.';render();return}S.ow.key=k;try{sessionStorage.setItem(OS,k)}catch{}S.ow.data=null;render();ownerLoad()}});
 document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b],[data-h],[data-r],[data-c],[data-c2],[data-m],[data-so],[data-rs],[data-mt],[data-ac],[data-xc],[data-n],[data-cs],[data-cr],[data-sv],[data-st],[data-pin],[data-ot],[data-ok],[data-sh],[data-retry],[data-lo],[data-call],[data-navl]');if(!t)return;const d=t.dataset;
  if(d.h!==undefined){e.stopPropagation();const i=+d.h;S.sv.has(i)?S.sv.delete(i):S.sv.add(i);persist();render();return}
- if(d.g!==undefined){const q=$('#q');if(q)S.q=q.value.trim();goTo(d.g)}
+ if(d.g!==undefined){const q=$('#q');if(q)S.q=q.value.trim();if(d.g==='map'&&S.scr==='detail'&&R[S.rid])S.ms=S.rid;goTo(d.g)}
  else if(d.b)back()
  else if(d.r!==undefined){S.rid=+d.r;S.mt='Najpopularnije';goTo('detail');if(R[S.rid])ping(R[S.rid].slug,'view')}
  else if(d.c!==undefined){S.cat=d.c;render()}
