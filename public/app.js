@@ -76,7 +76,7 @@ function detail(){const r=R[S.rid];
  <button class="chip" style="margin-top:12px" data-ac="${r.id}">${ic('cmp',16)} Dodaj u poređenje</button></div></div>`}
 function menu(){const r=R[S.rid],tb=['Najpopularnije','Predjela','Glavna jela','Piće'],f={Najpopularnije:m=>m[4]!=='d',Predjela:m=>m[4]==='p','Glavna jela':m=>m[4]==='g',Piće:m=>m[4]==='d'}[S.mt];
  return `<div class="scr">${bk('Meni i cijene')}<div class="tabs">${tb.map(t=>`<button class="chip${S.mt===t?' on':''}" data-mt="${t}">${t}</button>`).join('')}</div>
- ${r.menu.filter(f).slice(0,6).map(m=>`<div class="mi"><img src="${art(m[3])}" alt=""><div><b>${m[0]}</b><small>${m[1]}</small></div><span class="pr" style="font-size:16px">${eur(m[2])} €</span></div>`).join('')}
+ ${r.menu.filter(f).slice(0,S.mt==='Najpopularnije'?6:99).map(m=>`<div class="mi"><img src="${art(m[3])}" alt=""><div><b>${m[0]}</b><small>${m[1]}</small></div><span class="pr" style="font-size:16px">${eur(m[2])} €</span></div>`).join('')}
  <div class="nt">${ic('bulb',20)}<span>${r.vf?`Cijene je potvrdio restoran.<br>Posljednja provjera: ${dmy(r.vf)}`:'Restoran još nije potvrdio ove cijene.'}</span></div></div>`}
 function compare(){const L=S.cmp.map(i=>R[i]),ck=v=>v?ic('check',20):'—';
  const rows=[['Prosječan račun po osobi','coin',r=>`${pr(r)}`],['Kuhinja','fork',r=>r.tags[0]],['Ambijent','amb',r=>r.amb],['Udaljenost','dist',r=>r.km+' km'],['Parking','park',r=>ck(r.park)],['Wi-Fi','wifi',r=>ck(r.wifi)],['Porodice','fam',r=>ck(r.fam)],['Ocjena','star',r=>`${r.r} (${r.c})`]];
