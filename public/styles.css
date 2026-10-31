@@ -116,3 +116,4 @@ h2{font-size:18px;margin:18px 0 10px;font-weight:700}.sub{color:var(--mt);margin
 .srw{position:relative}.sg{position:absolute;left:0;right:0;top:calc(100% - 6px);z-index:30;background:var(--sf);border:1px solid var(--ln);border-radius:12px;box-shadow:0 10px 28px rgba(15,45,82,.18);overflow:hidden}
 .sg[hidden]{display:none}.sg button{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;text-align:left;font-weight:600;color:var(--tx);border-bottom:1px solid var(--ln)}
 .sg button:last-child{border-bottom:0}.sg button span{flex:1}.sg button small{color:var(--mt);font-weight:500;font-size:12px}
+.sel input{flex:1;min-width:0;border:0;background:none;font-weight:600;color:var(--tx)}#sg2{max-height:48vh;overflow-y:auto}.sg button[aria-current=true]{background:var(--ch)}

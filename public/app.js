@@ -50,12 +50,13 @@ const popTitle=()=>S.loc===ALL_LOC?'Najpopularnije u Crnoj Gori':LOC_IN[S.loc]?`
 const popList=()=>R.filter(inLoc).sort((a,b)=>(b.r||0)-(a.r||0)||(b.c||0)-(a.c||0)).slice(0,10);
 function placeSug(v){const n=norm(v).trim();if(!n)return[];const L=locs().filter(l=>norm(l).includes(n)||(l===ALL_LOC&&'cg'.startsWith(n)));return L.sort((x,y)=>(norm(y).startsWith(n)-norm(x).startsWith(n))).slice(0,6)}
 function showSug(v){const g=$('#sg');if(!g)return;const L=placeSug(v);if(!L.length){g.hidden=true;g.innerHTML='';return}g.innerHTML=L.map(l=>{const c=l===ALL_LOC?R.length:R.filter(r=>r.city===l).length;return `<button type="button" data-sg="${l}">${ic('pin',16)}<span>${l}</span><small>${c} ${c===1?'restoran':'restorana'}</small></button>`}).join('');g.hidden=false}
+function locSug(v,all){const g=$('#sg2');if(!g)return;const n=norm(v||'').trim();let L=all||!n?locs():locs().filter(l=>norm(l).includes(n)||(l===ALL_LOC&&('cg'.startsWith(n)||'crna gora'.startsWith(n))));if(n&&!all)L=L.sort((x,y)=>(norm(y).startsWith(n)-norm(x).startsWith(n)));if(!L.length){g.innerHTML='<p class="sub" style="padding:12px 14px;margin:0">Nema takvog mjesta.</p>';g.hidden=false;return}g.innerHTML=L.map(l=>{const c=l===ALL_LOC?R.length:R.filter(r=>r.city===l).length;return `<button type="button" data-sg="${l}"${l===S.loc?' aria-current="true"':''}>${ic('pin',16)}<span>${l}</span><small>${c} ${c===1?'restoran':'restorana'}</small></button>`}).join('');g.hidden=false;g.scrollTop=0}
 function cityFromQuery(q){const n=norm(q).trim();if(!n)return null;if(['cg','crna gora','cijela crna gora'].includes(n))return ALL_LOC;const m=locs().find(l=>l!==ALL_LOC&&norm(l)===n);return m||null}
 function home(){const mo=[['Do 15 €','p'],['Romantična večera','rom'],['Porodični ručak','fam']];
  return `<div class="scr"><div class="hd"><div class="logo" style="flex:1">STO<i>?</i></div><button class="ib" data-g="more" aria-label="Profil">${ic('user',24)}</button></div>
  <h1 style="font-size:24px;margin:6px 0 4px">Šta danas želiš?</h1><p class="sub">Izaberi kriterijume i pronađi restoran koji odgovara tvojoj situaciji.</p>
  <div class="cats">${[['Sve','grid'],['Riba','fish'],['Meso','meat'],['Pizza','pizza'],['Pasta','pasta']].map(c=>`<button class="cat" data-c="${c[0]}" aria-pressed="${S.cat===c[0]}"><span>${ic(c[1],24)}</span>${c[0]}</button>`).join('')}</div>
- <div class="row"><label class="sel">${ic('pin',18)}<select id="loc" aria-label="Lokacija">${locs().map(l=>`<option${S.loc===l?' selected':''}>${l}</option>`).join('')}</select>${ic('chd',18)}</label><button class="sel" style="flex:none" data-g="list" aria-label="Filteri">${ic('filt',20)}</button></div>
+ <div class="row"><div class="srw" style="flex:1"><label class="sel">${ic('pin',18)}<input id="locq" type="text" autocomplete="off" autocapitalize="words" aria-label="Mjesto" placeholder="Ukucaj mjesto..." value="${S.loc.replace(/"/g,'&quot;')}">${ic('chd',18)}</label><div id="sg2" class="sg" hidden></div></div><button class="sel" style="flex:none" data-g="list" aria-label="Filteri">${ic('filt',20)}</button></div>
  <div class="srw"><label class="srch">${ic('search',18)}<input id="q" type="search" autocomplete="off" placeholder="Pretraži restorane, jela, mjesta..." value="${S.q.replace(/"/g,'&quot;')}"></label><div id="sg" class="sg" hidden></div></div>
  <h2>Za danas</h2><div class="chips">${mo.map(m=>`<button class="chip${(m[1]==='p'?S.maxP===15:S.mood===m[1])?' on':''}" data-m="${m[1]}">${m[0]}</button>`).join('')}</div>
  <button class="hero" data-c2="Riba"><img src="${art('terasa')}" alt="Restorani uz more"><span class="bd">Preporuka za vas</span><span class="cp"><div><b>Restorani uz more</b><small>Riba · Mediteranska kuhinja</small></div>${ic('chr',20)}</span></button>
@@ -184,3 +185,9 @@ if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWor
 document.addEventListener('input',e=>{if(e.target.id==='q')showSug(e.target.value)});
 document.addEventListener('focusin',e=>{if(e.target.id==='q'&&e.target.value)showSug(e.target.value)});
 document.addEventListener('click',e=>{if(!e.target.closest('.srw')){const g=$('#sg');if(g)g.hidden=true}});
+
+document.addEventListener('focusin',e=>{if(e.target.id==='locq'){e.target.select();locSug('',true)}});
+document.addEventListener('input',e=>{if(e.target.id==='locq')locSug(e.target.value,false)});
+document.addEventListener('keydown',e=>{if(e.target.id==='locq'&&e.key==='Enter'){e.preventDefault();const f=document.querySelector('#sg2 [data-sg]');if(f){S.loc=f.dataset.sg;S.q='';render()}}});
+document.addEventListener('click',e=>{if(!e.target.closest('.srw')){const g=$('#sg2'),i=$('#locq');if(g)g.hidden=true;if(i)i.value=S.loc}});
+document.addEventListener('focusin',e=>{const a=$('#sg'),b=$('#sg2');if(e.target.id==='locq'&&a)a.hidden=true;if(e.target.id==='q'&&b){b.hidden=true;const i=$('#locq');if(i)i.value=S.loc}});
