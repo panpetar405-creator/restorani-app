@@ -48,13 +48,15 @@ function filt(){return R.filter(r=>(S.cat==='Sve'||r.tags.includes(S.cat))&&(r.l
 const LOC_IN={'Podgorica':'u Podgorici','Budva':'u Budvi','Kotor':'u Kotoru','Tivat':'u Tivtu','Herceg Novi':'u Herceg Novom','Bar':'u Baru','Ulcinj':'u Ulcinju','Cetinje':'na Cetinju','Nikšić':'u Nikšiću','Kolašin':'u Kolašinu','Žabljak':'na Žabljaku','Perast':'u Perastu','Risan':'u Risnu','Bijela':'u Bijeloj','Petrovac':'u Petrovcu'};
 const popTitle=()=>S.loc===ALL_LOC?'Najpopularnije u Crnoj Gori':LOC_IN[S.loc]?`Najpopularnije ${LOC_IN[S.loc]}`:`Najpopularnije: ${S.loc}`;
 const popList=()=>R.filter(inLoc).sort((a,b)=>(b.r||0)-(a.r||0)||(b.c||0)-(a.c||0)).slice(0,10);
+function placeSug(v){const n=norm(v).trim();if(!n)return[];const L=locs().filter(l=>norm(l).includes(n)||(l===ALL_LOC&&'cg'.startsWith(n)));return L.sort((x,y)=>(norm(y).startsWith(n)-norm(x).startsWith(n))).slice(0,6)}
+function showSug(v){const g=$('#sg');if(!g)return;const L=placeSug(v);if(!L.length){g.hidden=true;g.innerHTML='';return}g.innerHTML=L.map(l=>{const c=l===ALL_LOC?R.length:R.filter(r=>r.city===l).length;return `<button type="button" data-sg="${l}">${ic('pin',16)}<span>${l}</span><small>${c} ${c===1?'restoran':'restorana'}</small></button>`}).join('');g.hidden=false}
 function cityFromQuery(q){const n=norm(q).trim();if(!n)return null;if(['cg','crna gora','cijela crna gora'].includes(n))return ALL_LOC;const m=locs().find(l=>l!==ALL_LOC&&norm(l)===n);return m||null}
 function home(){const mo=[['Do 15 €','p'],['Romantična večera','rom'],['Porodični ručak','fam']];
  return `<div class="scr"><div class="hd"><div class="logo" style="flex:1">STO<i>?</i></div><button class="ib" data-g="more" aria-label="Profil">${ic('user',24)}</button></div>
  <h1 style="font-size:24px;margin:6px 0 4px">Šta danas želiš?</h1><p class="sub">Izaberi kriterijume i pronađi restoran koji odgovara tvojoj situaciji.</p>
  <div class="cats">${[['Sve','grid'],['Riba','fish'],['Meso','meat'],['Pizza','pizza'],['Pasta','pasta']].map(c=>`<button class="cat" data-c="${c[0]}" aria-pressed="${S.cat===c[0]}"><span>${ic(c[1],24)}</span>${c[0]}</button>`).join('')}</div>
  <div class="row"><label class="sel">${ic('pin',18)}<select id="loc" aria-label="Lokacija">${locs().map(l=>`<option${S.loc===l?' selected':''}>${l}</option>`).join('')}</select>${ic('chd',18)}</label><button class="sel" style="flex:none" data-g="list" aria-label="Filteri">${ic('filt',20)}</button></div>
- <label class="srch">${ic('search',18)}<input id="q" type="search" placeholder="Pretraži restorane, jela, kuhinju..." value="${S.q.replace(/"/g,'&quot;')}"></label>
+ <div class="srw"><label class="srch">${ic('search',18)}<input id="q" type="search" autocomplete="off" placeholder="Pretraži restorane, jela, mjesta..." value="${S.q.replace(/"/g,'&quot;')}"></label><div id="sg" class="sg" hidden></div></div>
  <h2>Za danas</h2><div class="chips">${mo.map(m=>`<button class="chip${(m[1]==='p'?S.maxP===15:S.mood===m[1])?' on':''}" data-m="${m[1]}">${m[0]}</button>`).join('')}</div>
  <button class="hero" data-c2="Riba"><img src="${art('terasa')}" alt="Restorani uz more"><span class="bd">Preporuka za vas</span><span class="cp"><div><b>Restorani uz more</b><small>Riba · Mediteranska kuhinja</small></div>${ic('chr',20)}</span></button>
  <h2>${popTitle()}</h2><div class="pop">${popList().length?popList().map(r=>`<button class="pc" data-r="${r.id}"><img src="${art(r.img)}" alt="${r.n}"><b>${r.n}</b><small>${star()} ${r.r} · ${pr(r)}</small></button>`).join(''):'<p class="sub">Još nema restorana u ovom mjestu.</p>'}</div></div>`}
@@ -145,10 +147,10 @@ function render(){let h,nv='';const s=S.scr;
 function goTo(s,push=true){if(push&&S.scr!==s)S.hist.push(S.scr);S.scr=s;if(s==='own'){S.ot='Pregled';if(S.ow.key&&!S.ow.data)ownerLoad()}render();scrollTo(0,0)}
 function back(){S.scr=S.hist.pop()||'home';render();scrollTo(0,0)}
 document.addEventListener('change',e=>{const i=e.target.id;if(i==='loc'){S.loc=e.target.value;S.q=($('#q')||{}).value||S.q;render()}else if(i==='addc'&&e.target.value!==''){S.cmp.push(+e.target.value);render()}});
-document.addEventListener('keydown',e=>{if(e.target.id==='q'&&e.key==='Enter'){const v=e.target.value.trim(),c=cityFromQuery(v);if(c){S.loc=c;S.q='';render()}else{S.q=v;goTo('list')}}else if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&(e.target.dataset.r||e.target.dataset.pin)&&e.target.getAttribute('role')==='button'){e.preventDefault();e.target.click()}});
+document.addEventListener('keydown',e=>{if(e.target.id==='q'&&e.key==='Enter'){const v=e.target.value.trim(),sg=placeSug(v),c=cityFromQuery(v)||(sg.length===1&&sg[0]!==ALL_LOC&&norm(sg[0]).startsWith(norm(v).trim())?sg[0]:null);if(c){S.loc=c;S.q='';render()}else{S.q=v;goTo('list')}}else if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&(e.target.dataset.r||e.target.dataset.pin)&&e.target.getAttribute('role')==='button'){e.preventDefault();e.target.click()}});
 document.addEventListener('input',e=>{const d=e.target.dataset;if(e.target.id==='bud'){const v=+e.target.value;S.maxP=v>=60?99:v;upd();return}if(d.pi!==undefined){S.ow.edits[d.pi]=e.target.value===''?NaN:+e.target.value}});
 document.addEventListener('submit',e=>{if(e.target.id==='ownf'){e.preventDefault();const k=(e.target.elements.k.value||'').trim();if(k.length<20||k.length>100){S.ow.err='Ključ nije ispravan.';render();return}S.ow.key=k;try{sessionStorage.setItem(OS,k)}catch{}S.ow.data=null;render();ownerLoad()}});
-document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b],[data-h],[data-r],[data-c],[data-c2],[data-m],[data-so],[data-rs],[data-mt],[data-ac],[data-xc],[data-n],[data-cs],[data-cr],[data-sv],[data-st],[data-pin],[data-ml],[data-ot],[data-ok],[data-sh],[data-retry],[data-lo],[data-call],[data-navl]');if(!t)return;const d=t.dataset;
+document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b],[data-h],[data-r],[data-c],[data-c2],[data-m],[data-so],[data-rs],[data-mt],[data-ac],[data-xc],[data-n],[data-cs],[data-cr],[data-sv],[data-st],[data-pin],[data-sg],[data-ml],[data-ot],[data-ok],[data-sh],[data-retry],[data-lo],[data-call],[data-navl]');if(!t)return;const d=t.dataset;
  if(d.h!==undefined){e.stopPropagation();const i=+d.h;S.sv.has(i)?S.sv.delete(i):S.sv.add(i);persist();render();return}
  if(d.g!==undefined){const q=$('#q');if(q)S.q=q.value.trim();if(d.g==='map'&&S.scr==='detail'&&R[S.rid])S.ms=S.rid;goTo(d.g)}
  else if(d.b)back()
@@ -168,6 +170,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b
  else if(d.st){S.svt=d.st;render()}
  else if(d.pin!==undefined){S.ms=+d.pin;render()}
  else if(d.ml!==undefined){S.loc=d.ml;render()}
+ else if(d.sg!==undefined){S.loc=d.sg;S.q='';render()}
  else if(d.ot){S.ot=d.ot;if(d.ot==='Meni i cijene'||d.ot==='Pregled')render();else{toast(d.ot+': uskoro')}}
  else if(d.ok){ownerSave()}
  else if(d.sh){shareIt()}
@@ -177,3 +180,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b
  else if(d.navl){ping(d.navl,'nav')}});
 render();loadData();
 if('serviceWorker' in navigator)addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{}));
+
+document.addEventListener('input',e=>{if(e.target.id==='q')showSug(e.target.value)});
+document.addEventListener('focusin',e=>{if(e.target.id==='q'&&e.target.value)showSug(e.target.value)});
+document.addEventListener('click',e=>{if(!e.target.closest('.srw')){const g=$('#sg');if(g)g.hidden=true}});

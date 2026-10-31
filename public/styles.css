@@ -112,3 +112,7 @@ h2{font-size:18px;margin:18px 0 10px;font-weight:700}.sub{color:var(--mt);margin
 @keyframes shm{to{background-position:-200% 0}}
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 
+
+.srw{position:relative}.sg{position:absolute;left:0;right:0;top:calc(100% - 6px);z-index:30;background:var(--sf);border:1px solid var(--ln);border-radius:12px;box-shadow:0 10px 28px rgba(15,45,82,.18);overflow:hidden}
+.sg[hidden]{display:none}.sg button{display:flex;align-items:center;gap:10px;width:100%;padding:12px 14px;text-align:left;font-weight:600;color:var(--tx);border-bottom:1px solid var(--ln)}
+.sg button:last-child{border-bottom:0}.sg button span{flex:1}.sg button small{color:var(--mt);font-weight:500;font-size:12px}
