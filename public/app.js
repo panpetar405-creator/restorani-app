@@ -42,8 +42,8 @@ const bk=(t,r='')=>`<div class="hd"><button class="ib" data-b="1" aria-label="Na
 const heart=r=>`<button class="hrt${S.sv.has(r.id)?'':' off'}" data-h="${r.id}" aria-label="Sačuvaj">${ic('heart',22,'currentColor',S.sv.has(r.id)?'currentColor':'none')}</button>`;
 const ALL_LOC='Cijela Crna Gora';
 const inLoc=r=>S.loc===ALL_LOC||r.city===S.loc;
-const CITY_ORDER=['Podgorica','Budva','Kotor','Tivat','Herceg Novi','Bar','Ulcinj','Cetinje','Nikšić','Kolašin','Žabljak'];
-const locs=()=>{const c=[...new Set(R.map(r=>r.city).filter(Boolean))];c.sort((a,b)=>{const x=CITY_ORDER.indexOf(a),y=CITY_ORDER.indexOf(b);return (x<0?99:x)-(y<0?99:y)||a.localeCompare(b)});return [ALL_LOC,...c]};
+const CITY_ORDER=['Podgorica','Budva','Kotor','Tivat','Herceg Novi','Bar','Ulcinj','Cetinje','Nikšić','Kolašin','Žabljak','Perast','Risan','Petrovac','Sveti Stefan','Bečići','Rafailovići','Sutomore','Virpazar','Danilovgrad','Berane','Bijelo Polje','Pljevlja','Mojkovac','Plav'];
+const locs=()=>{const c=[...new Set([...CITY_ORDER,...R.map(r=>r.city).filter(Boolean)])];c.sort((a,b)=>{const x=CITY_ORDER.indexOf(a),y=CITY_ORDER.indexOf(b);return (x<0?99:x)-(y<0?99:y)||a.localeCompare(b)});return [ALL_LOC,...c]};
 function filt(){return R.filter(r=>(S.cat==='Sve'||r.tags.includes(S.cat))&&(r.lo??0)<=S.maxP&&(!S.mood||r.mood.includes(S.mood))&&inLoc(r)&&(!S.q||norm(r.n+' '+r.tags.join(' ')+' '+r.menu.map(m=>m[0]).join(' ')).includes(norm(S.q))))}
 const LOC_IN={'Podgorica':'u Podgorici','Budva':'u Budvi','Kotor':'u Kotoru','Tivat':'u Tivtu','Herceg Novi':'u Herceg Novom','Bar':'u Baru','Ulcinj':'u Ulcinju','Cetinje':'na Cetinju','Nikšić':'u Nikšiću','Kolašin':'u Kolašinu','Žabljak':'na Žabljaku','Perast':'u Perastu','Risan':'u Risnu','Bijela':'u Bijeloj','Petrovac':'u Petrovcu'};
 const popTitle=()=>S.loc===ALL_LOC?'Najpopularnije u Crnoj Gori':LOC_IN[S.loc]?`Najpopularnije ${LOC_IN[S.loc]}`:`Najpopularnije: ${S.loc}`;
@@ -57,7 +57,7 @@ function home(){const mo=[['Do 15 €','p'],['Romantična večera','rom'],['Poro
  <label class="srch">${ic('search',18)}<input id="q" type="search" placeholder="Pretraži restorane, jela, kuhinju..." value="${S.q.replace(/"/g,'&quot;')}"></label>
  <h2>Za danas</h2><div class="chips">${mo.map(m=>`<button class="chip${(m[1]==='p'?S.maxP===15:S.mood===m[1])?' on':''}" data-m="${m[1]}">${m[0]}</button>`).join('')}</div>
  <button class="hero" data-c2="Riba"><img src="${art('terasa')}" alt="Restorani uz more"><span class="bd">Preporuka za vas</span><span class="cp"><div><b>Restorani uz more</b><small>Riba · Mediteranska kuhinja</small></div>${ic('chr',20)}</span></button>
- <h2>${popTitle()}</h2><div class="pop">${popList().map(r=>`<button class="pc" data-r="${r.id}"><img src="${art(r.img)}" alt="${r.n}"><b>${r.n}</b><small>${star()} ${r.r} · ${pr(r)}</small></button>`).join('')}</div></div>`}
+ <h2>${popTitle()}</h2><div class="pop">${popList().length?popList().map(r=>`<button class="pc" data-r="${r.id}"><img src="${art(r.img)}" alt="${r.n}"><b>${r.n}</b><small>${star()} ${r.r} · ${pr(r)}</small></button>`).join(''):'<p class="sub">Još nema restorana u ovom mjestu.</p>'}</div></div>`}
 const SORTS=[['pop','Najpopularnije'],['cheap','Najjeftinije'],['near','Najbliže'],['rate','Najbolje ocijenjeni']];
 const bv=()=>S.maxP>=99?60:Math.max(10,Math.min(60,S.maxP));
 const bl=()=>S.maxP>=99?'Bez limita':`do ${S.maxP} €`;
