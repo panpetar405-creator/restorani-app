@@ -36,21 +36,24 @@ async function loadData(){try{const[a,b]=await Promise.all([api('/restaurants?li
  loadSaved();if(!S.loaded){S.cmp=[0,1].filter(i=>R[i]);S.loaded=true}else S.cmp=S.cmp.filter(i=>R[i]);S.err=false}catch{S.err=true}
  render()}
 async function shareIt(){const r=R[S.rid];if(!r)return;try{if(navigator.share){await navigator.share({title:r.raw+' · STO?',text:r.raw+': račun po osobi '+pr(r),url:location.origin});return}await navigator.clipboard.writeText(location.origin);toast('Link kopiran')}catch{}}
-const S={scr:'splash',hist:[],tab:'home',cat:'Sve',loc:'Tivat i okolina',maxP:25,mood:'',q:'',rid:0,mt:'Najpopularnije',sort:'pop',cmp:[],sv:new Set(),n:2,cs:{glavno:1,pice:1,prilog:1,dezert:0},cr:0,svt:'r',ms:0,ot:'Pregled',err:false,loaded:false,ow:{key:(()=>{try{return sessionStorage.getItem('sto.owner')||''}catch{return ''}})(),data:null,err:'',edits:{}}};
+const S={scr:'splash',hist:[],tab:'home',cat:'Sve',loc:'Cijela Crna Gora',maxP:25,mood:'',q:'',rid:0,mt:'Najpopularnije',sort:'pop',cmp:[],sv:new Set(),n:2,cs:{glavno:1,pice:1,prilog:1,dezert:0},cr:0,svt:'r',ms:0,ot:'Pregled',err:false,loaded:false,ow:{key:(()=>{try{return sessionStorage.getItem('sto.owner')||''}catch{return ''}})(),data:null,err:'',edits:{}}};
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2300)}
 const bk=(t,r='')=>`<div class="hd"><button class="ib" data-b="1" aria-label="Nazad">${ic('back',24)}</button><h1>${t}</h1>${r}</div>`;
 const heart=r=>`<button class="hrt${S.sv.has(r.id)?'':' off'}" data-h="${r.id}" aria-label="Sačuvaj">${ic('heart',22,'currentColor',S.sv.has(r.id)?'currentColor':'none')}</button>`;
-function filt(){return R.filter(r=>(S.cat==='Sve'||r.tags.includes(S.cat))&&(r.lo??0)<=S.maxP&&(!S.mood||r.mood.includes(S.mood))&&(S.loc==='Tivat i okolina'?r.city==='Tivat':S.loc==='Kotor'?r.city==='Kotor':S.loc==='Herceg Novi'?r.city==='Herceg Novi':true)&&(!S.q||norm(r.n+' '+r.tags.join(' ')+' '+r.menu.map(m=>m[0]).join(' ')).includes(norm(S.q))))}
-const LOC_CITY={'Tivat i okolina':'Tivat','Kotor':'Kotor','Herceg Novi':'Herceg Novi'};
-const LOC_IN={'Tivat i okolina':'u Tivtu','Kotor':'u Kotoru','Herceg Novi':'u Herceg Novom','Cijela Boka':'u Boki'};
-const popTitle=()=>`Najpopularnije ${LOC_IN[S.loc]||'u Boki'}`;
-const popList=()=>{const c=LOC_CITY[S.loc];return R.filter(r=>!c||r.city===c).sort((a,b)=>(b.r||0)-(a.r||0)||(b.c||0)-(a.c||0)).slice(0,10)};
-function cityFromQuery(q){const n=norm(q).trim();if(!n)return null;if(n==='herceg novi'||n==='hercegnovi'||n==='h. novi')return 'Herceg Novi';if(n==='kotor')return 'Kotor';if(n==='tivat')return 'Tivat i okolina';if(n==='boka'||n==='cijela boka')return 'Cijela Boka';return null}
+const ALL_LOC='Cijela Crna Gora';
+const inLoc=r=>S.loc===ALL_LOC||r.city===S.loc;
+const CITY_ORDER=['Podgorica','Budva','Kotor','Tivat','Herceg Novi','Bar','Ulcinj','Cetinje','Nikšić','Kolašin','Žabljak'];
+const locs=()=>{const c=[...new Set(R.map(r=>r.city).filter(Boolean))];c.sort((a,b)=>{const x=CITY_ORDER.indexOf(a),y=CITY_ORDER.indexOf(b);return (x<0?99:x)-(y<0?99:y)||a.localeCompare(b)});return [ALL_LOC,...c]};
+function filt(){return R.filter(r=>(S.cat==='Sve'||r.tags.includes(S.cat))&&(r.lo??0)<=S.maxP&&(!S.mood||r.mood.includes(S.mood))&&inLoc(r)&&(!S.q||norm(r.n+' '+r.tags.join(' ')+' '+r.menu.map(m=>m[0]).join(' ')).includes(norm(S.q))))}
+const LOC_IN={'Podgorica':'u Podgorici','Budva':'u Budvi','Kotor':'u Kotoru','Tivat':'u Tivtu','Herceg Novi':'u Herceg Novom','Bar':'u Baru','Ulcinj':'u Ulcinju','Cetinje':'na Cetinju','Nikšić':'u Nikšiću','Kolašin':'u Kolašinu','Žabljak':'na Žabljaku','Perast':'u Perastu','Risan':'u Risnu','Bijela':'u Bijeloj','Petrovac':'u Petrovcu'};
+const popTitle=()=>S.loc===ALL_LOC?'Najpopularnije u Crnoj Gori':LOC_IN[S.loc]?`Najpopularnije ${LOC_IN[S.loc]}`:`Najpopularnije: ${S.loc}`;
+const popList=()=>R.filter(inLoc).sort((a,b)=>(b.r||0)-(a.r||0)||(b.c||0)-(a.c||0)).slice(0,10);
+function cityFromQuery(q){const n=norm(q).trim();if(!n)return null;if(['cg','crna gora','cijela crna gora'].includes(n))return ALL_LOC;const m=locs().find(l=>l!==ALL_LOC&&norm(l)===n);return m||null}
 function home(){const mo=[['Do 15 €','p'],['Romantična večera','rom'],['Porodični ručak','fam']];
  return `<div class="scr"><div class="hd"><div class="logo" style="flex:1">STO<i>?</i></div><button class="ib" data-g="more" aria-label="Profil">${ic('user',24)}</button></div>
  <h1 style="font-size:24px;margin:6px 0 4px">Šta danas želiš?</h1><p class="sub">Izaberi kriterijume i pronađi restoran koji odgovara tvojoj situaciji.</p>
  <div class="cats">${[['Sve','grid'],['Riba','fish'],['Meso','meat'],['Pizza','pizza'],['Pasta','pasta']].map(c=>`<button class="cat" data-c="${c[0]}" aria-pressed="${S.cat===c[0]}"><span>${ic(c[1],24)}</span>${c[0]}</button>`).join('')}</div>
- <div class="row"><label class="sel">${ic('pin',18)}<select id="loc" aria-label="Lokacija">${['Tivat i okolina','Kotor','Herceg Novi','Cijela Boka'].map(l=>`<option${S.loc===l?' selected':''}>${l}</option>`).join('')}</select>${ic('chd',18)}</label><button class="sel" style="flex:none" data-g="list" aria-label="Filteri">${ic('filt',20)}</button></div>
+ <div class="row"><label class="sel">${ic('pin',18)}<select id="loc" aria-label="Lokacija">${locs().map(l=>`<option${S.loc===l?' selected':''}>${l}</option>`).join('')}</select>${ic('chd',18)}</label><button class="sel" style="flex:none" data-g="list" aria-label="Filteri">${ic('filt',20)}</button></div>
  <label class="srch">${ic('search',18)}<input id="q" type="search" placeholder="Pretraži restorane, jela, kuhinju..." value="${S.q.replace(/"/g,'&quot;')}"></label>
  <h2>Za danas</h2><div class="chips">${mo.map(m=>`<button class="chip${(m[1]==='p'?S.maxP===15:S.mood===m[1])?' on':''}" data-m="${m[1]}">${m[0]}</button>`).join('')}</div>
  <button class="hero" data-c2="Riba"><img src="${art('terasa')}" alt="Restorani uz more"><span class="bd">Preporuka za vas</span><span class="cp"><div><b>Restorani uz more</b><small>Riba · Mediteranska kuhinja</small></div>${ic('chr',20)}</span></button>
@@ -103,15 +106,17 @@ function saved(){const L=R.filter(r=>S.sv.has(r.id));
  ${S.svt==='r'?(L.length?L.map(r=>`<div class="rc" role="button" tabindex="0" data-r="${r.id}"><img src="${art(r.img)}" alt="" style="height:80px;width:80px"><div class="tx"><h3><span>${r.n}</span>${heart(r)}</h3><div class="rt">${star()}<b>${r.r}</b> · ${r.city}</div><div class="pr">${pr(r)}</div></div></div>`).join(''):'<p class="sub" style="text-align:center;padding:30px 0">Još nema sačuvanih restorana. Dodirni srce na kartici.</p>')
  :OFF.map(o=>`<button class="rc" data-r="${o[2]}"><div class="tx"><h3>${o[0]}</h3><div class="rt">${o[1]}</div></div>${ic('chr',18)}</button>`).join('')}</div>`}
 const proj=(la,ln,z)=>{const s=256*2**z,sn=Math.sin(la*Math.PI/180);return[(ln+180)/360*s,(.5-Math.log((1+sn)/(1-sn))/(4*Math.PI))*s]};
-function mapv(){const P=R.filter(x=>x.lat!=null&&x.lng!=null),r=R[S.ms]||R[0],W=Math.max(260,Math.min(430,innerWidth)-32),H=340;let body;
+function mapv(){const P=R.filter(x=>x.lat!=null&&x.lng!=null&&inLoc(x)),r=P.find(x=>x.id===S.ms)||P[0]||R[0],W=Math.max(260,Math.min(430,innerWidth)-32),H=340;let body;
  if(P.length){let z=16,xs,ys;for(;z>3;z--){xs=P.map(p=>proj(p.lat,p.lng,z)[0]);ys=P.map(p=>proj(p.lat,p.lng,z)[1]);if(Math.max(...xs)-Math.min(...xs)<W-90&&Math.max(...ys)-Math.min(...ys)<H-90)break}
   xs=P.map(p=>proj(p.lat,p.lng,z)[0]);ys=P.map(p=>proj(p.lat,p.lng,z)[1]);
   const ox=(Math.min(...xs)+Math.max(...xs))/2-W/2,oy=(Math.min(...ys)+Math.max(...ys))/2-H/2,n=2**z;let t='';
   for(let x=Math.floor(ox/256);x<=Math.floor((ox+W)/256);x++)for(let y=Math.floor(oy/256);y<=Math.floor((oy+H)/256);y++)if(x>=0&&y>=0&&x<n&&y<n)t+=`<img src="https://tile.openstreetmap.org/${z}/${x}/${y}.png" alt="" width="256" height="256" style="left:${Math.round(x*256-ox)}px;top:${Math.round(y*256-oy)}px">`;
-  P.forEach(p=>{const[x,y]=proj(p.lat,p.lng,z);t+=`<button class="pin${p.id===S.ms?' on':''}" data-pin="${p.id}" aria-label="${p.n}" style="left:${Math.round(x-ox)}px;top:${Math.round(y-oy)}px">${ic('pin',34,'#fff','#1d4f91')}</button>`});
+  P.forEach(p=>{const[x,y]=proj(p.lat,p.lng,z);t+=`<button class="pin${p.id===r.id?' on':''}" data-pin="${p.id}" aria-label="${p.n}" style="left:${Math.round(x-ox)}px;top:${Math.round(y-oy)}px">${ic('pin',34,'#fff','#1d4f91')}</button>`});
   body=`<div class="tm" style="height:${H}px" role="group" aria-label="Mapa restorana">${t}<span class="att">© OpenStreetMap</span></div>`}
  else body='<p class="sub">Restorani još nemaju unesene koordinate.</p>';
- return `<div class="scr">${bk('Na mapi')}${body}<div class="sc2" role="button" tabindex="0" data-r="${r.id}"><img src="${art(r.img)}" alt=""><div><b>${r.n}</b><div class="rt">${star()}<b>${r.r}</b> · ${r.km} km</div><b>${pr(r)}</b></div>${heart(r)}</div></div>`}
+ const lc=`<div class="chips" style="margin-bottom:12px">${locs().map(l=>`<button class="chip${S.loc===l?' on':''}" data-ml="${l}">${l}</button>`).join('')}</div>`;
+ if(!P.length)return `<div class="scr">${bk('Na mapi')}${lc}<p class="sub">Nema restorana s koordinatama za ovu lokaciju.</p></div>`;
+ return `<div class="scr">${bk('Na mapi')}${lc}${body}<div class="sc2" role="button" tabindex="0" data-r="${r.id}"><img src="${art(r.img)}" alt=""><div><b>${r.n}</b><div class="rt">${star()}<b>${r.r}</b> · ${r.km} km</div><b>${pr(r)}</b></div>${heart(r)}</div></div>`}
 function more(){return `<div class="scr">${bk('Još')}<div class="lst">${[['own','Za restorane (vlasnik)','gear'],['calc','Kalkulator računa','coin'],['map','Na mapi','map'],['list','Svi restorani','fork']].map(([g,l,i])=>`<button data-g="${g}">${ic(i,22)}<span>${l}</span>${ic('chr',18)}</button>`).join('')}</div><p class="sub" style="margin-top:20px">„STO?” je radni naziv koncepta. Restorani, cijene i ocjene su izmišljeni primjeri.</p></div>`}
 async function ownerLoad(){const o=S.ow;if(!o.key)return;o.err='';
  try{o.data=esc(await api('/owner/me',{headers:{authorization:'Bearer '+o.key}}))}
@@ -143,7 +148,7 @@ document.addEventListener('change',e=>{const i=e.target.id;if(i==='loc'){S.loc=e
 document.addEventListener('keydown',e=>{if(e.target.id==='q'&&e.key==='Enter'){const v=e.target.value.trim(),c=cityFromQuery(v);if(c){S.loc=c;S.q='';render()}else{S.q=v;goTo('list')}}else if((e.key==='Enter'||e.key===' ')&&e.target.dataset&&(e.target.dataset.r||e.target.dataset.pin)&&e.target.getAttribute('role')==='button'){e.preventDefault();e.target.click()}});
 document.addEventListener('input',e=>{const d=e.target.dataset;if(e.target.id==='bud'){const v=+e.target.value;S.maxP=v>=60?99:v;upd();return}if(d.pi!==undefined){S.ow.edits[d.pi]=e.target.value===''?NaN:+e.target.value}});
 document.addEventListener('submit',e=>{if(e.target.id==='ownf'){e.preventDefault();const k=(e.target.elements.k.value||'').trim();if(k.length<20||k.length>100){S.ow.err='Ključ nije ispravan.';render();return}S.ow.key=k;try{sessionStorage.setItem(OS,k)}catch{}S.ow.data=null;render();ownerLoad()}});
-document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b],[data-h],[data-r],[data-c],[data-c2],[data-m],[data-so],[data-rs],[data-mt],[data-ac],[data-xc],[data-n],[data-cs],[data-cr],[data-sv],[data-st],[data-pin],[data-ot],[data-ok],[data-sh],[data-retry],[data-lo],[data-call],[data-navl]');if(!t)return;const d=t.dataset;
+document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b],[data-h],[data-r],[data-c],[data-c2],[data-m],[data-so],[data-rs],[data-mt],[data-ac],[data-xc],[data-n],[data-cs],[data-cr],[data-sv],[data-st],[data-pin],[data-ml],[data-ot],[data-ok],[data-sh],[data-retry],[data-lo],[data-call],[data-navl]');if(!t)return;const d=t.dataset;
  if(d.h!==undefined){e.stopPropagation();const i=+d.h;S.sv.has(i)?S.sv.delete(i):S.sv.add(i);persist();render();return}
  if(d.g!==undefined){const q=$('#q');if(q)S.q=q.value.trim();if(d.g==='map'&&S.scr==='detail'&&R[S.rid])S.ms=S.rid;goTo(d.g)}
  else if(d.b)back()
@@ -152,7 +157,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b
  else if(d.c2){S.cat=d.c2;S.maxP=25;goTo('list')}
  else if(d.m!==undefined){if(d.m==='p'){S.maxP=S.maxP===15?25:15;S.mood=''}else S.mood=S.mood===d.m?'':d.m;render();if(S.maxP===15||S.mood)goTo('list')}
  else if(d.so){S.sort=d.so;upd()}
- else if(d.rs){S.maxP=99;S.cat='Sve';S.mood='';S.q='';S.sort='pop';S.loc='Cijela Boka';render()}
+ else if(d.rs){S.maxP=99;S.cat='Sve';S.mood='';S.q='';S.sort='pop';S.loc=ALL_LOC;render()}
  else if(d.mt){S.mt=d.mt;render()}
  else if(d.ac!==undefined){const i=+d.ac;if(!S.cmp.includes(i))S.cmp=[...S.cmp,i].slice(-2);toast('Dodato u poređenje');S.hist.push(S.scr);S.scr='compare';render();scrollTo(0,0)}
  else if(d.xc!==undefined){S.cmp=S.cmp.filter(i=>i!==+d.xc);render()}
@@ -162,6 +167,7 @@ document.addEventListener('click',e=>{const t=e.target.closest('[data-g],[data-b
  else if(d.sv){S.sv.add(S.cr);persist();toast('Sačuvano: '+R[S.cr].raw)}
  else if(d.st){S.svt=d.st;render()}
  else if(d.pin!==undefined){S.ms=+d.pin;render()}
+ else if(d.ml!==undefined){S.loc=d.ml;render()}
  else if(d.ot){S.ot=d.ot;if(d.ot==='Meni i cijene'||d.ot==='Pregled')render();else{toast(d.ot+': uskoro')}}
  else if(d.ok){ownerSave()}
  else if(d.sh){shareIt()}
