@@ -45,7 +45,7 @@ export async function readJson(request, maxBytes = 20000) {
   }
 }
 
-const parseList = (s) => {
+export const parseList = (s) => {
   try {
     const v = JSON.parse(s);
     return Array.isArray(v) ? v : [];
@@ -103,5 +103,43 @@ export function shapeRestaurant(row, items) {
     price,
     calc,
     menu,
+  };
+}
+
+export const KINDS = ['event', 'beach', 'culture'];
+
+export const isDate = (s) => typeof s === 'string' && /^\d{4}-\d\d-\d\d$/.test(s) && !Number.isNaN(Date.parse(s));
+
+/** Skup mjeseci (1-12) koje period od-do dodiruje. */
+export function monthsBetween(from, to) {
+  const out = new Set();
+  const d = new Date(from + 'T00:00:00Z');
+  const e = new Date(to + 'T00:00:00Z');
+  for (let n = 0; d <= e && n < 400; n++) {
+    out.add(d.getUTCMonth() + 1);
+    d.setUTCDate(d.getUTCDate() + 1);
+  }
+  return out;
+}
+
+export function shapeItem(row, offSeason = false) {
+  return {
+    slug: row.slug,
+    kind: row.kind,
+    title: row.title,
+    place: row.place,
+    region: row.region,
+    description: row.description,
+    from: row.date_from,
+    to: row.date_to,
+    months: parseList(row.months),
+    source: row.source,
+    sourceUrl: /^https?:\/\//.test(row.source_url) ? row.source_url : '',
+    status: row.status,
+    verifiedAt: row.verified_at,
+    demo: !!row.demo,
+    lat: row.lat,
+    lng: row.lng,
+    offSeason,
   };
 }

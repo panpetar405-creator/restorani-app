@@ -1,5 +1,5 @@
 import {
-  EVENT_TYPES, HttpError, MOODS, clamp, json, norm, readJson, sha256, shapeRestaurant,
+  EVENT_TYPES, HttpError, KINDS, MOODS, clamp, isDate, json, monthsBetween, norm, parseList, readJson, sha256, shapeItem, shapeRestaurant,
 } from './lib.js';
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
@@ -44,6 +44,35 @@ async function listRestaurants(env, url) {
     .filter((r) => !q || norm([r.name, ...r.tags, ...r.menu.map((m) => m.name)].join(' ')).includes(q))
     .slice(0, limit);
   return json({ restaurants: out });
+}
+
+async function listItems(env, url) {
+  const p = url.searchParams;
+  const place = norm((p.get('place') || '').slice(0, 40));
+  const kind = KINDS.includes(p.get('kind')) ? p.get('kind') : '';
+  let from = isDate(p.get('from')) ? p.get('from') : '';
+  let to = isDate(p.get('to')) ? p.get('to') : '';
+  if (from && to && from > to) [from, to] = [to, from];
+  const limit = clamp(p.get('limit'), 1, 500, 200) | 0;
+  const { results } = await env.DB
+    .prepare('SELECT * FROM items WHERE active = 1 ORDER BY date_from IS NULL, date_from, title')
+    .all();
+  const ms = from && to ? monthsBetween(from, to) : null;
+  const out = [];
+  for (const r of results) {
+    if (kind && r.kind !== kind) continue;
+    if (place && !norm(r.place + ' ' + r.region).includes(place)) continue;
+    let off = false;
+    if (r.kind === 'event') {
+      if (from && (r.date_to || r.date_from) < from) continue;
+      if (to && r.date_from > to) continue;
+    } else if (ms) {
+      const m = parseList(r.months);
+      off = m.length > 0 && !m.some((x) => ms.has(x));
+    }
+    out.push(shapeItem(r, off));
+  }
+  return json({ items: out.slice(0, limit) });
 }
 
 async function getRestaurant(env, slug) {
@@ -123,6 +152,8 @@ async function route(request, env, url) {
   if (pathname === '/api/health') return json({ ok: true });
 
   if (await limited(env.RL, ip)) throw new HttpError(429, 'Previše zahtjeva, pokušaj ponovo za minut');
+
+  if (pathname === '/api/items' && method === 'GET') return listItems(env, url);
 
   if (seg[1] === 'restaurants') {
     if (seg.length === 2 && method === 'GET') return listRestaurants(env, url);
