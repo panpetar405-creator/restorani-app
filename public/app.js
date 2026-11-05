@@ -100,6 +100,7 @@ document.addEventListener('click', (e) => {
   if (i >= 0) plan.splice(i, 1); else plan.push(k);
   savePlan();
   document.querySelectorAll('.add').forEach((a) => { if (a.getAttribute('data-k') === k) setAdd(a, plan.includes(k)); });
+  document.querySelectorAll('[data-bm]').forEach((a) => { if (a.getAttribute('data-bm') === k) { const on = plan.includes(k); a.setAttribute('aria-pressed', on); a.setAttribute('aria-label', on ? 'Ukloni iz plana' : 'Dodaj u plan'); a.innerHTML = ic('bookmark', on ? 'f' : ''); } });
   $('pb').textContent = plan.length; $('pb').hidden = !plan.length;
   if (location.hash === '#plan') planView();
 });
@@ -257,19 +258,33 @@ function weatherPeriod(x) {
 }
 const rangeText = (f, t) => nice(f) + (t && t !== f ? ' – ' + nice(t) : '');
 
-function galleryHtml(title, kind, media) {
-  if (!media.length) return `<div class="gal" data-c="${kind}"><div class="gempty">${ic(GLYPH[kind])}<span>Fotografije uskoro</span></div></div>`;
-  lbList = [];
-  const sl = media.map((m, i) => {
-    if (m.type === 'image') {
-      const zi = lbList.push(m) - 1;
-      const cap = m.caption || m.credit ? `<div class="cap">${esc(m.caption)}${m.credit ? `<i>${esc(m.credit)}</i>` : ''}</div>` : '';
-      return `<div class="sl"><img src="${esc(m.url)}" alt="${esc(m.caption || title)}" ${i ? 'loading="lazy"' : ''} decoding="async"><button type="button" class="zoom" data-z="${zi}" aria-label="Uvećaj fotografiju"></button>${cap}</div>`;
-    }
-    if (m.type === 'video') return `<div class="sl"><video src="${esc(m.url)}" controls playsinline preload="metadata"${m.poster ? ` poster="${esc(m.poster)}"` : ''}></video></div>`;
-    return `<div class="sl"><button type="button" class="vp" data-yt="${esc(m.id)}" aria-label="Pokreni video${m.caption ? ': ' + esc(m.caption) : ''}"><img src="${esc(m.poster)}" alt="" loading="lazy"><span class="pl2">${ic('play')}</span></button></div>`;
-  }).join('');
-  return `<div class="gal" data-c="${kind}"><div class="gtrack" id="gtrack">${sl}</div>${media.length > 1 ? `<div class="gcount" id="gcount">1 / ${media.length}</div>` : ''}</div>`;
+/* ---- objava u stilu društvene mreže: karusel (slike i video), srce, plan, mreža sličica ---- */
+let likes = [], vio = null;
+try { likes = JSON.parse(localStorage.getItem('mp.likes') || '[]'); } catch { likes = []; }
+const saveLikes = () => { try { localStorage.setItem('mp.likes', JSON.stringify(likes)); } catch { /* ignore */ } };
+const setLike = (b, on) => { b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? 'Ukloni oznaku Sviđa mi se' : 'Sviđa mi se'); b.innerHTML = ic('heart', on ? 'f' : ''); };
+
+function slideHtml(m, i, title) {
+  if (m.type === 'image') return `<div class="sl"><img src="${esc(m.url)}" alt="${esc(m.caption || title)}" ${i ? 'loading="lazy"' : ''} decoding="async"><button type="button" class="zoom" data-z="${i}" aria-label="Uvećaj fotografiju"></button></div>`;
+  if (m.type === 'video') return `<div class="sl vid"><video src="${esc(m.url)}" muted loop playsinline preload="metadata"${m.poster ? ` poster="${esc(m.poster)}"` : ''}></video><button type="button" class="vtap" data-vt aria-label="Pokreni ili pauziraj video"></button><button type="button" class="mute" data-mute aria-label="Uključi zvuk">${ic('mute')}</button><span class="rbadge">${ic('reel')}</span></div>`;
+  return `<div class="sl"><button type="button" class="vp" data-yt="${esc(m.id)}" aria-label="Pokreni video${m.caption ? ': ' + esc(m.caption) : ''}"><img src="${esc(m.poster)}" alt="" loading="lazy"></button><span class="pl2">${ic('play')}</span><span class="rbadge">${ic('reel')}</span></div>`;
+}
+
+function postHtml(x, key, kind, title, place, pills, media) {
+  lbList = media;
+  const inp = plan.includes(key), liked = likes.includes(key), n = media.length;
+  const head = `<header class="ph"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="pt">${esc(title)}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</header>`;
+  const body = n
+    ? `<div class="pm"><div class="gtrack" id="gtrack">${media.map((m, i) => slideHtml(m, i, title)).join('')}</div>${n > 1 ? `<div class="gcount" id="gcount">1 / ${n}</div>` : ''}<span class="burst" id="burst" aria-hidden="true">${ic('heart', 'f')}</span></div>${n > 1 ? `<div class="dots" id="dots" aria-hidden="true">${media.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}`
+    : `<div class="pm"><div class="gempty">${ic('camera')}<span>Fotografije i video uskoro</span></div></div>`;
+  const acts = `<div class="pa"><button type="button" class="pab like" data-like="${esc(key)}" aria-pressed="${liked}" aria-label="${liked ? 'Ukloni oznaku Sviđa mi se' : 'Sviđa mi se'}">${ic('heart', liked ? 'f' : '')}</button><button type="button" class="pab" data-share aria-label="Podijeli">${ic('share')}</button><button type="button" class="pab bm" data-bm="${esc(key)}" aria-pressed="${inp}" aria-label="${inp ? 'Ukloni iz plana' : 'Dodaj u plan'}">${ic('bookmark', inp ? 'f' : '')}</button></div>`;
+  const cur = media[0], cap = cur && (cur.caption || cur.credit) ? `<p class="pcr" id="pcr">${esc(cur.caption)}${cur.credit ? `<i>${esc(cur.credit)}</i>` : ''}</p>` : '';
+  return `<article class="post">${head}${body}${acts}${cap}</article>`;
+}
+
+function gridHtml(media) {
+  if (media.length < 2) return '';
+  return `<section class="sec"><h2>Fotografije i video <span class="cnt">${media.length}</span></h2><div class="pgrid">${media.map((m, i) => `<button type="button" class="gt" data-z="${i}" aria-label="${m.type === 'image' ? 'Fotografija' : 'Video'} ${i + 1}${m.caption ? ': ' + esc(m.caption) : ''}"><img src="${esc(m.type === 'image' ? m.url : m.poster || '')}" alt="" loading="lazy" decoding="async">${m.type === 'image' ? '' : `<span class="rbadge">${ic('reel')}</span>`}</button>`).join('')}</div></section>`;
 }
 
 function infoRows(x, isI) {
@@ -317,14 +332,14 @@ async function showDetail(key) {
   const tags = isI ? [] : [...(x.tags || []), ...(x.amenities || [])];
   const dest = x.lat != null && x.lng != null ? `${x.lat},${x.lng}` : '';
   const maps = 'https://www.google.com/maps/' + (dest ? 'dir/?api=1&destination=' + dest : 'search/?api=1&query=' + encodeURIComponent(title + ' ' + place));
-  const inp = plan.includes(key);
+  const inp = plan.includes(key), media = d.media || [];
   box.innerHTML = `<div data-c="${kind}">
-    <button type="button" class="dback l" data-back aria-label="Nazad">${ic('left')}</button>
-    <button type="button" class="dback r" data-share aria-label="Podijeli">${ic('share')}</button>
-    ${galleryHtml(title, kind, d.media || [])}
+    <div class="dbar"><button type="button" class="ib" data-back aria-label="Nazad">${ic('left')}</button><span class="dk">${KIND[kind]}</span><button type="button" class="ib" data-share aria-label="Podijeli">${ic('share')}</button></div>
+    ${postHtml(x, key, kind, title, place, pills, media)}
     <div class="wrap">
-      <div class="dh"><div class="row"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="kd">${KIND[kind]}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</div><h1>${esc(title)}</h1></div>
+      <div class="dh"><h1>${esc(title)}</h1></div>
       <div class="acts2"><button type="button" class="btn s add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + 'U planu' : ic('plus') + 'Dodaj u plan'}</button><a class="btn s" href="${esc(maps)}" target="_blank" rel="noopener">${ic('nav')}Mapa</a></div>
+      ${gridHtml(media)}
       <section class="sec"><h2>Vremenska prognoza</h2><p class="sub" id="wsub"></p><div id="wbody"><div class="skb" style="height:132px"></div></div></section>
       ${text ? `<section class="sec"><h2>O ${isI ? (kind === 'event' ? 'događaju' : 'lokaciji') : 'restoranu'}</h2><div class="box"><p class="prose">${esc(text)}</p></div></section>` : ''}
       ${!isI && x.why && x.why.length ? `<section class="sec"><h2>Zašto ovdje</h2><div class="box"><ul class="why">${x.why.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div></section>` : ''}
@@ -332,8 +347,7 @@ async function showDetail(key) {
       ${isI ? '' : menuHtml(x.menu)}
       <section class="sec"><h2>Informacije</h2><div class="box">${infoRows(x, isI)}</div></section>
     </div></div>`;
-  const tr = $('gtrack');
-  if (tr && $('gcount')) tr.addEventListener('scroll', () => { $('gcount').textContent = Math.round(tr.scrollLeft / tr.clientWidth) + 1 + ' / ' + tr.children.length; }, { passive: true });
+  initGallery();
   loadWeather(key, x, tok);
 }
 
@@ -359,16 +373,40 @@ async function loadWeather(key, x, tok) {
   }).join('')}</div>${est ? '<p class="note">Dani sa isprekidanom ivicom su procjena na osnovu prethodnih godina. Stvarna prognoza je dostupna 16 dana unaprijed.</p>' : ''}${attr}`;
 }
 
+function initGallery() {
+  if (vio) { vio.disconnect(); vio = null; }
+  const tr = $('gtrack'); if (!tr) return;
+  const n = tr.children.length;
+  const upd = () => {
+    const i = Math.min(n - 1, Math.round(tr.scrollLeft / tr.clientWidth));
+    if ($('gcount')) $('gcount').textContent = i + 1 + ' / ' + n;
+    const dots = $('dots'); if (dots) [...dots.children].forEach((d, j) => d.classList.toggle('on', j === i));
+    const m = lbList[i], c = $('pcr');
+    if (c) c.innerHTML = m && (m.caption || m.credit) ? `${esc(m.caption)}${m.credit ? `<i>${esc(m.credit)}</i>` : ''}` : '';
+  };
+  if (n > 1) tr.addEventListener('scroll', upd, { passive: true });
+  const vids = tr.querySelectorAll('video');
+  if (vids.length && 'IntersectionObserver' in window) {
+    vio = new IntersectionObserver((es) => es.forEach((en) => {
+      const v = en.target;
+      if (en.isIntersecting && en.intersectionRatio >= 0.6) v.play().catch(() => {}); else v.pause();
+    }), { root: tr, threshold: [0, 0.6] });
+    vids.forEach((v) => vio.observe(v));
+  }
+}
+
 /* lightbox */
 function lbShow(i) {
   lbPos = (i + lbList.length) % lbList.length;
-  const m = lbList[lbPos];
-  $('lbi').src = m.url; $('lbi').alt = m.caption || '';
+  const m = lbList[lbPos], box = $('lbm');
+  if (m.type === 'image') box.innerHTML = `<img src="${esc(m.url)}" alt="${esc(m.caption || '')}">`;
+  else if (m.type === 'video') box.innerHTML = `<video src="${esc(m.url)}" controls autoplay playsinline${m.poster ? ` poster="${esc(m.poster)}"` : ''}></video>`;
+  else box.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${esc(m.id)}?autoplay=1&rel=0&playsinline=1" title="Video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
   $('lbc').innerHTML = `${lbPos + 1} / ${lbList.length}${m.caption ? '<br>' + esc(m.caption) : ''}${m.credit ? '<br><small>' + esc(m.credit) + '</small>' : ''}`;
   $('lbp').hidden = $('lbn').hidden = lbList.length < 2;
 }
-const lbOpen = (i) => { lbShow(i); $('lb').hidden = false; document.body.classList.add('lock'); $('lbx').focus(); };
-const lbClose = () => { $('lb').hidden = true; $('lbi').src = ''; document.body.classList.remove('lock'); };
+const lbOpen = (i) => { lbShow(i); $('lb').hidden = false; document.querySelectorAll('#gtrack video').forEach((v) => v.pause()); document.body.classList.add('lock'); $('lbx').focus(); };
+const lbClose = () => { $('lb').hidden = true; $('lbm').innerHTML = ''; document.body.classList.remove('lock'); };
 $('lbx').onclick = lbClose; $('lbp').onclick = () => lbShow(lbPos - 1); $('lbn').onclick = () => lbShow(lbPos + 1);
 let tx = 0;
 $('lb').addEventListener('touchstart', (e) => { tx = e.touches[0].clientX; }, { passive: true });
@@ -378,9 +416,33 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') lbClose(); else if (e.key === 'ArrowLeft') lbShow(lbPos - 1); else if (e.key === 'ArrowRight') lbShow(lbPos + 1);
 });
 
+function toggleLike(k, forceOn) {
+  const i = likes.indexOf(k);
+  if (i >= 0 && !forceOn) likes.splice(i, 1); else if (i < 0) likes.push(k);
+  saveLikes();
+  document.querySelectorAll('[data-like]').forEach((b) => { if (b.getAttribute('data-like') === k) setLike(b, likes.includes(k)); });
+}
+/* dupli dodir na fotografiju = srce, kao na Instagramu */
+let lastTap = 0;
+$('dt').addEventListener('click', (e) => {
+  const z = e.target.closest('.zoom'); if (!z) return;
+  const now = Date.now();
+  if (now - lastTap < 320) {
+    e.stopImmediatePropagation(); lastTap = 0;
+    const k = decodeURIComponent(location.hash.slice(3)); toggleLike(k, true);
+    const b = $('burst'); if (b) { b.classList.remove('go'); void b.offsetWidth; b.classList.add('go'); }
+  } else lastTap = now;
+}, true);
+
 $('dt').addEventListener('click', async (e) => {
   const t = e.target;
   if (t.closest('[data-back]')) { if (navs > 0) history.back(); else location.hash = '#istrazi'; return; }
+  const lk = t.closest('[data-like]'); if (lk) { toggleLike(lk.getAttribute('data-like')); return; }
+  const bm = t.closest('[data-bm]'); if (bm) { const a = document.querySelector('.acts2 .add'); if (a) a.click(); return; }
+  const vt = t.closest('[data-vt]');
+  if (vt) { const v = vt.parentNode.querySelector('video'); if (v.paused) v.play().catch(() => {}); else v.pause(); return; }
+  const mu = t.closest('[data-mute]');
+  if (mu) { const v = mu.parentNode.querySelector('video'); v.muted = !v.muted; mu.innerHTML = ic(v.muted ? 'mute' : 'vol'); mu.setAttribute('aria-label', v.muted ? 'Uključi zvuk' : 'Isključi zvuk'); return; }
   const z = t.closest('[data-z]'); if (z) { lbOpen(+z.getAttribute('data-z')); return; }
   const yt = t.closest('[data-yt]');
   if (yt) { yt.parentNode.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${esc(yt.getAttribute('data-yt'))}?autoplay=1&rel=0&playsinline=1" title="Video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`; return; }
