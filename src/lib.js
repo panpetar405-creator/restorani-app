@@ -143,3 +143,88 @@ export function shapeItem(row, offSeason = false) {
     offSeason,
   };
 }
+
+/* ---------- mediji ---------- */
+const httpsOnly = (u) => (typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/.test(u) ? u : '');
+
+export function shapeMedia(row) {
+  const base = { caption: row.caption || '', credit: row.credit || '' };
+  if (row.type === 'youtube') {
+    const m = /(?:^|v=|youtu\.be\/|embed\/)([A-Za-z0-9_-]{11})(?:[?&#]|$)/.exec(String(row.url));
+    if (!m) return null;
+    return { type: 'youtube', id: m[1], poster: `https://i.ytimg.com/vi/${m[1]}/hqdefault.jpg`, ...base };
+  }
+  const url = httpsOnly(row.url);
+  if (!url) return null;
+  return { type: row.type === 'video' ? 'video' : 'image', url, poster: httpsOnly(row.poster), ...base };
+}
+
+/* ---------- prognoza ---------- */
+const pad2 = (n) => String(n).padStart(2, '0');
+
+export const addDaysISO = (s, n) => {
+  const d = new Date(s + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+};
+
+export function dateList(from, to) {
+  const out = [];
+  for (let d = from; d <= to && out.length < 400; d = addDaysISO(d, 1)) out.push(d);
+  return out;
+}
+
+/** Isti dan prije k godina (29. 2. se spušta na 28. 2.). */
+export function shiftYears(s, k) {
+  const [y, m, d] = s.split('-').map(Number);
+  const last = new Date(Date.UTC(y - k, m, 0)).getUTCDate();
+  return `${y - k}-${pad2(m)}-${pad2(Math.min(d, last))}`;
+}
+
+/** Red-po-red iz Open-Meteo "daily" objekta. */
+export function dailyRows(daily, src) {
+  const t = (daily && daily.time) || [];
+  return t.map((date, i) => ({
+    date,
+    tmax: Math.round(daily.temperature_2m_max[i]),
+    tmin: Math.round(daily.temperature_2m_min[i]),
+    rain: Math.round((daily.precipitation_sum[i] || 0) * 10) / 10,
+    prob: daily.precipitation_probability_max ? daily.precipitation_probability_max[i] : null,
+    code: daily.weather_code ? daily.weather_code[i] : null,
+    src,
+  }));
+}
+
+/** Prosjek istih datuma iz prethodnih godina. yearMaps[i]: Map(datum -> red) za godinu k = i + 1. */
+export function climateDays(dates, yearMaps) {
+  const out = [];
+  for (const date of dates) {
+    const v = yearMaps.map((m, i) => m.get(shiftYears(date, i + 1))).filter((r) => r && Number.isFinite(r.tmax) && Number.isFinite(r.tmin));
+    if (!v.length) continue;
+    out.push({
+      date,
+      tmax: Math.round(avg(v.map((r) => r.tmax))),
+      tmin: Math.round(avg(v.map((r) => r.tmin))),
+      rain: Math.round(avg(v.map((r) => r.rain)) * 10) / 10,
+      wet: Math.round((v.filter((r) => r.rain >= 1).length / v.length) * 100),
+      src: 'climate',
+    });
+  }
+  return out;
+}
+
+export function monthSummary(days) {
+  const g = new Map();
+  for (const d of days) {
+    const k = d.date.slice(0, 7);
+    if (!g.has(k)) g.set(k, []);
+    g.get(k).push(d);
+  }
+  return [...g].map(([month, l]) => ({
+    month,
+    days: l.length,
+    tmax: Math.round(avg(l.map((d) => d.tmax))),
+    tmin: Math.round(avg(l.map((d) => d.tmin))),
+    wetDays: Math.round(l.reduce((s, d) => s + d.wet / 100, 0)),
+  }));
+}
