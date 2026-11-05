@@ -1,0 +1,11 @@
+-- Primjer unosa galerije (slike i video) za događaj "Skijaška sezona".
+-- Zamijeni URL-ove pravim https adresama (npr. Cloudflare R2 ili tvoj CDN) pa pokreni migraciju.
+-- type: 'image' | 'video' (mp4, https) | 'youtube' (link ili ID). poster = sličica za video.
+-- ref: 'i:<slug>' za događaje/plaže/kulturu, 'r:<slug>' za restorane.
+--
+-- INSERT INTO media (ref,type,url,poster,caption,credit,sort) VALUES
+--   ('i:skijaska-sezona','image','https://TVOJ-CDN/kolasin-1.jpg','','Staze na Kolašinu 1600','Foto: Ime Prezime',1),
+--   ('i:skijaska-sezona','video','https://TVOJ-CDN/kolasin-ski.mp4','https://TVOJ-CDN/kolasin-ski-poster.jpg','Spust sa vrha','Video: Ime Prezime',2),
+--   ('i:skijaska-sezona','image','https://TVOJ-CDN/kolasin-2.jpg','','Žičara u zoru','',3),
+--   ('i:skijaska-sezona','youtube','https://youtu.be/XXXXXXXXXXX','','Promo video','',4);
+SELECT 1;
