@@ -21,7 +21,7 @@ function d1(db) {
 let env;
 before(() => {
   const db = new DatabaseSync(':memory:');
-  for (const f of ['0007_items.sql', '0008_demo_items.sql']) db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8'));
+  for (const f of ['0007_items.sql', '0008_demo_items.sql', '0009_detalji_mediji.sql']) db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8'));
   env = { DB: d1(db), RL: null, RL_AUTH: null };
 });
 const get = async (qs = '') => (await (await worker.fetch(new Request('https://mp.test/api/items' + qs), env)).json()).items;
