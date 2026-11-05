@@ -145,7 +145,7 @@ export function shapeItem(row, offSeason = false) {
 }
 
 /* ---------- mediji ---------- */
-const httpsOnly = (u) => (typeof u === 'string' && /^https:\/\/[^\s"'<>]+$/.test(u) ? u : '');
+const httpsOnly = (u) => (typeof u === 'string' && (/^https:\/\/[^\s"'<>]+$/.test(u) || /^\/api\/m\/[0-9a-f-]{36}\.[a-z0-9]{3,4}$/.test(u)) ? u : '');
 
 export function shapeMedia(row) {
   const base = { caption: row.caption || '', credit: row.credit || '' };

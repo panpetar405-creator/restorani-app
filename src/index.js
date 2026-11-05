@@ -2,6 +2,7 @@ import {
   EVENT_TYPES, HttpError, KINDS, MOODS, clamp, addDaysISO, climateDays, dailyRows, dateList, isDate, json, monthSummary, monthsBetween, norm, parseList, readJson, sha256, shapeItem,
   shapeMedia, shapeRestaurant, shiftYears,
 } from './lib.js';
+import { adminRoute, serveMedia } from './admin.js';
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
 
@@ -247,6 +248,8 @@ async function route(request, env, url) {
 
   if (pathname === '/api/health') return json({ ok: true });
 
+  if (seg[1] === 'm' && seg.length === 3 && method === 'GET') return serveMedia(env, request, seg[2]);
+
   if (await limited(env.RL, ip)) throw new HttpError(429, 'Previše zahtjeva, pokušaj ponovo za minut');
 
   if (pathname === '/api/items' && method === 'GET') return listItems(env, url);
@@ -264,6 +267,11 @@ async function route(request, env, url) {
       .prepare('SELECT o.title, r.name AS restaurant, r.slug FROM offers o JOIN restaurants r ON r.id = o.restaurant_id WHERE o.active = 1 AND r.active = 1 ORDER BY o.id')
       .all();
     return json({ offers: results });
+  }
+
+  if (seg[1] === 'admin') {
+    if (await limited(env.RL_AUTH, ip)) throw new HttpError(429, 'Previše pokušaja, pokušaj ponovo za minut');
+    return adminRoute(request, env, pathname, method);
   }
 
   if (seg[1] === 'owner') {
