@@ -15,6 +15,7 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const r = e.request, u = new URL(r.url);
   if (r.method !== 'GET' || u.origin !== location.origin) return;
+  if (u.pathname.startsWith('/admin')) return; // admin uvijek sa mreže
   const pub = u.pathname === '/api/restaurants' || u.pathname === '/api/offers' || u.pathname === '/api/items';
   if (u.pathname.startsWith('/api/') && !pub) return; // vlasnički i ostali API nikad iz keša
   if (pub) {
