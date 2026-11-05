@@ -1,65 +1,35 @@
-# STO? — Račun prije stola
+# Montepalm: šta ima u Crnoj Gori
 
-Aplikacija (PWA) za izbor restorana prema stvarnom računu po osobi. Frontend je statički, API je Cloudflare Worker, podaci su u Cloudflare D1. Deploy ide automatski iz GitHuba.
+PWA u kojoj korisnik izabere mjesto i period, pa vidi događaje, plaže, kulturu i gastronomiju. Frontend je statički, API je Cloudflare Worker, podaci su u Cloudflare D1. Nastao je preradom STO? aplikacije (restorani), pa su infrastruktura, rate limiting, testovi i automatski deploy ostali isti.
 
 ```
 public/            PWA: index.html, app.js, styles.css, sw.js, manifest, ikone, _headers (CSP)
-src/index.js       Worker: API rute, rate limiting, pristup vlasnika
-src/lib.js         validacija, JSON odgovori, procjena računa
-migrations/        0001 shema, 0002 DEMO podaci (izmišljeni restorani iz prototipa)
-scripts/owner-key.js   generira ključ za vlasnika restorana
-test/              testovi API-ja (node --test, bez ovisnosti)
-.github/workflows/deploy.yml   test, migracije, deploy na push u main
+src/index.js       Worker: /api/items, /api/restaurants, vlasnički API (restorani)
+src/lib.js         validacija, JSON odgovori, oblikovanje stavki i restorana
+migrations/        0001-0006 restorani (STO?), 0007 tabela items, 0008 DEMO događaji
+test/              api.test.js (restorani), items.test.js (događaji i period)
 ```
 
-## Kako radi račun
-Račun po osobi = glavno jelo + piće + pola priloga. Raspon (od–do) računa Worker iz menija, pa se mijenja čim vlasnik promijeni cijene. Dok vlasnik ne potvrdi cijene, aplikacija piše „Cijene još nisu potvrđene”.
+## Kako radi pretraga po periodu
+- **Događaji** se prikažu ako se njihovi datumi preklapaju sa izabranim periodom.
+- **Plaže i kultura** imaju mjesece sezone. Ako period ne pada u sezonu, stavka se ne skriva nego se označi „Van sezone u tom periodu”.
+- **Gastronomija** su restorani iz tabele `restaurants` (sa računom po osobi), filtrirani po mjestu.
+- Svaka stavka ima `status` (potvrdjeno, okvirno, provjeriti), izvor i datum provjere.
 
 ## Lokalno
 ```bash
 npm install
-npm run db:local                 # shema + demo podaci u lokalni D1
-npm run dev                      # http://localhost:8787
-npm test                         # testovi API-ja (Node 22+)
+npm run db:local        # sve migracije u lokalni D1
+npm run dev             # http://localhost:8787
+npm test                # 17 testova, Node 22+
 ```
 
-## Prvo objavljivanje
-
-**1. GitHub**
-```bash
-git init -b main && git add . && git commit -m "STO? v1"
-gh repo create sto --private --source=. --push
-```
-
-**2. Cloudflare (jednom, ručno)**
-```bash
-npx wrangler login
-npx wrangler d1 create sto-db     # kopiraj database_id u wrangler.jsonc
-npm run db:remote                 # migracije na produkcijsku bazu
-npx wrangler deploy               # prvi deploy; ispiše adresu *.workers.dev
-```
-
-**3. Automatski deploy**
-Na Cloudflareu napravi API token (šablon „Edit Cloudflare Workers” + dozvola *D1: Edit*), pa u GitHub repozitorij dodaj:
-```bash
-gh secret set CLOUDFLARE_API_TOKEN
-gh secret set CLOUDFLARE_ACCOUNT_ID
-```
-Od tada svaki push u `main` pokreće testove, primjenjuje nove migracije i radi deploy.
-
-**4. Domena** (opcionalno): Cloudflare → Workers → `sto` → Settings → Domains & Routes.
-
-## Ključ za vlasnika restorana
-```bash
-npm run owner-key -- konoba-akustik
-```
-Ispiše ključ (pošalji ga vlasniku) i naredbu koja u bazu upisuje samo njegov hash. Vlasnik se u aplikaciji prijavi preko *Još → Za restorane*, ažurira cijene i potvrdi ih; time se postavlja datum provjere.
+## Objavljivanje
+Isto kao prije: `npx wrangler deploy`, ili push u `main` (GitHub Actions radi testove, migracije i deploy). Baza je ista kao u STO? projektu (`database_id` u `wrangler.jsonc`), pa migracije 0007 i 0008 samo dodaju novu tabelu. Worker se sada zove `montepalm`, što znači nova `*.workers.dev` adresa. Stari Worker `sto` možeš obrisati kad prebaciš domenu.
 
 ## Prije javnog lansiranja
-- **Demo podaci.** `migrations/0002_demo_seed.sql` sadrži izmišljene restorane, cijene i ocjene. Obriši tu migraciju (i redove iz baze) prije nego unesete prave podatke. Tekst na ekranu *Još* također kaže da su primjeri izmišljeni.
-- **Mapa** koristi pločice openstreetmap.org. Njihova pravila ograničavaju veću upotrebu; za veći promet pređi na vlastiti ili plaćeni provajder pločica i dopuni `img-src` u `public/_headers`.
-- **Fotografije restorana** su za sada ilustracije iz koda. Za prave fotografije dodaj R2 bucket.
-- **Ocjene i recenzije** su polja u bazi bez vlastitog toka za unos; povući ih iz Googlea ili uvesti vlastiti sistem.
-- **Sačuvani restorani** žive u pregledniku (localStorage); nema korisničkih naloga.
-- **Rate limiting** koristi Cloudflare *Rate Limiting* binding (`RL`, `RL_AUTH` u `wrangler.jsonc`). Ako ga na računu nema, ukloni `ratelimits` blok ili ga zamijeni pravilima u Cloudflare WAF-u.
-- Lista restorana se trenutno učitava cijela (do 100) i filtrira u aplikaciji; API već podržava `city`, `cat`, `max`, `mood`, `q`, `limit` za kasnije prebacivanje filtriranja na server.
+- **DEMO događaji.** `0008_demo_items.sql` ima izmišljene primjere sa okvirnim datumima (obilježeni su kao „Primjer”). Obriši ih: `DELETE FROM items WHERE demo = 1;` i unesi prave.
+- **Demo restorani.** `0002_demo_seed.sql` i dalje sadrži izmišljene restorane (README stare aplikacije).
+- **Unos pravih događaja** za sada ide SQL-om (`INSERT INTO items ...`). Sljedeći korak je admin stranica ili obrazac za organizatore.
+- **Fotografije.** Hero fotografiju korisnik bira na uređaju. Za slike kartica dodaj polje `image` i R2 bucket.
+- **Mapa** nije uključena u ovoj verziji. Za nju dopuni `img-src` u `public/_headers`.
