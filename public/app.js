@@ -367,9 +367,13 @@ async function loadWeather(key, x, tok) {
   }
   $('wsub').textContent = per ? `${w.place}, ${rangeText(w.from, w.to)}` : `Narednih 7 dana, ${w.place}. Izaberi period da vidiš prognozu za svoj termin.`;
   const est = w.days.some((d) => d.src === 'climate');
+  const many = w.days.length > 31;
+  let lastM = -1;
   $('wbody').innerHTML = `<div class="wxr">${w.days.map((dd) => {
     const dt = parse(dd.date), cl = dd.src === 'climate', g = cl ? climIcon(dd.wet) : wxIcon(dd.code), pr = cl ? dd.wet : dd.prob;
-    return `<div class="wx${cl ? ' cl' : ''}" role="group" aria-label="${DAYN[dt.getDay()]} ${nice(dd.date)}, ${cl ? 'procjena, ' : ''}${dd.tmax} stepeni, ${wxText[g]}"><span class="dn">${DAYN[dt.getDay()]}</span><span class="dd">${dt.getDate()}. ${MS[dt.getMonth()]}</span>${ic(g)}<span class="tp">${cl ? '~' : ''}${dd.tmax}° <span>${dd.tmin}°</span></span>${pr != null ? `<span class="rn">${ic('drop')}${pr}%</span>` : ''}</div>`;
+    const mh = many && dt.getMonth() !== lastM ? `<div class="wxm" aria-hidden="true"><span>${MONTHS[dt.getMonth()]}</span></div>` : '';
+    lastM = dt.getMonth();
+    return `${mh}<div class="wx${cl ? ' cl' : ''}" role="group" aria-label="${DAYN[dt.getDay()]} ${nice(dd.date)}, ${cl ? 'procjena, ' : ''}${dd.tmax} stepeni, ${wxText[g]}"><span class="dn">${DAYN[dt.getDay()]}</span><span class="dd">${dt.getDate()}. ${MS[dt.getMonth()]}</span>${ic(g)}<span class="tp">${cl ? '~' : ''}${dd.tmax}° <span>${dd.tmin}°</span></span>${pr != null ? `<span class="rn">${ic('drop')}${pr}%</span>` : ''}</div>`;
   }).join('')}</div>${est ? '<p class="note">Dani sa isprekidanom ivicom su procjena na osnovu prethodnih godina. Stvarna prognoza je dostupna 16 dana unaprijed.</p>' : ''}${attr}`;
 }
 

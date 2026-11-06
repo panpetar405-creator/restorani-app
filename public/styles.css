@@ -270,6 +270,8 @@ a.ev{color:inherit;text-decoration:none}
 .wxr::-webkit-scrollbar{display:none}
 .wx{flex:none;width:92px;scroll-snap-align:start;display:grid;justify-items:center;gap:4px;padding:12px 6px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-md)}
 .wx.cl{border-style:dashed}
+.wxm{flex:none;align-self:stretch;display:grid;place-items:center;padding:0 4px;scroll-snap-align:start}
+.wxm span{writing-mode:vertical-rl;transform:rotate(180deg);font-weight:800;font-size:.8rem;letter-spacing:.06em;text-transform:uppercase;color:var(--sea)}
 .wx .dn{font-weight:800;font-size:.9rem}
 .wx .dd{font-size:.75rem;color:var(--mute)}
 .wx .ic{width:30px;height:30px;color:var(--sea);margin:2px 0}
