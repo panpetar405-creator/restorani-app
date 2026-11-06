@@ -2,7 +2,7 @@ import {
   EVENT_TYPES, HttpError, KINDS, MOODS, clamp, addDaysISO, climateDays, dailyRows, dateList, isDate, json, monthSummary, monthsBetween, norm, parseList, readJson, sha256, shapeItem,
   shapeMedia, shapeRestaurant, shiftYears,
 } from './lib.js';
-import { adminRoute, serveMedia } from './admin.js';
+import { adminRoute, serveMedia } from './adminapi.js';
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
 
