@@ -1,5 +1,5 @@
 import {
-  EVENT_TYPES, HttpError, KINDS, MOODS, clamp, addDaysISO, climateDays, dailyRows, dateList, isDate, json, monthSummary, monthsBetween, norm, parseList, readJson, sha256, shapeItem,
+  EVENT_TYPES, HttpError, KINDS, MOODS, clamp, addDaysISO, climateDays, dailyRows, dateList, isDate, json, monthsBetween, norm, parseList, readJson, sha256, shapeItem,
   shapeMedia, shapeRestaurant, shiftYears,
 } from './lib.js';
 import { adminRoute, serveMedia } from './adminapi.js';
@@ -132,13 +132,13 @@ async function getWeather(env, url) {
   if (to < from) to = from;
   if (to > addDaysISO(from, 365)) to = addDaysISO(from, 365);
 
-  const key = `https://weather.montepalm.internal/${m[0]}/${from}/${to}/${today}`;
+  const key = `https://weather.montepalm.internal/v2/${m[0]}/${from}/${to}/${today}`;
   const cache = typeof caches !== 'undefined' ? caches.default : null;
   if (cache) { const hit = await cache.match(key); if (hit) return json(await hit.json()); }
 
-  const dates = dateList(from, to), long = dates.length > 14;
-  const fdates = long ? [] : dates.filter((d) => d <= lastFc);
-  const cdates = long ? dates : dates.filter((d) => d > lastFc);
+  const dates = dateList(from, to);
+  const fdates = dates.filter((d) => d <= lastFc);
+  const cdates = dates.filter((d) => d > lastFc);
   const loc = `latitude=${lat}&longitude=${lng}&timezone=${encodeURIComponent(TZ)}`;
 
   const fc = fdates.length
@@ -162,9 +162,7 @@ async function getWeather(env, url) {
     cl = climateDays(cdates, got.map((g) => (g.status === 'fulfilled' ? g.value : new Map())));
   }
 
-  const out = long
-    ? { available: true, place: row.place, from, to, mode: 'monthly', months: monthSummary(cl) }
-    : { available: true, place: row.place, from, to, mode: 'daily', days: [...fc, ...cl].sort((a, b) => (a.date < b.date ? -1 : 1)) };
+  const out = { available: true, place: row.place, from, to, mode: 'daily', days: [...fc, ...cl].sort((a, b) => (a.date < b.date ? -1 : 1)) };
   if (cache) {
     const ttl = fdates.length ? 1800 : 86400;
     await cache.put(key, new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'cache-control': `max-age=${ttl}` } }));
