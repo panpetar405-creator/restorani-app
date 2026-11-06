@@ -86,9 +86,16 @@ button{cursor:pointer}
 
 /* kategorije (plocice) */
 .tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.tile{display:flex;align-items:center;gap:12px;padding:12px;background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);font-weight:800;text-align:left;box-shadow:var(--sh);transition:transform .08s}
-.tile:active{transform:scale(.98)}
-.tile .bd{width:44px;height:44px}
+.tile{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-start;gap:14px;min-height:128px;padding:14px;color:#fff;background:linear-gradient(150deg,var(--t1),var(--t2));border:0;border-radius:var(--r-lg);font-weight:800;text-align:left;box-shadow:var(--sh);transition:transform .08s}
+.tile:active{transform:scale(.97)}
+.tile .bd{width:44px;height:44px;background:rgba(255,255,255,.22);color:#fff;border-radius:14px}
+.tile .tl{position:relative;display:grid;gap:2px;font-size:1.12rem;line-height:1.15}
+.tile .tl small{font-size:.78rem;font-weight:600;opacity:.9}
+.tile .deco{position:absolute;right:-14px;bottom:-16px;width:104px;height:104px;color:#fff;opacity:.16;stroke-width:1.3;pointer-events:none}
+.tile[data-c="event"]{--t1:#8a5400;--t2:#b06c08}
+.tile[data-c="beach"]{--t1:#0b6470;--t2:#0e7885}
+.tile[data-c="food"]{--t1:#a8461f;--t2:#bd5628}
+.tile[data-c="culture"]{--t1:#42596f;--t2:#566f89}
 
 /* boje kategorija: jedna tačka istine */
 [data-c="event"]{--c:#9a5f00;--ct:#fbefd2}

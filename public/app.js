@@ -456,7 +456,8 @@ document.addEventListener('click', (e) => { if (e.target.closest('.lk, a.ev')) s
 
 /* ---- navigacija ---- */
 function setCat(k) { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); search(); }
-$('tiles').innerHTML = Object.keys(CATS).map((k) => `<button class="tile" type="button" data-c="${k}" data-cat="${k}"><span class="bd">${ic(GLYPH[k])}</span>${CATS[k]}</button>`).join('');
+const SUB = { event: 'Festivali i koncerti', beach: 'Plaže i uvale', food: 'Restorani i konobe', culture: 'Gradovi i tvrđave' };
+$('tiles').innerHTML = Object.keys(CATS).map((k) => `<button class="tile" type="button" data-c="${k}" data-cat="${k}"><span class="bd">${ic(GLYPH[k])}</span>${ic(GLYPH[k], 'deco')}<span class="tl">${CATS[k]}<small>${SUB[k]}</small></span></button>`).join('');
 ['all', ...Object.keys(CATS)].forEach((k) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = k === 'all' ? 'Sve' : CATS[k];
   b.setAttribute('data-cat', k); b.setAttribute('aria-pressed', k === 'all'); b.onclick = () => setCat(k); $('chips').appendChild(b);
