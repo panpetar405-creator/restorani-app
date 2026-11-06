@@ -71,10 +71,12 @@ test('prognoza: blizu je stvarna prognoza, daleko je prosjek iz prethodnih godin
   assert.equal(far.days[0].wet, 100);
   assert.ok(calls.some((c) => c.includes('archive-api') && c.includes('2026-07-10')));
 });
-test('prognoza: dug period daje mjesečni sažetak, bez perioda sedam dana, bez koordinata geokodiranje', async () => {
+test('prognoza: dug period se prikazuje po danima, bez perioda sedam dana, bez koordinata geokodiranje', async () => {
   const long = await (await api('/weather?ref=i:stari-grad-kotor&from=2026-12-15&to=2027-03-31')).json();
-  assert.equal(long.mode, 'monthly');
-  assert.deepEqual(long.months.map((m) => m.month), ['2026-12', '2027-01', '2027-02', '2027-03']);
+  assert.equal(long.mode, 'daily');
+  assert.equal(long.days.length, 107);
+  assert.equal(long.days[0].date, '2026-12-15');
+  assert.equal(long.days.at(-1).date, '2027-03-31');
   const none = await (await api('/weather?ref=i:plaza-jaz')).json();
   assert.equal(none.days.length, 7);
   assert.ok(calls.some((c) => c.includes('geocoding-api')));
