@@ -1,12 +1,13 @@
 {
   "name": "Montepalm",
   "short_name": "Montepalm",
+  "id": "/",
   "description": "Šta ima u Crnoj Gori: događaji, plaže, kultura i gastronomija po mjestu i periodu.",
   "lang": "sr-Latn-ME",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#f1f5f5",
+  "background_color": "#fcf3e8",
   "theme_color": "#10303f",
   "icons": [
     {
