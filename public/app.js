@@ -258,6 +258,12 @@ function weatherPeriod(x) {
 }
 const rangeText = (f, t) => nice(f) + (t && t !== f ? ' – ' + nice(t) : '');
 
+function toast(msg) {
+  let t = document.getElementById('toast');
+  if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); t.setAttribute('aria-live', 'polite'); document.body.appendChild(t); }
+  t.textContent = msg; t.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(() => { t.hidden = true; }, 2200);
+}
+
 /* ---- objava u stilu društvene mreže: karusel (slike i video), srce, plan, mreža sličica ---- */
 let likes = [], vio = null;
 try { likes = JSON.parse(localStorage.getItem('mp.likes') || '[]'); } catch { likes = []; }
@@ -452,8 +458,8 @@ $('dt').addEventListener('click', async (e) => {
   if (yt) { yt.parentNode.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${esc(yt.getAttribute('data-yt'))}?autoplay=1&rel=0&playsinline=1" title="Video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`; return; }
   if (t.closest('[data-retry]')) { const k = decodeURIComponent(location.hash.slice(3)); $('wbody').innerHTML = '<div class="skb" style="height:132px"></div>'; if (known[k]) loadWeather(k, known[k], detailTok); return; }
   if (t.closest('[data-share]')) {
-    const k = decodeURIComponent(location.hash.slice(3)), x = known[k] || {}, data = { title: x.title || x.name || 'Montepalm', url: location.href };
-    try { if (navigator.share) await navigator.share(data); else await navigator.clipboard.writeText(location.href); } catch { /* otkazano */ }
+    const k = decodeURIComponent(location.hash.slice(3)), x = known[k] || {}, link = /^[ir]:[a-z0-9-]+$/.test(k) ? `${location.origin}/s/${k[0]}/${k.slice(2)}` : location.href, data = { title: x.title || x.name || 'Montepalm', url: link };
+    try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(link); toast('Link kopiran'); } } catch { /* otkazano */ }
   }
 });
 document.addEventListener('click', (e) => { if (e.target.closest('.lk, a.ev')) saved = { hash: location.hash || '#pocetna', y: window.scrollY }; });
