@@ -35,7 +35,7 @@ function itemCard(x) {
   if (x.status !== 'potvrdjeno') pills.push(`<span class="pill">${esc(STATUS[x.status])}</span>`);
   if (x.demo) pills.push('<span class="pill demo">Primjer</span>');
   if (x.verifiedAt) meta.push(`<li>${ic('shield')}Provjereno ${esc(fmt(x.verifiedAt))}</li>`);
-  return card(key, x.kind, x.title, x.place, x.description, meta, pills, x.offSeason);
+  return card(key, x.kind, x.title, x.place, x.description, meta, pills, x.offSeason, x.cover);
 }
 function restCard(r) {
   const key = 'r:' + r.slug; known[key] = r;
@@ -43,17 +43,17 @@ function restCard(r) {
   if (r.rating) meta.push(`<li class="star">${ic('star', 'f')}${esc(r.rating)} <span class="m">(${esc(r.reviews)})</span></li>`);
   meta.push(`<li class="w">${r.price ? '€ ' + esc(r.price.lo) + ' – ' + esc(r.price.hi) + ' po osobi' : 'Cijena uskoro'}</li>`);
   if (r.verifiedAt) meta.push(`<li>${ic('shield')}Provjereno ${esc(fmt(r.verifiedAt))}</li>`);
-  return card(key, 'food', r.name, r.city, r.tags.join(', ') || r.ambience, meta, [], false);
+  return card(key, 'food', r.name, r.city, r.tags.join(', ') || r.ambience, meta, [], false, r.cover);
 }
-function card(key, kind, title, place, desc, meta, pills, off) {
+function card(key, kind, title, place, desc, meta, pills, off, cover) {
   const inp = plan.includes(key);
-  return `<article class="card${off ? ' off' : ''}" data-c="${kind}"><div class="ch"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="kd">${KIND[kind]}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</div><h3 class="t"><a class="lk" href="#d/${esc(key)}">${esc(title)}</a>${ic('right')}</h3>${desc ? `<p class="d">${esc(desc)}</p>` : ''}<ul class="meta">${meta.join('')}</ul><button type="button" class="btn s add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + 'U planu' : ic('plus') + 'Dodaj u plan'}</button></article>`;
+  return `<article class="card${off ? ' off' : ''}${cover ? ' hascv' : ''}" data-c="${kind}">${cover ? `<div class="cv" aria-hidden="true"><img src="${esc(cover)}" alt="" loading="lazy" decoding="async"></div>` : ''}<div class="ch"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="kd">${KIND[kind]}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</div><h3 class="t"><a class="lk" href="#d/${esc(key)}">${esc(title)}</a>${ic('right')}</h3>${desc ? `<p class="d">${esc(desc)}</p>` : ''}<ul class="meta">${meta.join('')}</ul><button type="button" class="btn s add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + 'U planu' : ic('plus') + 'Dodaj u plan'}</button></article>`;
 }
 const emptyBox = (g, title, text, extra = '') => `<div class="empty"><span class="bd">${ic(g)}</span><b>${title}</b><p>${text}</p>${extra}</div>`;
 function railCard(x) {
   known['i:' + x.slug] = x;
   const d = parse(x.from);
-  return `<a class="ev" href="#d/i:${esc(x.slug)}"><span class="dt"><b>${d.getDate()}</b><span>${MS[d.getMonth()]}</span></span><span class="tx"><span class="tt">${esc(x.title)}</span><span class="pl">${ic('pin')}<span>${esc(x.place)}</span></span><span class="rng">${esc(span(x))}</span></span></a>`;
+  return `<a class="ev" href="#d/i:${esc(x.slug)}">${x.cover ? `<span class="evi"><img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async"></span>` : ''}<span class="evr"><span class="dt"><b>${d.getDate()}</b><span>${MS[d.getMonth()]}</span></span><span class="tx"><span class="tt">${esc(x.title)}</span><span class="pl">${ic('pin')}<span>${esc(x.place)}</span></span><span class="rng">${esc(span(x))}</span></span></span></a>`;
 }
 
 /* ---- podaci ---- */
@@ -61,6 +61,7 @@ async function loadAll() {
   try {
     const [a, b] = await Promise.all([api('/items'), api('/restaurants?limit=100')]);
     all = a.items; rests = b.restaurants;
+    if (typeof renderTiles === 'function') renderTiles();
   } catch { all = []; rests = []; $('rail').innerHTML = emptyBox('alert', 'Podaci nisu učitani', 'Provjeri internet vezu i pokušaj ponovo.'); }
   places = [...new Set([...all.map((x) => x.place), ...rests.map((r) => r.city)])].sort((a, b) => a.localeCompare(b, 'sr'));
   const up = all.filter((x) => x.kind === 'event' && (x.to || x.from) >= today).sort((a, b) => (a.from < b.from ? -1 : 1)).slice(0, 6);
@@ -467,7 +468,11 @@ document.addEventListener('click', (e) => { if (e.target.closest('.lk, a.ev')) s
 /* ---- navigacija ---- */
 function setCat(k) { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); search(); }
 const SUB = { event: 'Festivali i koncerti', beach: 'Plaže i uvale', food: 'Restorani i konobe', culture: 'Gradovi i tvrđave' };
-$('tiles').innerHTML = Object.keys(CATS).map((k) => `<button class="tile" type="button" data-c="${k}" data-cat="${k}"><span class="bd">${ic(GLYPH[k])}</span>${ic(GLYPH[k], 'deco')}<span class="tl">${CATS[k]}<small>${SUB[k]}</small></span></button>`).join('');
+function renderTiles() {
+  const cov = (k) => (k === 'food' ? (rests.find((r) => r.cover) || {}).cover : (all.find((x) => x.kind === k && x.cover) || {}).cover) || '';
+  $('tiles').innerHTML = Object.keys(CATS).map((k) => { const c = cov(k); return `<button class="tile${c ? ' hasbg' : ''}" type="button" data-c="${k}" data-cat="${k}">${c ? `<img class="tbg" src="${esc(c)}" alt="" loading="lazy" decoding="async">` : ''}<span class="bd">${ic(GLYPH[k])}</span>${ic(GLYPH[k], 'deco')}<span class="tl">${CATS[k]}<small>${SUB[k]}</small></span></button>`; }).join('');
+}
+renderTiles();
 ['all', ...Object.keys(CATS)].forEach((k) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = k === 'all' ? 'Sve' : CATS[k];
   b.setAttribute('data-cat', k); b.setAttribute('aria-pressed', k === 'all'); b.onclick = () => setCat(k); $('chips').appendChild(b);
