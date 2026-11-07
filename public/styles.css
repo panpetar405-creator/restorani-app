@@ -64,8 +64,8 @@ button{cursor:pointer}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:var(--r-md);border:1.5px solid transparent;background:none;font-weight:800;font-size:1rem;transition:transform .08s,border-color .15s,filter .15s}
 .btn:active{transform:scale(.98)}
 .btn.full{width:100%}
-.btn.p{background:var(--acc);color:var(--accink)}
-.btn.p:hover{filter:brightness(.96)}
+.btn.p{background:linear-gradient(100deg,#01145c 0%,#014985 32%,#0175a1 58%,#03a1bc 80%,#1aedad 100%);color:#fff;box-shadow:0 6px 16px rgba(1,73,133,.28)}
+.btn.p:hover{filter:brightness(1.06)}
 .btn.s{border-color:var(--line);color:var(--ink);background:var(--card)}
 .btn.s:hover{border-color:var(--sea)}
 .btn.g{color:var(--sea);min-height:48px}
@@ -323,6 +323,3 @@ a.ev{color:inherit;text-decoration:none}
 .lang span{display:grid;place-items:center;min-width:34px;height:32px;padding:0 6px;border-radius:999px;opacity:.75}
 .lang span.on{background:#fff;color:var(--ink,#10303f);opacity:1}
 
-/* dugme Pretraži u bojama gradijenta loga */
-#hgo{background:linear-gradient(100deg,#01145c 0%,#014985 32%,#0175a1 58%,#03a1bc 80%,#1aedad 100%);color:#fff;border-color:transparent;box-shadow:0 6px 16px rgba(1,73,133,.28)}
-#hgo:hover{filter:brightness(1.06)}
