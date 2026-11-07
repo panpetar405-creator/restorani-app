@@ -1,4 +1,11 @@
 'use strict';
+document.documentElement.classList.add('js');
+// slike se otkrivaju tek kad se učitaju (blur-up), a pri grešci se ne ostavlja prazan prostor
+const imgDone = (e) => { if (e.target && e.target.tagName === 'IMG') e.target.classList.add('ld'); };
+document.addEventListener('load', imgDone, true);
+document.addEventListener('error', imgDone, true);
+const buzz = (ms) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch { /* ignore */ } };
+const bump = (el, cls) => { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
 const $ = (i) => document.getElementById(i);
 const CATS = DICT[LANG].cats, KIND = DICT[LANG].kind;
 const GLYPH = { event: 'ticket', beach: 'umbrella', food: 'fork', culture: 'columns' };
@@ -98,6 +105,7 @@ document.addEventListener('click', (e) => {
   if (i >= 0) plan.splice(i, 1); else plan.push(k);
   savePlan();
   document.querySelectorAll('.add').forEach((a) => { if (a.getAttribute('data-k') === k) setAdd(a, plan.includes(k)); });
+  if (plan.includes(k)) { buzz(14); bump(b, 'pop'); bump($('pb'), 'bump'); }
   document.querySelectorAll('[data-bm]').forEach((a) => { if (a.getAttribute('data-bm') === k) { const on = plan.includes(k); a.setAttribute('aria-pressed', on); a.setAttribute('aria-label', on ? t('removePlan') : t('addPlan')); a.innerHTML = ic('bookmark', on ? 'f' : ''); } });
   $('pb').textContent = plan.length; $('pb').hidden = !plan.length;
   if (location.hash === '#plan') planView();
@@ -423,6 +431,7 @@ function toggleLike(k, forceOn) {
   if (i >= 0 && !forceOn) likes.splice(i, 1); else if (i < 0) likes.push(k);
   saveLikes();
   document.querySelectorAll('[data-like]').forEach((b) => { if (b.getAttribute('data-like') === k) setLike(b, likes.includes(k)); });
+  if (likes.includes(k)) { buzz(10); document.querySelectorAll('[data-like]').forEach((b) => { if (b.getAttribute('data-like') === k) bump(b, 'pop'); }); }
 }
 /* dupli dodir na fotografiju = srce, kao na Instagramu */
 let lastTap = 0;

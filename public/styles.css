@@ -370,3 +370,27 @@ a.ev{color:inherit;text-decoration:none}
 .pab.like .ic{width:24px;height:24px}
 .pab.like[aria-pressed="true"] .ic{color:#e0245e}
 .pab.like:hover{background:var(--sea-t)}
+
+/* ===== sitni detalji ===== */
+/* veći razmak između sekcija */
+.sec{margin-top:36px}
+.hd{margin:36px 0 14px}
+.dh{gap:10px}
+
+/* slike: blur-up, otkrivaju se tek kad se učitaju */
+.js .cv,.js .evi,.js .sl{overflow:hidden}
+@media (prefers-reduced-motion:no-preference){
+  .js .cv img,.js .evi img,.js .sl img{opacity:0;filter:blur(14px);transform:scale(1.05);transition:opacity .45s ease,filter .5s ease,transform .5s ease}
+  .js .cv img.ld,.js .evi img.ld,.js .sl img.ld{opacity:1;filter:none;transform:none}
+  /* blagi prelaz pri promjeni ekrana */
+  .view.on{animation:vin .26s ease-out}
+  @keyframes vin{from{opacity:0;transform:translateY(8px)}}
+  /* povratna informacija pri dodavanju u plan / lajku */
+  .pop{animation:pop .38s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes pop{0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)}}
+  #pb.bump{animation:bump .45s cubic-bezier(.3,1.8,.5,1)}
+  @keyframes bump{0%{transform:scale(1)}40%{transform:scale(1.5)}100%{transform:scale(1)}}
+  .pab.like.pop .ic{animation:heart .45s cubic-bezier(.3,1.8,.5,1)}
+  @keyframes heart{0%{transform:scale(.6)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
+}
+@media (prefers-reduced-motion:reduce){.js .cv img,.js .evi img,.js .sl img{opacity:1}}
