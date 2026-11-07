@@ -338,3 +338,28 @@ a.ev{color:inherit;text-decoration:none}
 .wx[data-w=snow]{background:linear-gradient(160deg,#7cc6ec 0%,#4a9fd0 55%,#3a78b0 100%)}
 .wx[data-w=storm]{background:linear-gradient(160deg,#5b6aa0 0%,#3a4377 55%,#262c58 100%)}
 .wx[data-w=fog]{background:linear-gradient(160deg,#a5b5bd 0%,#7a8d97 100%)}
+
+/* ===== profesionalniji izgled: paleta po logu ===== */
+:root{--sea:#0b6ea3;--sea-t:#dcecf7}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--sea:#5cb8e6;--sea-t:#15384f}}
+/* kategorije: plava (događaji), tirkiz (plaže), koral (gastro), indigo (kultura) */
+[data-c="event"]{--c:#0b5aa8;--ct:#dde9f7;--t1:#01145c;--t2:#0b5aa8}
+[data-c="beach"]{--c:#0a7d92;--ct:#d6f0f4;--t1:#075a73;--t2:#07859b}
+[data-c="food"]{--c:#b8482a;--ct:#f8e3d8;--t1:#a8461f;--t2:#cf6a3a}
+[data-c="culture"]{--c:#3f4f9e;--ct:#e3e7f6;--t1:#2a367f;--t2:#4a5ab0}
+.tile[data-c="event"]{--t1:#01145c;--t2:#0b5aa8}
+.tile[data-c="beach"]{--t1:#075a73;--t2:#07859b}
+.tile[data-c="food"]{--t1:#a8461f;--t2:#cf6a3a}
+.tile[data-c="culture"]{--t1:#2a367f;--t2:#4a5ab0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) [data-c="event"]{--c:#7db8f2;--ct:#12304f}:root:not([data-theme="light"]) [data-c="beach"]{--c:#6fd0da;--ct:#12363f}:root:not([data-theme="light"]) [data-c="food"]{--c:#f0a07c;--ct:#3d2318}:root:not([data-theme="light"]) [data-c="culture"]{--c:#aab6f0;--ct:#222a52}}
+.evi.ph{background:linear-gradient(150deg,#01145c,#0b5aa8 60%,#0175a1)}
+
+/* događaj bez fotografije: gradijent kategorije umjesto bež bloka */
+.gempty{aspect-ratio:16/9;color:#fff;position:relative;overflow:hidden;background:linear-gradient(150deg,var(--t1,#01145c),var(--t2,#0b5aa8))}
+.gempty::before{content:"";position:absolute;right:-60px;top:-60px;width:220px;height:220px;border-radius:50%;background:rgba(255,255,255,.10)}
+.gempty::after{content:"";position:absolute;left:-40px;bottom:-70px;width:180px;height:180px;border-radius:50%;background:rgba(255,255,255,.07)}
+.gempty .ic{width:56px;height:56px;stroke-width:1.4;position:relative;z-index:1;opacity:.95}
+.gempty span{position:relative;z-index:1;font-size:.85rem;font-weight:600;opacity:.88;letter-spacing:.01em}
+
+/* "Dodaj u plan" je glavna radnja; kad je u planu, postaje mirna potvrda */
+.acts2 .btn.p.add[aria-pressed="true"]{background:var(--ok-t);color:var(--ok);box-shadow:none;border-color:var(--ok)}

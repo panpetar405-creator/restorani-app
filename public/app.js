@@ -44,7 +44,7 @@ function restCard(r) {
 }
 function card(key, kind, title, place, desc, meta, pills, off, cover) {
   const inp = plan.includes(key);
-  return `<article class="card${off ? ' off' : ''}${cover ? ' hascv' : ''}" data-c="${kind}">${cover ? `<div class="cv" aria-hidden="true"><img src="${esc(cover)}" alt="" loading="lazy" decoding="async"></div>` : ''}<div class="ch"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="kd">${KIND[kind]}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</div><h3 class="t"><a class="lk" href="#d/${esc(key)}">${esc(title)}</a>${ic('right')}</h3>${desc ? `<p class="d">${esc(desc)}</p>` : ''}<ul class="meta">${meta.join('')}</ul><button type="button" class="btn s add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button></article>`;
+  return `<article class="card${off ? ' off' : ''}${cover ? ' hascv' : ''}" data-c="${kind}">${cover ? `<div class="cv" aria-hidden="true"><img src="${esc(cover)}" alt="" loading="lazy" decoding="async"></div>` : ''}<div class="ch"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="kd">${KIND[kind]}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</div><h3 class="t"><a class="lk" href="#d/${esc(key)}">${esc(title)}</a>${ic('right')}</h3>${desc ? `<p class="d">${esc(desc)}</p>` : ''}<ul class="meta">${meta.join('')}</ul><button type="button" class="btn p add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button></article>`;
 }
 const emptyBox = (g, title, text, extra = '') => `<div class="empty"><span class="bd">${ic(g)}</span><b>${title}</b><p>${text}</p>${extra}</div>`;
 function railCard(x) {
@@ -342,7 +342,7 @@ async function showDetail(key) {
     ${postHtml(x, key, kind, title, place, pills, media)}
     <div class="wrap">
       <div class="dh"><h1>${esc(title)}</h1></div>
-      <div class="acts2"><button type="button" class="btn s add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button><a class="btn s" href="${esc(maps)}" target="_blank" rel="noopener">${ic('nav')}${t('map')}</a></div>
+      <div class="acts2"><button type="button" class="btn p add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button><a class="btn s" href="${esc(maps)}" target="_blank" rel="noopener">${ic('nav')}${t('map')}</a></div>
       ${gridHtml(media)}
       <section class="sec"><h2>${t('forecast')}</h2><p class="sub" id="wsub"></p><div id="wbody"><div class="skb" style="height:132px"></div></div></section>
       ${text ? `<section class="sec"><h2>${isI ? (kind === 'event' ? t('about').event : t('about').loc) : t('about').rest}</h2><div class="box"><p class="prose">${esc(text)}</p></div></section>` : ''}
