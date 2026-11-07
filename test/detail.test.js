@@ -89,3 +89,8 @@ test('climateDays prosječi godine', () => {
   assert.equal(d[0].wet, 50);
   assert.equal(monthSummary(d)[0].wetDays, 1);
 });
+test('liste: naslovna slika je prva ispravna slika iz galerije', async () => {
+  const r = await (await api('/items')).json();
+  assert.equal(r.items.find((x) => x.slug === 'stari-grad-kotor').cover, 'https://cdn.test/a.jpg');
+  assert.equal(r.items.find((x) => x.slug === 'plaza-jaz').cover, '');
+});
