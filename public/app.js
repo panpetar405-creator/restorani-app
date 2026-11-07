@@ -467,7 +467,7 @@ document.addEventListener('click', (e) => { if (e.target.closest('.lk, a.ev')) s
 
 /* ---- navigacija ---- */
 function setCat(k) { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); search(); }
-const SUB = { event: 'Festivali i koncerti', beach: 'Plaže i uvale', food: 'Restorani i konobe', culture: 'Gradovi i tvrđave' };
+const SUB = { event: 'Šta se dešava i kada', beach: 'Plaže i uvale', food: 'Restorani i konobe', culture: 'Znamenitosti i baština' };
 function renderTiles() {
   const cov = (k) => (k === 'food' ? (rests.find((r) => r.cover) || {}).cover : (all.find((x) => x.kind === k && x.cover) || {}).cover) || '';
   $('tiles').innerHTML = Object.keys(CATS).map((k) => { const c = cov(k); return `<button class="tile${c ? ' hasbg' : ''}" type="button" data-c="${k}" data-cat="${k}">${c ? `<img class="tbg" src="${esc(c)}" alt="" loading="lazy" decoding="async">` : ''}<span class="bd">${ic(GLYPH[k])}</span>${ic(GLYPH[k], 'deco')}<span class="tl">${CATS[k]}<small>${SUB[k]}</small></span></button>`; }).join('');
