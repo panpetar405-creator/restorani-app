@@ -3,6 +3,7 @@ import {
   shapeMedia, shapeRestaurant, shiftYears,
 } from './lib.js';
 import { adminRoute, serveMedia } from './adminapi.js';
+import { sharePage } from './share.js';
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
 
@@ -290,6 +291,9 @@ async function route(request, env, url) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith('/s/') && request.method === 'GET') {
+      try { const r = await sharePage(env, url); return r || Response.redirect(url.origin + '/', 302); } catch (e) { console.error(e); return Response.redirect(url.origin + '/', 302); }
+    }
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
     try {
       return await route(request, env, url);
