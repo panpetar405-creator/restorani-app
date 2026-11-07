@@ -53,6 +53,9 @@ export function cleanItem(b) {
     place: str(b.place, 80, 'Mjesto', true),
     region: str(b.region, 60, 'Region'),
     description: str(b.description, 500, 'Kratak opis'),
+    title_en: str(b.title_en, 120, 'Naziv (EN)'),
+    description_en: str(b.description_en, 500, 'Kratak opis (EN)'),
+    details_en: str(b.details_en, 4000, 'Duži opis (EN)'),
     details: str(b.details, 4000, 'Duži opis'),
     address: str(b.address, 120, 'Adresa'),
     website: url(b.website, 'Web stranica'),
@@ -87,6 +90,7 @@ export function cleanRestaurant(b) {
     city: str(b.city, 60, 'Mjesto', true),
     phone: str(b.phone, 30, 'Telefon'),
     ambience: str(b.ambience, 600, 'Opis'),
+    ambience_en: str(b.ambience_en, 600, 'Opis (EN)'),
     tags: JSON.stringify(list(b.tags, 12, 30, 'Oznake')),
     amenities: JSON.stringify(list(b.amenities, 12, 30, 'Sadržaji')),
     why: JSON.stringify(list(b.why, 8, 200, 'Zašto ovdje')),
@@ -197,11 +201,11 @@ async function entry(env, ref) {
   if (ref[0] === 'i') {
     const r = await env.DB.prepare('SELECT * FROM items WHERE slug = ?').bind(slug).first();
     if (!r) throw new HttpError(404, 'Stavka nije pronađena');
-    data = { ref, type: 'item', slug, kind: r.kind, title: r.title, place: r.place, region: r.region, description: r.description, details: r.details, address: r.address, website: r.website, date_from: r.date_from, date_to: r.date_to, months: parseList(r.months), status: r.status, source: r.source, source_url: r.source_url, lat: r.lat, lng: r.lng, verified_at: r.verified_at, demo: !!r.demo, active: !!r.active };
+    data = { ref, type: 'item', slug, kind: r.kind, title: r.title, place: r.place, region: r.region, description: r.description, details: r.details, title_en: r.title_en || '', description_en: r.description_en || '', details_en: r.details_en || '', address: r.address, website: r.website, date_from: r.date_from, date_to: r.date_to, months: parseList(r.months), status: r.status, source: r.source, source_url: r.source_url, lat: r.lat, lng: r.lng, verified_at: r.verified_at, demo: !!r.demo, active: !!r.active };
   } else {
     const r = await env.DB.prepare('SELECT * FROM restaurants WHERE slug = ?').bind(slug).first();
     if (!r) throw new HttpError(404, 'Stavka nije pronađena');
-    data = { ref, type: 'restaurant', slug, kind: 'food', name: r.name, city: r.city, phone: r.phone || '', ambience: r.ambience, tags: parseList(r.tags), amenities: parseList(r.amenities), why: parseList(r.why), lat: r.lat, lng: r.lng, verified_at: r.verified_at, active: !!r.active };
+    data = { ref, type: 'restaurant', slug, kind: 'food', name: r.name, city: r.city, phone: r.phone || '', ambience: r.ambience, ambience_en: r.ambience_en || '', tags: parseList(r.tags), amenities: parseList(r.amenities), why: parseList(r.why), lat: r.lat, lng: r.lng, verified_at: r.verified_at, active: !!r.active };
   }
   const { results } = await env.DB.prepare('SELECT * FROM media WHERE ref = ? ORDER BY sort, id').bind(ref).all();
   return { ...data, media: results.map(adminMedia) };
@@ -233,12 +237,12 @@ export async function adminRoute(request, env, pathname, method) {
       const body = await readJson(request, 30000);
       if (ref[0] === 'i') {
         const o = cleanItem(body);
-        await env.DB.prepare(`UPDATE items SET kind=?, title=?, place=?, region=?, description=?, details=?, address=?, website=?, date_from=?, date_to=?, months=?, status=?, source=?, source_url=?, lat=?, lng=?, demo=?, active=?, verified_at = CASE WHEN ? THEN date('now') ELSE verified_at END WHERE slug=?`)
-          .bind(o.kind, o.title, o.place, o.region, o.description, o.details, o.address, o.website, o.date_from, o.date_to, o.months, o.status, o.source, o.source_url, o.lat, o.lng, o.demo, o.active, o.verify ? 1 : 0, ref.slice(2)).run();
+        await env.DB.prepare(`UPDATE items SET kind=?, title=?, place=?, region=?, description=?, details=?, title_en=?, description_en=?, details_en=?, address=?, website=?, date_from=?, date_to=?, months=?, status=?, source=?, source_url=?, lat=?, lng=?, demo=?, active=?, verified_at = CASE WHEN ? THEN date('now') ELSE verified_at END WHERE slug=?`)
+          .bind(o.kind, o.title, o.place, o.region, o.description, o.details, o.title_en, o.description_en, o.details_en, o.address, o.website, o.date_from, o.date_to, o.months, o.status, o.source, o.source_url, o.lat, o.lng, o.demo, o.active, o.verify ? 1 : 0, ref.slice(2)).run();
       } else {
         const o = cleanRestaurant(body);
-        await env.DB.prepare('UPDATE restaurants SET name=?, city=?, phone=?, ambience=?, tags=?, amenities=?, why=?, lat=?, lng=?, active=? WHERE slug=?')
-          .bind(o.name, o.city, o.phone || null, o.ambience, o.tags, o.amenities, o.why, o.lat, o.lng, o.active, ref.slice(2)).run();
+        await env.DB.prepare('UPDATE restaurants SET name=?, city=?, phone=?, ambience=?, ambience_en=?, tags=?, amenities=?, why=?, lat=?, lng=?, active=? WHERE slug=?')
+          .bind(o.name, o.city, o.phone || null, o.ambience, o.ambience_en, o.tags, o.amenities, o.why, o.lat, o.lng, o.active, ref.slice(2)).run();
       }
       return json(await entry(env, ref));
     }
@@ -247,8 +251,8 @@ export async function adminRoute(request, env, pathname, method) {
   if (what === 'items' && seg.length === 3 && method === 'POST') {
     const o = cleanItem(await readJson(request, 30000));
     const slug = await uniqueSlug(env.DB, o.title);
-    await env.DB.prepare(`INSERT INTO items (slug,kind,title,place,region,description,details,address,website,date_from,date_to,months,status,source,source_url,lat,lng,demo,active,verified_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, CASE WHEN ? THEN date('now') ELSE NULL END)`)
-      .bind(slug, o.kind, o.title, o.place, o.region, o.description, o.details, o.address, o.website, o.date_from, o.date_to, o.months, o.status, o.source, o.source_url, o.lat, o.lng, o.demo, o.active, o.verify ? 1 : 0).run();
+    await env.DB.prepare(`INSERT INTO items (slug,kind,title,place,region,description,details,title_en,description_en,details_en,address,website,date_from,date_to,months,status,source,source_url,lat,lng,demo,active,verified_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?, CASE WHEN ? THEN date('now') ELSE NULL END)`)
+      .bind(slug, o.kind, o.title, o.place, o.region, o.description, o.details, o.title_en, o.description_en, o.details_en, o.address, o.website, o.date_from, o.date_to, o.months, o.status, o.source, o.source_url, o.lat, o.lng, o.demo, o.active, o.verify ? 1 : 0).run();
     return json(await entry(env, 'i:' + slug), 201);
   }
 

@@ -73,7 +73,7 @@ export function estimate(menu) {
   return { price, calc: [avg(g), avg(d), avg(p), avg(z)].map(Math.round) };
 }
 
-export function shapeRestaurant(row, items) {
+export function shapeRestaurant(row, items, lang = 'sr') {
   const menu = items.map((m) => ({
     id: m.id,
     name: m.name,
@@ -93,7 +93,7 @@ export function shapeRestaurant(row, items) {
     amenities: parseList(row.amenities),
     moods: parseList(row.moods),
     why: parseList(row.why),
-    ambience: row.ambience,
+    ambience: (lang === 'en' && row.ambience_en) || row.ambience,
     art: ART_KEYS.includes(row.art) ? row.art : 'terasa',
     km: row.km,
     phone: row.phone && /^\+?[0-9 ]{6,20}$/.test(row.phone) ? row.phone : null,
@@ -122,14 +122,17 @@ export function monthsBetween(from, to) {
   return out;
 }
 
-export function shapeItem(row, offSeason = false) {
+export const pickLang = (url) => (url && url.searchParams && url.searchParams.get('lang') === 'en' ? 'en' : 'sr');
+
+export function shapeItem(row, offSeason = false, lang = 'sr') {
+  const en = lang === 'en';
   return {
     slug: row.slug,
     kind: row.kind,
-    title: row.title,
+    title: (en && row.title_en) || row.title,
     place: row.place,
     region: row.region,
-    description: row.description,
+    description: (en && row.description_en) || row.description,
     from: row.date_from,
     to: row.date_to,
     months: parseList(row.months),

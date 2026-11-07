@@ -11,18 +11,19 @@ export async function sharePage(env, url) {
   const m = /^\/s\/([ir])\/([^/]+)\/?$/.exec(url.pathname);
   if (!m || !SLUG.test(m[2])) return null;
   const [, t, slug] = m, ref = `${t}:${slug}`, origin = url.origin;
+  const en = url.searchParams.get('lang') === 'en';
   let title, desc;
   if (t === 'i') {
     const r = await env.DB.prepare('SELECT * FROM items WHERE active = 1 AND slug = ?').bind(slug).first();
     if (!r) return null;
-    title = r.title;
+    title = (en && r.title_en) || r.title;
     const when = r.date_from ? (r.date_to && r.date_to !== r.date_from ? `${fmt(r.date_from)} – ${fmt(r.date_to)}` : fmt(r.date_from)) : '';
-    desc = [[r.place, when].filter(Boolean).join(' · '), r.description || r.details].filter(Boolean).join('. ');
+    desc = [[r.place, when].filter(Boolean).join(' · '), (en && (r.description_en || r.details_en)) || r.description || r.details].filter(Boolean).join('. ');
   } else {
     const r = await env.DB.prepare('SELECT * FROM restaurants WHERE active = 1 AND slug = ?').bind(slug).first();
     if (!r) return null;
     title = r.name;
-    desc = [r.city, r.ambience].filter(Boolean).join('. ');
+    desc = [r.city, (en && r.ambience_en) || r.ambience].filter(Boolean).join('. ');
   }
   const { results } = await env.DB.prepare('SELECT * FROM media WHERE ref = ? ORDER BY sort, id').bind(ref).all();
   let img = '';
@@ -34,10 +35,10 @@ export async function sharePage(env, url) {
   const custom = !!img;
   if (!img) img = `${origin}/og.png`;
   const pageTitle = `${title} · Montepalm`;
-  const d = clip(desc || 'Događaji, plaže, kultura i gastronomija u Crnoj Gori.', 200);
-  const target = `/#d/${ref}`;
+  const d = clip(desc || (en ? 'Events, beaches, culture and food in Montenegro.' : 'Događaji, plaže, kultura i gastronomija u Crnoj Gori.'), 200);
+  const target = `/${en ? '?lang=en' : ''}#d/${ref}`;
   const html = `<!DOCTYPE html>
-<html lang="sr-Latn-ME"><head><meta charset="utf-8">
+<html lang="${en ? 'en' : 'sr-Latn-ME'}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(pageTitle)}</title>
 <meta name="description" content="${esc(d)}">
@@ -53,7 +54,7 @@ ${custom ? '' : '<meta property="og:image:width" content="1200">\n<meta property
 <meta name="twitter:description" content="${esc(d)}">
 <meta name="twitter:image" content="${esc(img)}">
 <meta http-equiv="refresh" content="0;url=${esc(target)}">
-</head><body><p><a href="${esc(target)}">${esc(title)}: otvori u aplikaciji Montepalm</a></p></body></html>`;
+</head><body><p><a href="${esc(target)}">${esc(title)}: ${en ? 'open in the Montepalm app' : 'otvori u aplikaciji Montepalm'}</a></p></body></html>`;
   return new Response(html, {
     headers: {
       'content-type': 'text/html; charset=utf-8',

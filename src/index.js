@@ -1,6 +1,6 @@
 import {
   EVENT_TYPES, HttpError, KINDS, MOODS, clamp, addDaysISO, climateDays, dailyRows, dateList, isDate, json, monthsBetween, norm, parseList, readJson, sha256, shapeItem,
-  shapeMedia, shapeRestaurant, shiftYears,
+  shapeMedia, pickLang, shapeRestaurant, shiftYears,
 } from './lib.js';
 import { adminRoute, serveMedia } from './adminapi.js';
 import { sharePage } from './share.js';
@@ -54,7 +54,7 @@ async function listRestaurants(env, url) {
   const covers = await loadCovers(env.DB);
 
   const out = rows
-    .map((r) => ({ ...shapeRestaurant(r, menus.get(r.id)), cover: covers.get('r:' + r.slug) || '' }))
+    .map((r) => ({ ...shapeRestaurant(r, menus.get(r.id), pickLang(url)), cover: covers.get('r:' + r.slug) || '' }))
     .filter((r) => !cat || r.tags.some((t) => norm(t) === cat))
     .filter((r) => !mood || r.moods.includes(mood))
     .filter((r) => (r.price ? r.price.lo : 0) <= max)
@@ -88,7 +88,7 @@ async function listItems(env, url) {
       const m = parseList(r.months);
       off = m.length > 0 && !m.some((x) => ms.has(x));
     }
-    out.push({ ...shapeItem(r, off), cover: covers.get('i:' + r.slug) || '' });
+    out.push({ ...shapeItem(r, off, pickLang(url)), cover: covers.get('i:' + r.slug) || '' });
   }
   return json({ items: out.slice(0, limit) });
 }
@@ -98,12 +98,12 @@ async function loadMedia(db, ref) {
   return results.map(shapeMedia).filter(Boolean).slice(0, 30);
 }
 
-async function getItem(env, slug) {
+async function getItem(env, slug, lang = 'sr') {
   if (!SLUG.test(slug)) throw new HttpError(404, 'Stavka nije pronađena');
   const row = await env.DB.prepare('SELECT * FROM items WHERE active = 1 AND slug = ?').bind(slug).first();
   if (!row) throw new HttpError(404, 'Stavka nije pronađena');
   const site = /^https?:\/\//.test(row.website) ? row.website : '';
-  return { item: { ...shapeItem(row), details: row.details, address: row.address, website: site }, media: await loadMedia(env.DB, 'i:' + slug) };
+  return { item: { ...shapeItem(row, false, lang), details: (lang === 'en' && row.details_en) || row.details, address: row.address, website: site }, media: await loadMedia(env.DB, 'i:' + slug) };
 }
 
 /* ---- prognoza (Open-Meteo): do 16 dana unaprijed stvarna, dalje prosjek istih datuma iz 3 prethodne godine ---- */
@@ -186,12 +186,12 @@ async function getWeather(env, url) {
   return json(out);
 }
 
-async function getRestaurant(env, slug) {
+async function getRestaurant(env, slug, lang = 'sr') {
   if (!SLUG.test(slug)) throw new HttpError(404, 'Restoran nije pronađen');
   const row = await env.DB.prepare('SELECT * FROM restaurants WHERE active = 1 AND slug = ?').bind(slug).first();
   if (!row) throw new HttpError(404, 'Restoran nije pronađen');
   const menus = await loadMenus(env.DB, [row.id]);
-  return shapeRestaurant(row, menus.get(row.id));
+  return shapeRestaurant(row, menus.get(row.id), lang);
 }
 
 async function recordEvent(env, request, slug) {
@@ -267,12 +267,12 @@ async function route(request, env, url) {
   if (await limited(env.RL, ip)) throw new HttpError(429, 'Previše zahtjeva, pokušaj ponovo za minut');
 
   if (pathname === '/api/items' && method === 'GET') return listItems(env, url);
-  if (seg[1] === 'items' && seg.length === 3 && method === 'GET') return json(await getItem(env, seg[2]));
+  if (seg[1] === 'items' && seg.length === 3 && method === 'GET') return json(await getItem(env, seg[2], pickLang(url)));
   if (pathname === '/api/weather' && method === 'GET') return getWeather(env, url);
 
   if (seg[1] === 'restaurants') {
     if (seg.length === 2 && method === 'GET') return listRestaurants(env, url);
-    if (seg.length === 3 && method === 'GET') return json({ ...(await getRestaurant(env, seg[2])), media: await loadMedia(env.DB, 'r:' + seg[2]) });
+    if (seg.length === 3 && method === 'GET') return json({ ...(await getRestaurant(env, seg[2], pickLang(url))), media: await loadMedia(env.DB, 'r:' + seg[2]) });
     if (seg.length === 4 && seg[3] === 'event' && method === 'POST') return recordEvent(env, request, seg[2]);
   }
 
