@@ -324,15 +324,17 @@ a.ev{color:inherit;text-decoration:none}
 .lang span.on{background:#fff;color:var(--ink,#10303f);opacity:1}
 
 
-/* prognoza u boji */
-.wx[data-w=sun]{--c1:#f5a300;--f1:rgba(245,163,0,.22);background:#fffaf0}
-.wx[data-w=cloudsun]{--c1:#f5a300;--c2:#6f8c9b;background:#fffaf0}
-.wx[data-w=cloud]{--c1:#6f8c9b;background:#f4f8fa}
-.wx[data-w=rain]{--c1:#6f8c9b;--c2:#2f8be6;background:#f0f7fe}
-.wx[data-w=snow]{--c1:#7a97a8;--c2:#3aaee8;background:#f0f8fe}
-.wx[data-w=storm]{--c1:#586a8a;--c2:#f5a300;background:#f3f4fa}
-.wx[data-w=fog]{--c1:#8aa0aa;background:#f4f8fa}
-.wx .ic{width:34px;height:34px}
-.wx .tp{color:#d9480f}
-.wx .tp span{color:#2a7bb5}
-.wx .rn,.wx .rn .ic{color:#2f8be6}
+/* prognoza u boji: pune boje po vremenu, bijeli tekst i ikone */
+.wx{color:#fff;border-color:transparent;background-origin:border-box;box-shadow:0 4px 12px rgba(13,43,56,.16);text-shadow:0 1px 2px rgba(0,0,0,.22)}
+.wx.cl{border:1.5px dashed rgba(255,255,255,.7)}
+.wx .dn,.wx .tp{color:#fff}
+.wx .dd,.wx .tp span,.wx .rn{color:rgba(255,255,255,.9)}
+.wx .ic,.wx .rn .ic{color:#fff;--c1:#fff;--c2:#fff;--f1:rgba(255,255,255,.28);width:34px;height:34px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2))}
+.wx .rn .ic{width:13px;height:13px;filter:none}
+.wx[data-w=sun]{background:linear-gradient(160deg,#f8b22a 0%,#f08a00 50%,#e8590c 100%)}
+.wx[data-w=cloudsun]{background:linear-gradient(160deg,#f3a63a 0%,#e1835a 40%,#5f8fb8 100%)}
+.wx[data-w=cloud]{background:linear-gradient(160deg,#8aa0b0 0%,#60798b 100%)}
+.wx[data-w=rain]{background:linear-gradient(160deg,#4a8fd8 0%,#1f5fae 55%,#173f86 100%)}
+.wx[data-w=snow]{background:linear-gradient(160deg,#7cc6ec 0%,#4a9fd0 55%,#3a78b0 100%)}
+.wx[data-w=storm]{background:linear-gradient(160deg,#5b6aa0 0%,#3a4377 55%,#262c58 100%)}
+.wx[data-w=fog]{background:linear-gradient(160deg,#a5b5bd 0%,#7a8d97 100%)}
