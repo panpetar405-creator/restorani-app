@@ -266,7 +266,7 @@ function toast(msg) {
 let likes = [], vio = null;
 try { likes = JSON.parse(localStorage.getItem('mp.likes') || '[]'); } catch { likes = []; }
 const saveLikes = () => { try { localStorage.setItem('mp.likes', JSON.stringify(likes)); } catch { /* ignore */ } };
-const setLike = (b, on) => { b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? t('unlike') : t('like')); b.innerHTML = ic('heart', on ? 'f' : ''); };
+const setLike = (b, on) => { b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? t('unlike') : t('like')); b.innerHTML = ic('heart', on ? 'f' : '') + `<span>${t('like')}</span>`; };
 
 function slideHtml(m, i, title) {
   if (m.type === 'image') return `<div class="sl"><img src="${esc(m.url)}" alt="${esc(m.caption || title)}" ${i ? 'loading="lazy"' : ''} decoding="async"><button type="button" class="zoom" data-z="${i}" aria-label="${t('zoom')}"></button></div>`;
@@ -281,7 +281,7 @@ function postHtml(x, key, kind, title, place, pills, media) {
   const body = n
     ? `<div class="pm"><div class="gtrack" id="gtrack">${media.map((m, i) => slideHtml(m, i, title)).join('')}</div>${n > 1 ? `<div class="gcount" id="gcount">1 / ${n}</div>` : ''}<span class="burst" id="burst" aria-hidden="true">${ic('heart', 'f')}</span></div>${n > 1 ? `<div class="dots" id="dots" aria-hidden="true">${media.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}`
     : `<div class="pm"><div class="gempty">${ic('camera')}<span>${t('photosSoon')}</span></div></div>`;
-  const acts = `<div class="pa"><button type="button" class="pab like" data-like="${esc(key)}" aria-pressed="${liked}" aria-label="${liked ? t('unlike') : t('like')}">${ic('heart', liked ? 'f' : '')}</button><button type="button" class="pab" data-share aria-label="${t('share')}">${ic('share')}</button><button type="button" class="pab bm" data-bm="${esc(key)}" aria-pressed="${inp}" aria-label="${inp ? t('removePlan') : t('addPlan')}">${ic('bookmark', inp ? 'f' : '')}</button></div>`;
+  const acts = `<div class="pa"><button type="button" class="pab like" data-like="${esc(key)}" aria-pressed="${liked}" aria-label="${liked ? t('unlike') : t('like')}">${ic('heart', liked ? 'f' : '')}<span>${t('like')}</span></button></div>`;
   const cur = media[0], cap = cur && (cur.caption || cur.credit) ? `<p class="pcr" id="pcr">${esc(cur.caption)}${cur.credit ? `<i>${esc(cur.credit)}</i>` : ''}</p>` : '';
   return `<article class="post">${head}${body}${acts}${cap}</article>`;
 }
