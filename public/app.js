@@ -53,7 +53,7 @@ const emptyBox = (g, title, text, extra = '') => `<div class="empty"><span class
 function railCard(x) {
   known['i:' + x.slug] = x;
   const d = parse(x.from);
-  return `<a class="ev" href="#d/i:${esc(x.slug)}">${x.cover ? `<span class="evi"><img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async"></span>` : ''}<span class="evr"><span class="dt"><b>${d.getDate()}</b><span>${MS[d.getMonth()]}</span></span><span class="tx"><span class="tt">${esc(x.title)}</span><span class="pl">${ic('pin')}<span>${esc(x.place)}</span></span><span class="rng">${esc(span(x))}</span></span></span></a>`;
+  return `<a class="ev" href="#d/i:${esc(x.slug)}">${x.cover ? `<span class="evi"><img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async"></span>` : `<span class="evi ph" aria-hidden="true">${ic(GLYPH.event)}</span>`}<span class="evr"><span class="dt"><b>${d.getDate()}</b><span>${MS[d.getMonth()]}</span></span><span class="tx"><span class="tt">${esc(x.title)}</span><span class="pl">${ic('pin')}<span>${esc(x.place)}</span></span><span class="rng">${esc(span(x))}</span></span></span></a>`;
 }
 
 /* ---- podaci ---- */
