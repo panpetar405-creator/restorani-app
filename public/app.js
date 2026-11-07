@@ -366,11 +366,10 @@ async function loadWeather(key, x, tok) {
   const attr = `<p class="note">${t('data')}<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>`;
   $('wsub').textContent = per ? `${w.place}, ${rangeText(w.from, w.to)}` : `${t('next7')}${w.place}${t('next7b')}`;
   const est = w.days.some((d) => d.src === 'climate');
-  const many = w.days.length > 31;
   let lastM = -1;
   $('wbody').innerHTML = `<div class="wxr">${w.days.map((dd) => {
     const dt = parse(dd.date), cl = dd.src === 'climate', g = cl ? climIcon(dd.wet) : wxIcon(dd.code), pr = cl ? dd.wet : dd.prob;
-    const mh = many && dt.getMonth() !== lastM ? `<div class="wxm" aria-hidden="true"><span>${MONTHS[dt.getMonth()]}</span></div>` : '';
+    const mh = dt.getMonth() !== lastM ? `<div class="wxm" aria-hidden="true"><span>${MONTHS[dt.getMonth()]}</span></div>` : '';
     lastM = dt.getMonth();
     return `${mh}<div class="wx${cl ? ' cl' : ''}" role="group" aria-label="${DAYN[dt.getDay()]} ${nice(dd.date)}, ${cl ? t('estAria') : ''}${dd.tmax}${t('degrees')}${wxText[g]}"><span class="dn">${DAYN[dt.getDay()]}</span><span class="dd">${dt.getDate()}${LANG === 'en' ? ' ' : '. '}${MS[dt.getMonth()]}</span>${ic(g)}<span class="tp">${cl ? '~' : ''}${dd.tmax}° <span>${dd.tmin}°</span></span>${pr != null ? `<span class="rn">${ic('drop')}${pr}%</span>` : ''}</div>`;
   }).join('')}</div>${est ? `<p class="note">${t('estNote')}</p>` : ''}${attr}`;
