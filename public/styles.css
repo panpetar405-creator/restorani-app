@@ -323,3 +323,16 @@ a.ev{color:inherit;text-decoration:none}
 .lang span{display:grid;place-items:center;min-width:34px;height:32px;padding:0 6px;border-radius:999px;opacity:.75}
 .lang span.on{background:#fff;color:var(--ink,#10303f);opacity:1}
 
+
+/* prognoza u boji */
+.wx[data-w=sun]{--c1:#f5a300;--f1:rgba(245,163,0,.22);background:#fffaf0}
+.wx[data-w=cloudsun]{--c1:#f5a300;--c2:#6f8c9b;background:#fffaf0}
+.wx[data-w=cloud]{--c1:#6f8c9b;background:#f4f8fa}
+.wx[data-w=rain]{--c1:#6f8c9b;--c2:#2f8be6;background:#f0f7fe}
+.wx[data-w=snow]{--c1:#7a97a8;--c2:#3aaee8;background:#f0f8fe}
+.wx[data-w=storm]{--c1:#586a8a;--c2:#f5a300;background:#f3f4fa}
+.wx[data-w=fog]{--c1:#8aa0aa;background:#f4f8fa}
+.wx .ic{width:34px;height:34px}
+.wx .tp{color:#d9480f}
+.wx .tp span{color:#2a7bb5}
+.wx .rn,.wx .rn .ic{color:#2f8be6}

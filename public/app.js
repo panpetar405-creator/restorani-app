@@ -371,7 +371,7 @@ async function loadWeather(key, x, tok) {
     const dt = parse(dd.date), cl = dd.src === 'climate', g = cl ? climIcon(dd.wet) : wxIcon(dd.code), pr = cl ? dd.wet : dd.prob;
     const mh = dt.getMonth() !== lastM ? `<div class="wxm" aria-hidden="true"><span>${MONTHS[dt.getMonth()]}</span></div>` : '';
     lastM = dt.getMonth();
-    return `${mh}<div class="wx${cl ? ' cl' : ''}" role="group" aria-label="${DAYN[dt.getDay()]} ${nice(dd.date)}, ${cl ? t('estAria') : ''}${dd.tmax}${t('degrees')}${wxText[g]}"><span class="dn">${DAYN[dt.getDay()]}</span><span class="dd">${dt.getDate()}${LANG === 'en' ? ' ' : '. '}${MS[dt.getMonth()]}</span>${ic(g)}<span class="tp">${cl ? '~' : ''}${dd.tmax}° <span>${dd.tmin}°</span></span>${pr != null ? `<span class="rn">${ic('drop')}${pr}%</span>` : ''}</div>`;
+    return `${mh}<div class="wx${cl ? ' cl' : ''}" data-w="${g}" role="group" aria-label="${DAYN[dt.getDay()]} ${nice(dd.date)}, ${cl ? t('estAria') : ''}${dd.tmax}${t('degrees')}${wxText[g]}"><span class="dn">${DAYN[dt.getDay()]}</span><span class="dd">${dt.getDate()}${LANG === 'en' ? ' ' : '. '}${MS[dt.getMonth()]}</span>${ic(g)}<span class="tp">${cl ? '~' : ''}${dd.tmax}° <span>${dd.tmin}°</span></span>${pr != null ? `<span class="rn">${ic('drop')}${pr}%</span>` : ''}</div>`;
   }).join('')}</div>${est ? `<p class="note">${t('estNote')}</p>` : ''}${attr}`;
 }
 
