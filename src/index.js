@@ -24,6 +24,19 @@ async function loadMenus(db, ids) {
   return map;
 }
 
+/* naslovna slika svake stavke: prva slika (ili sličica videa) iz galerije */
+async function loadCovers(db) {
+  const { results } = await db.prepare('SELECT ref, type, url, poster, caption, credit FROM media ORDER BY ref, sort, id').all();
+  const map = new Map();
+  for (const row of results) {
+    if (map.has(row.ref)) continue;
+    const m = shapeMedia(row);
+    const u = m && (m.type === 'image' ? m.url : m.poster);
+    if (u) map.set(row.ref, u);
+  }
+  return map;
+}
+
 async function listRestaurants(env, url) {
   const p = url.searchParams;
   const city = (p.get('city') || '').slice(0, 40);
@@ -38,9 +51,10 @@ async function listRestaurants(env, url) {
     : env.DB.prepare('SELECT * FROM restaurants WHERE active = 1 ORDER BY review_count DESC');
   const { results: rows } = await stmt.all();
   const menus = await loadMenus(env.DB, rows.map((r) => r.id));
+  const covers = await loadCovers(env.DB);
 
   const out = rows
-    .map((r) => shapeRestaurant(r, menus.get(r.id)))
+    .map((r) => ({ ...shapeRestaurant(r, menus.get(r.id)), cover: covers.get('r:' + r.slug) || '' }))
     .filter((r) => !cat || r.tags.some((t) => norm(t) === cat))
     .filter((r) => !mood || r.moods.includes(mood))
     .filter((r) => (r.price ? r.price.lo : 0) <= max)
@@ -61,6 +75,7 @@ async function listItems(env, url) {
     .prepare('SELECT * FROM items WHERE active = 1 ORDER BY date_from IS NULL, date_from, title')
     .all();
   const ms = from && to ? monthsBetween(from, to) : null;
+  const covers = await loadCovers(env.DB);
   const out = [];
   for (const r of results) {
     if (kind && r.kind !== kind) continue;
@@ -73,7 +88,7 @@ async function listItems(env, url) {
       const m = parseList(r.months);
       off = m.length > 0 && !m.some((x) => ms.has(x));
     }
-    out.push(shapeItem(r, off));
+    out.push({ ...shapeItem(r, off), cover: covers.get('i:' + r.slug) || '' });
   }
   return json({ items: out.slice(0, limit) });
 }
