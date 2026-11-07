@@ -21,7 +21,7 @@ function d1(db) {
 let env;
 before(() => {
   const db = new DatabaseSync(':memory:');
-  for (const f of ['0007_items.sql', '0008_demo_items.sql', '0009_detalji_mediji.sql']) db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8'));
+  for (const f of ['0007_items.sql', '0008_demo_items.sql', '0009_detalji_mediji.sql', '0011_engleski.sql']) db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8').replace(/^ALTER TABLE restaurants.*$/m, ''));
   db.exec("UPDATE items SET title = 'Skijaška <sezona>', description = 'Skijanje \"na\" Kolašinu 1600.' WHERE slug = 'skijaska-sezona'");
   db.prepare('INSERT INTO media (ref,type,url,caption,credit,sort) VALUES (?,?,?,?,?,?)').run('i:skijaska-sezona', 'image', '/media/kolasin-1.jpg', '', '', 1);
   env = { DB: d1(db), RL: null, RL_AUTH: null, ASSETS: { fetch: async () => new Response('asset') } };
@@ -49,4 +49,17 @@ test('dijeljenje: bez slike koristi og.png, nepoznata stavka vraća na početnu'
   assert.equal(nf.headers.get('location'), 'https://mp.test/');
   assert.equal((await get('/s/x/abc')).status, 302);
   assert.equal((await get('/s/i/..%2Fetc')).status, 302);
+});
+
+test('dijeljenje: engleski naslov, opis i prebacivanje na engleski jezik', async () => {
+  const h0 = await (await get('/s/i/skijaska-sezona?lang=en')).text();
+  assert.match(h0, /html lang="en"/);
+  assert.match(h0, /refresh" content="0;url=\/\?lang=en#d\/i:skijaska-sezona"/);
+  assert.match(h0, /open in the Montepalm app/);
+  await env.DB.prepare("UPDATE items SET title_en = 'Ski <season>', description_en = 'Skiing at Kolasin.' WHERE slug = 'skijaska-sezona'").run();
+  const h1 = await (await get('/s/i/skijaska-sezona?lang=en')).text();
+  assert.match(h1, /og:title" content="Ski &lt;season&gt; · Montepalm"/);
+  assert.match(h1, /Skiing at Kolasin/);
+  const sr = await (await get('/s/i/skijaska-sezona')).text();
+  assert.doesNotMatch(sr, /Ski &lt;season/);
 });

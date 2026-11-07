@@ -36,7 +36,7 @@ const fakeFetch = async (url) => {
 let env;
 before(() => {
   const db = new DatabaseSync(':memory:');
-  for (const f of ['0007_items.sql', '0008_demo_items.sql', '0009_detalji_mediji.sql']) db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8'));
+  for (const f of ['0007_items.sql', '0008_demo_items.sql', '0009_detalji_mediji.sql', '0011_engleski.sql']) db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8').replace(/^ALTER TABLE restaurants.*$/m, ''));
   db.exec("UPDATE items SET lat = 42.4, lng = 18.7, details = 'Duži opis', website = 'javascript:alert(1)' WHERE slug = 'stari-grad-kotor'");
   const ins = db.prepare('INSERT INTO media (ref,type,url,caption,credit,sort) VALUES (?,?,?,?,?,?)');
   ins.run('i:stari-grad-kotor', 'image', 'https://cdn.test/a.jpg', 'Zidine', 'Foto: A. B.', 2);

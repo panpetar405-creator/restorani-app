@@ -46,6 +46,7 @@ before(async () => {
   db.exec(readFileSync(new URL('../migrations/0002_demo_seed.sql', import.meta.url), 'utf8'));
   db.exec(readFileSync(new URL('../migrations/0007_items.sql', import.meta.url), 'utf8'));
   db.exec(readFileSync(new URL('../migrations/0009_detalji_mediji.sql', import.meta.url), 'utf8'));
+  db.exec(readFileSync(new URL('../migrations/0011_engleski.sql', import.meta.url), 'utf8'));
   db.prepare('UPDATE restaurants SET owner_key_hash = ? WHERE slug = ?').run(await sha256(KEY), 'konoba-akustik');
   env = { DB: d1(db), RL: null, RL_AUTH: null };
 });
