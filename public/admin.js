@@ -73,6 +73,10 @@ function formItem(x, isNew) {
   <div class="two">${fld('f-place', 'Mjesto', x.place, { max: 80 })}${fld('f-region', 'Region', x.region, { max: 60 })}</div>
   ${fld('f-desc', 'Kratak opis (vidi se na kartici)', x.description, { area: 1, max: 500, rows: 3 })}
   ${fld('f-details', 'Duži opis (vidi se na stranici)', x.details, { area: 1, max: 4000, rows: 8, hint: 'Prazan red pravi novi pasus.' })}
+  <h2 style="font-size:1.05rem;margin:22px 0 6px">English (nije obavezno)</h2><p class="m" style="font-size:.82rem;margin:0 0 12px">Ako ostaviš prazno, strani turisti vide tekst na crnogorskom.</p>
+  ${fld('f-title-en', 'Naziv (EN)', x.title_en, { max: 120 })}
+  ${fld('f-desc-en', 'Kratak opis (EN)', x.description_en, { area: 1, max: 500, rows: 3 })}
+  ${fld('f-details-en', 'Duži opis (EN)', x.details_en, { area: 1, max: 4000, rows: 7 })}
   <div id="f-when">${ev ? `<div class="two">${fld('f-from', 'Početak', x.date_from || '', { type: 'date' })}${fld('f-to', 'Kraj (nije obavezno)', x.date_to || '', { type: 'date' })}</div>` : `<div class="afld"><span class="lb2">Mjeseci sezone</span><div class="mchips" id="f-months">${MS.map((m, i) => `<button type="button" data-m="${i + 1}" aria-pressed="${months.includes(i + 1)}">${m}</button>`).join('')}</div></div>`}</div>
   ${fld('f-addr', 'Adresa', x.address, { max: 120 })}
   ${fld('f-web', 'Web stranica', x.website, { type: 'url', max: 300, hint: 'Počinje sa https://' })}
@@ -87,6 +91,7 @@ function formRest(x) {
   return `${fld('f-name', 'Naziv', x.name, { max: 80 })}
   <div class="two">${fld('f-city', 'Mjesto', x.city, { max: 60 })}${fld('f-phone', 'Telefon', x.phone, { max: 30 })}</div>
   ${fld('f-amb', 'Opis', x.ambience, { area: 1, max: 600, rows: 5 })}
+  ${fld('f-amb-en', 'Opis (EN, nije obavezno)', x.ambience_en, { area: 1, max: 600, rows: 4 })}
   ${fld('f-why', 'Zašto ovdje (svaka stavka u novom redu)', (x.why || []).join('\n'), { area: 1, rows: 4 })}
   ${fld('f-tags', 'Oznake (odvojene zarezom)', (x.tags || []).join(', '))}
   ${fld('f-am', 'Sadržaji (odvojeni zarezom)', (x.amenities || []).join(', '))}
@@ -132,10 +137,10 @@ function collect() {
   const x = cur;
   if (x.type === 'restaurant') {
     const sp = (s, re) => s.split(re).map((t) => t.trim()).filter(Boolean);
-    return { ...x, name: v('f-name'), city: v('f-city'), phone: v('f-phone'), ambience: v('f-amb'), why: sp(v('f-why'), /\n/), tags: sp(v('f-tags'), ','), amenities: sp(v('f-am'), ','), lat: v('f-lat'), lng: v('f-lng'), active: document.getElementById('f-act').checked };
+    return { ...x, name: v('f-name'), city: v('f-city'), phone: v('f-phone'), ambience: v('f-amb'), ambience_en: v('f-amb-en'), why: sp(v('f-why'), /\n/), tags: sp(v('f-tags'), ','), amenities: sp(v('f-am'), ','), lat: v('f-lat'), lng: v('f-lng'), active: document.getElementById('f-act').checked };
   }
   const kind = v('f-kind');
-  return { ...x, kind, title: v('f-title'), place: v('f-place'), region: v('f-region'), description: v('f-desc'), details: v('f-details'), date_from: v('f-from') || null, date_to: v('f-to') || null, months: [...months], address: v('f-addr'), website: v('f-web'), lat: v('f-lat'), lng: v('f-lng'), status: v('f-status'), source: v('f-src'), source_url: v('f-srcu'), verified: document.getElementById('f-ver').checked, demo: document.getElementById('f-demo').checked, active: document.getElementById('f-act').checked };
+  return { ...x, kind, title: v('f-title'), place: v('f-place'), region: v('f-region'), description: v('f-desc'), details: v('f-details'), title_en: v('f-title-en'), description_en: v('f-desc-en'), details_en: v('f-details-en'), date_from: v('f-from') || null, date_to: v('f-to') || null, months: [...months], address: v('f-addr'), website: v('f-web'), lat: v('f-lat'), lng: v('f-lng'), status: v('f-status'), source: v('f-src'), source_url: v('f-srcu'), verified: document.getElementById('f-ver').checked, demo: document.getElementById('f-demo').checked, active: document.getElementById('f-act').checked };
 }
 
 async function save() {

@@ -1,6 +1,6 @@
 // Shell iz keša (stale-while-revalidate); lista restorana mrežom, a keš samo kad nema veze.
-const V = 'montepalm-v11';
-const SHELL = ['/', '/styles.css', '/app.js', '/manifest.webmanifest', '/icons/icon-192.png'];
+const V = 'montepalm-v12';
+const SHELL = ['/', '/styles.css', '/app.js', '/i18n.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));

@@ -80,53 +80,54 @@
       <rect x="302" y="290" width="34" height="140" fill="#bda98c"/><ellipse cx="319" cy="256" rx="14" ry="12" fill="#a8896a"/><rect x="306" y="256" width="26" height="36" fill="#c8b698"/>
     </svg>
     <div class="brand"><img src="/icons/icon-192.png" width="32" height="32" alt="" class="blogo">Montepalm</div>
-    <button class="photo" id="pbtn" type="button" aria-label="Dodaj fotografiju" title="Dodaj fotografiju"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></button>
+    <button class="lang" id="lbtn" type="button" aria-label="Jezik"><span class="on">SR</span><span>EN</span></button>
+    <button class="photo" id="pbtn" type="button" aria-label="Dodaj fotografiju" title="Dodaj fotografiju" data-i18n-aria="addPhoto" data-i18n-title="addPhoto"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></button>
     <input type="file" id="pfile" accept="image/*" hidden>
-    <div class="hin"><h1>Crna Gora<br>na dlanu</h1><p>Šta se dešava, gdje i kada. Izaberi mjesto i period.</p></div>
+    <div class="hin"><h1 data-i18n-html="heroTitle">Crna Gora<br>na dlanu</h1><p data-i18n="heroSub">Šta se dešava, gdje i kada. Izaberi mjesto i period.</p></div>
   </header>
 
   <form class="search" id="sf" autocomplete="off">
     <div class="pw">
       <div class="fld">
         <svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>
-        <div class="fb"><label for="hp">Gdje</label><input id="hp" placeholder="Herceg Novi, Kotor, Žabljak…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="hs"></div>
-        <button class="clr" type="button" hidden aria-label="Obriši mjesto"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+        <div class="fb"><label for="hp" data-i18n="where">Gdje</label><input id="hp" data-i18n-ph="wherePh" placeholder="Herceg Novi, Kotor, Žabljak…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="hs"></div>
+        <button class="clr" type="button" hidden aria-label="Obriši mjesto" data-i18n-aria="clearPlace"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
       </div>
       <div class="sug" id="hs" role="listbox" hidden></div>
     </div>
     <div class="r2">
-      <button class="fld df" type="button" id="hf" data-pair="h" data-f="f"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl">Od</span><span class="v e">Izaberi datum</span></span></button>
-      <button class="fld df" type="button" id="ht" data-pair="h" data-f="t"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl">Do</span><span class="v e">Izaberi datum</span></span></button>
+      <button class="fld df" type="button" id="hf" data-pair="h" data-f="f"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl" data-i18n="from">Od</span><span class="v e">Izaberi datum</span></span></button>
+      <button class="fld df" type="button" id="ht" data-pair="h" data-f="t"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl" data-i18n="to">Do</span><span class="v e">Izaberi datum</span></span></button>
     </div>
-    <button class="btn p full" id="hgo" type="button"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>Pretraži</button>
+    <button class="btn p full" id="hgo" type="button"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="search">Pretraži</span></button>
   </form>
 
   <div class="wrap">
-    <div class="hd"><h2>Uskoro</h2><button class="lnk" id="allev" type="button">Svi događaji<svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
+    <div class="hd"><h2 data-i18n="soon">Uskoro</h2><button class="lnk" id="allev" type="button"><span data-i18n="allEvents">Svi događaji</span><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
     <div class="rail" id="rail"></div>
-    <div class="hd"><h2>Šta želiš danas?</h2></div>
+    <div class="hd"><h2 data-i18n="whatToday">Šta želiš danas?</h2></div>
     <div class="tiles" id="tiles"></div>
   </div>
 </section>
 
 <section class="view" id="v-istrazi">
   <div class="wrap top">
-    <h1>Istraži</h1>
+    <h1 data-i18n="explore">Istraži</h1>
     <div class="search flat">
       <div class="pw">
         <div class="fld">
           <svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>
-          <div class="fb"><label for="p">Mjesto</label><input id="p" placeholder="Cijela Crna Gora" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="xs"></div>
-          <button class="clr" type="button" hidden aria-label="Obriši mjesto"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+          <div class="fb"><label for="p" data-i18n="place">Mjesto</label><input id="p" data-i18n-ph="placePh" placeholder="Cijela Crna Gora" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="xs"></div>
+          <button class="clr" type="button" hidden aria-label="Obriši mjesto" data-i18n-aria="clearPlace"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
         </div>
         <div class="sug" id="xs" role="listbox" hidden></div>
       </div>
       <div class="r2">
-        <button class="fld df" type="button" id="xf" data-pair="x" data-f="f"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl">Od</span><span class="v e">Izaberi datum</span></span></button>
-        <button class="fld df" type="button" id="xt" data-pair="x" data-f="t"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl">Do</span><span class="v e">Izaberi datum</span></span></button>
+        <button class="fld df" type="button" id="xf" data-pair="x" data-f="f"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl" data-i18n="from">Od</span><span class="v e">Izaberi datum</span></span></button>
+        <button class="fld df" type="button" id="xt" data-pair="x" data-f="t"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl" data-i18n="to">Do</span><span class="v e">Izaberi datum</span></span></button>
       </div>
     </div>
-    <div class="chips" id="chips" role="group" aria-label="Kategorija"></div>
+    <div class="chips" id="chips" role="group" aria-label="Kategorija" data-i18n-aria="category"></div>
     <div class="count" id="count" aria-live="polite"></div>
     <div id="out"></div>
   </div>
@@ -134,9 +135,9 @@
 
 <section class="view" id="v-plan">
   <div class="wrap top">
-    <h1>Moj put</h1>
+    <h1 data-i18n="myTrip">Moj put</h1>
     <div id="pout"></div>
-    <button class="btn s full" id="share" type="button"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg>Podijeli plan</button>
+    <button class="btn s full" id="share" type="button"><svg class="ic" aria-hidden="true"><use href="#i-share"/></svg><span data-i18n="sharePlan">Podijeli plan</span></button>
     <div class="m" id="sh" role="status" style="margin-top:8px"></div>
   </div>
 </section>
@@ -145,10 +146,10 @@
   <div id="dt" aria-live="polite"></div>
 </section>
 
-<nav class="tabs" aria-label="Glavna navigacija">
-  <a href="#pocetna"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg></span>Početna</a>
-  <a href="#istrazi"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></span>Istraži</a>
-  <a href="#plan"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-route"/></svg><span class="badge" id="pb" hidden></span></span>Moj put</a>
+<nav class="tabs" aria-label="Glavna navigacija" data-i18n-aria="mainNav">
+  <a href="#pocetna"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg></span><span data-i18n="home">Početna</span></a>
+  <a href="#istrazi"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></span><span data-i18n="explore">Istraži</span></a>
+  <a href="#plan"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-route"/></svg><span class="badge" id="pb" hidden></span></span><span data-i18n="myTrip">Moj put</span></a>
 </nav>
 
 <!-- kalendar -->
@@ -156,36 +157,37 @@
   <div class="scrim" data-x></div>
   <div class="panel" role="dialog" aria-modal="true" aria-labelledby="cal-t">
     <div class="grab" aria-hidden="true"></div>
-    <div class="ph"><h2 id="cal-t">Izaberi period</h2><button class="ib" type="button" data-x aria-label="Zatvori"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <div class="ph"><h2 id="cal-t" data-i18n="pickPeriod">Izaberi period</h2><button class="ib" type="button" data-x aria-label="Zatvori" data-i18n-aria="close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
     <div class="presets" id="presets">
-      <button type="button" class="chip" data-pre="we">Vikend</button>
-      <button type="button" class="chip" data-pre="w">7 dana</button>
-      <button type="button" class="chip" data-pre="m">Ovaj mjesec</button>
+      <button type="button" class="chip" data-pre="we" data-i18n="weekend">Vikend</button>
+      <button type="button" class="chip" data-pre="w" data-i18n="days7">7 dana</button>
+      <button type="button" class="chip" data-pre="m" data-i18n="thisMonth">Ovaj mjesec</button>
     </div>
     <div class="mn">
-      <button class="ib" type="button" id="prev" aria-label="Prethodni mjesec"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+      <button class="ib" type="button" id="prev" aria-label="Prethodni mjesec" data-i18n-aria="prevMonth"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
       <div class="mt" id="mt" aria-live="polite"></div>
-      <button class="ib" type="button" id="next" aria-label="Sljedeći mjesec"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
+      <button class="ib" type="button" id="next" aria-label="Sljedeći mjesec" data-i18n-aria="nextMonth"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
     </div>
     <div class="wd" aria-hidden="true"><span>Pon</span><span>Uto</span><span>Sri</span><span>Čet</span><span>Pet</span><span>Sub</span><span>Ned</span></div>
     <div class="days" id="days"></div>
     <div class="pf">
       <div class="sum" id="sum"></div>
-      <div class="acts"><button class="btn g" type="button" id="cclr">Očisti</button><button class="btn p" type="button" id="capp">Primijeni</button></div>
+      <div class="acts"><button class="btn g" type="button" id="cclr" data-i18n="clear">Očisti</button><button class="btn p" type="button" id="capp" data-i18n="apply">Primijeni</button></div>
     </div>
   </div>
 </div>
 
 <!-- galerija preko cijelog ekrana -->
-<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Galerija fotografija">
-  <button class="ib lbx" type="button" id="lbx" aria-label="Zatvori"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
-  <button class="ib lbn prev" type="button" id="lbp" aria-label="Prethodna fotografija"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+<div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Galerija fotografija" data-i18n-aria="gallery">
+  <button class="ib lbx" type="button" id="lbx" aria-label="Zatvori" data-i18n-aria="close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
+  <button class="ib lbn prev" type="button" id="lbp" aria-label="Prethodna fotografija" data-i18n-aria="prevPhoto"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
   <div class="lbm" id="lbm"></div>
-  <button class="ib lbn next" type="button" id="lbn" aria-label="Sljedeća fotografija"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
+  <button class="ib lbn next" type="button" id="lbn" aria-label="Sljedeća fotografija" data-i18n-aria="nextPhoto"><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button>
   <div class="lbc" id="lbc"></div>
 </div>
 
-<noscript>Za korištenje aplikacije Montepalm potreban je JavaScript.</noscript>
+<noscript>Za korištenje aplikacije Montepalm potreban je JavaScript. / The Montepalm app needs JavaScript.</noscript>
+<script src="/i18n.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>
