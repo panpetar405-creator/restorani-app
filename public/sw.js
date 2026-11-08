@@ -1,5 +1,5 @@
 // Shell iz keša (stale-while-revalidate); lista restorana mrežom, a keš samo kad nema veze.
-const V = 'montepalm-v24';
+const V = 'montepalm-v25';
 const SHELL = ['/', '/styles.css', '/app.js', '/i18n.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {

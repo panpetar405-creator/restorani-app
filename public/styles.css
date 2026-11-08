@@ -331,13 +331,13 @@ a.ev{color:inherit;text-decoration:none}
 .wx .dd,.wx .tp span,.wx .rn{color:rgba(255,255,255,.9)}
 .wx .ic,.wx .rn .ic{color:#fff;--c1:#fff;--c2:#fff;--f1:rgba(255,255,255,.28);width:34px;height:34px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.2))}
 .wx .rn .ic{width:13px;height:13px;filter:none}
-.wx[data-w=sun]{background:linear-gradient(160deg,#f8b22a 0%,#f08a00 50%,#e8590c 100%)}
-.wx[data-w=cloudsun]{background:linear-gradient(160deg,#f3a63a 0%,#e1835a 40%,#5f8fb8 100%)}
-.wx[data-w=cloud]{background:linear-gradient(160deg,#8aa0b0 0%,#60798b 100%)}
-.wx[data-w=rain]{background:linear-gradient(160deg,#4a8fd8 0%,#1f5fae 55%,#173f86 100%)}
-.wx[data-w=snow]{background:linear-gradient(160deg,#7cc6ec 0%,#4a9fd0 55%,#3a78b0 100%)}
+.wx[data-w=sun]{background:linear-gradient(160deg,#c25208 0%,#bd430c 50%,#a8320e 100%)}
+.wx[data-w=cloudsun]{background:linear-gradient(160deg,#b45f1f 0%,#a65a3f 40%,#4f7898 100%)}
+.wx[data-w=cloud]{background:linear-gradient(160deg,#667682 0%,#5f788a 100%)}
+.wx[data-w=rain]{background:linear-gradient(160deg,#3d77b3 0%,#1f5fae 55%,#173f86 100%)}
+.wx[data-w=snow]{background:linear-gradient(160deg,#2b7aa8 0%,#2a6fa3 55%,#285f95 100%)}
 .wx[data-w=storm]{background:linear-gradient(160deg,#5b6aa0 0%,#3a4377 55%,#262c58 100%)}
-.wx[data-w=fog]{background:linear-gradient(160deg,#a5b5bd 0%,#7a8d97 100%)}
+.wx[data-w=fog]{background:linear-gradient(160deg,#6b767b 0%,#66767f 100%)}
 
 /* ===== profesionalniji izgled: paleta po logu ===== */
 :root{--sea:#0b6ea3;--sea-t:#dcecf7}
@@ -404,3 +404,15 @@ a.ev{color:inherit;text-decoration:none}
 .empty .btn{margin-top:6px;min-width:180px;text-decoration:none}
 .offbar{position:fixed;left:0;right:0;top:0;z-index:40;padding:calc(6px + env(safe-area-inset-top,0px)) 12px 6px;background:#3a4377;color:#fff;font-size:.82rem;font-weight:600;text-align:center}
 .offbar[hidden]{display:none}
+
+/* ===== pristupačnost: dodirne površine >= 44px ===== */
+.lang{min-height:44px}
+.photo{min-width:44px;min-height:44px}
+.lnk{min-height:44px}
+.chip{min-height:44px}
+.wx .dd,.wx .tp span,.wx .rn{color:#fff}
+/* vidljiv fokus za tastaturu / čitače */
+:focus-visible{outline:3px solid var(--sea);outline-offset:2px}
+.btn.p:focus-visible{outline-color:#1aedad}
+/* tamni režim: aktivni jezik (bijela pločica) mora imati taman tekst */
+.lang span.on{color:#10303f}
