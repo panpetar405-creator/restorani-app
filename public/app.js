@@ -39,7 +39,7 @@ const saveSnap = () => {
   snap = o;
   try { localStorage.setItem('mp.planData', JSON.stringify(o)); } catch { /* ignore */ }
 };
-const savePlan = () => { try { localStorage.setItem('mp.plan', JSON.stringify(plan)); } catch { /* ignore */ } saveSnap(); };
+const savePlan = () => { try { localStorage.setItem('mp.plan', JSON.stringify(plan)); } catch { /* ignore */ } saveSnap(); if (window.mpPushSync) window.mpPushSync(); };
 
 /* ---- kartice ---- */
 function itemCard(x) {
@@ -642,7 +642,7 @@ function route() {
   if (back !== null) saved = { hash: '', y: 0 };
   let done = Promise.resolve();
   if (h === 'istrazi') { $('p').closest('.fld').querySelector('.clr').hidden = !$('p').value; done = search(); }
-  if (h === 'plan') planView();
+  if (h === 'plan') { planView(); if (window.mpPushRender) window.mpPushRender(); }
   if (h === 'korisno') usefulView();
   if (h === 'detalj') showDetail(dkey);
   window.scrollTo(0, 0);

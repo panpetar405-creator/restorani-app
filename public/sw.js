@@ -1,6 +1,6 @@
 // Shell iz keša (stale-while-revalidate); lista restorana mrežom, a keš samo kad nema veze.
-const V = 'montepalm-v30';
-const SHELL = ['/', '/styles.css', '/app.js', '/i18n.js', '/korisno.js', '/manifest.webmanifest', '/icons/icon-192.png'];
+const V = 'montepalm-v31';
+const SHELL = ['/', '/styles.css', '/app.js', '/i18n.js', '/korisno.js', '/push.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -40,4 +40,39 @@ self.addEventListener('fetch', (e) => {
       return hit || net;
     }),
   );
+});
+
+/* ---- push obavještenja ---- */
+self.addEventListener('push', (e) => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch { d = {}; }
+  e.waitUntil(self.registration.showNotification(String(d.title || 'Montepalm').slice(0, 80), {
+    body: String(d.body || '').slice(0, 200),
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+    tag: typeof d.tag === 'string' ? d.tag.slice(0, 60) : undefined,
+    data: { url: typeof d.url === 'string' ? d.url : '/' },
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  let url = new URL('/', self.location.origin).href;
+  try { const u = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin); if (u.origin === self.location.origin) url = u.href; } catch { /* ostaje početna */ }
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const c = list.find((x) => 'focus' in x);
+      if (!c) return self.clients.openWindow(url);
+      return c.focus().then(() => ('navigate' in c ? c.navigate(url).catch(() => c) : c));
+    }),
+  );
+});
+/* preglednik je promijenio ili obnovio pretplatu: javi serveru novu adresu, uz izbor sa stare */
+self.addEventListener('pushsubscriptionchange', (e) => {
+  e.waitUntil((async () => {
+    const old = e.oldSubscription;
+    const ns = e.newSubscription || (old ? await self.registration.pushManager.subscribe(old.options) : null);
+    if (!ns) return;
+    const j = ns.toJSON();
+    await fetch('/api/push/subscribe', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ endpoint: j.endpoint, keys: j.keys, replaces: old ? old.endpoint : undefined }) });
+  })().catch(() => {}));
 });

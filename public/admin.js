@@ -55,9 +55,10 @@ async function viewList() {
   };
   $app.innerHTML = `<div class="atop"><div class="in"><h1>Sadržaj</h1><button class="ghost" id="lo">Odjava</button></div></div>
   <div class="wrap" style="padding-top:14px"><div class="afld"><input type="search" id="q" placeholder="Traži po nazivu ili mjestu" aria-label="Traži"></div>
-  <button class="btn p full" id="nw">+ Novi događaj ili lokacija</button><div id="rows">${draw('')}</div></div>`;
+  <button class="btn p full" id="nw">+ Novi događaj ili lokacija</button><button class="btn s full" id="pu" style="margin-top:10px">Obavještenja korisnicima</button><div id="rows">${draw('')}</div></div>`;
   document.getElementById('lo').onclick = () => logout();
   document.getElementById('nw').onclick = () => { location.hash = '#/new'; };
+  document.getElementById('pu').onclick = () => { location.hash = '#/push'; };
   document.getElementById('q').oninput = (e) => { document.getElementById('rows').innerHTML = draw(e.target.value); };
   document.getElementById('rows').onclick = (e) => { const b = e.target.closest('[data-r]'); if (b) location.hash = '#/e/' + b.getAttribute('data-r'); };
 }
@@ -254,10 +255,56 @@ function bindMedia() {
 }
 
 /* ---------- rute ---------- */
+/* ---------- obavještenja (push) ---------- */
+const fmtT = (iso) => { try { return new Date(iso).toLocaleString('sr-Latn-ME', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return iso; } };
+async function viewPush() {
+  $app.innerHTML = '<div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>Obavještenja</h1></div></div><div class="wrap"><div class="skb" style="height:60px;margin-top:16px"></div></div>';
+  document.getElementById('bk').onclick = () => { location.hash = '#/'; };
+  let d; try { d = await api('GET', '/push'); } catch (e) { if (KEY) toast(e.message, true); return; }
+  const rows = d.campaigns.map((c) => {
+    const st = !c.enqueued_at ? `zakazano za ${fmtT(c.send_at)}` : c.pending ? `šalje se (čeka još ${c.pending})` : `poslato ${c.recipients}`;
+    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}</small></span>${c.enqueued_at ? '' : `<button class="ghost" data-del="${c.id}">Otkaži</button>`}</div>`;
+  }).join('');
+  $app.innerHTML = `<div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>Obavještenja</h1></div></div>
+  <div class="wrap" style="padding-top:14px">
+    ${d.configured ? '' : '<p class="afld"><b>Slanje nije podešeno.</b> <small>Dodaj tajne VAPID_PUBLIC, VAPID_PRIVATE i VAPID_SUBJECT (vidi README, dio „Obavještenja”).</small></p>'}
+    <p class="afld"><small>Uređaja sa uključenim obavještenjima: <b>${d.subs.total}</b> (promocije: ${d.subs.promo}, podsjetnici: ${d.subs.remind}). Podsjetnik dan prije događaja šalje se automatski u 10:00 svima kojima je događaj u „Moj put”.</small></p>
+    <div class="afld"><label for="pt">Naslov <span class="cnt2" id="ptc"></span></label><input type="text" id="pt" maxlength="60" placeholder="Vikend akcija na primorju"></div>
+    <div class="afld"><label for="pb">Tekst <span class="cnt2" id="pbc"></span></label><textarea id="pb" maxlength="180" style="min-height:80px" placeholder="20% popusta u restoranima do nedjelje"></textarea></div>
+    <div class="afld"><label for="pte">Naslov na engleskom (nije obavezno)</label><input type="text" id="pte" maxlength="60"></div>
+    <div class="afld"><label for="pbe">Tekst na engleskom (nije obavezno)</label><textarea id="pbe" maxlength="180" style="min-height:80px"></textarea><small>Gosti koji koriste njemački, ruski ili italijanski dobijaju engleski tekst, a ako ga nema, crnogorski.</small></div>
+    <div class="afld"><label for="pu2">Šta se otvara dodirom</label><input type="text" id="pu2" value="/" maxlength="200"><small>Početna: <code>/</code> · pretraga: <code>/#istrazi</code> · događaj: <code>/#d/i%3Afasinada</code> (slug iz adrese u adminu)</small></div>
+    <div class="afld"><label for="pw">Kada</label><select id="pw"><option value="now">Pošalji odmah</option><option value="later">Zakaži</option></select></div>
+    <div class="afld" id="pwl" hidden><label for="pd">Datum i sat slanja</label><input type="datetime-local" id="pd" style="min-height:48px;padding:0 12px;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--bg)"></div>
+    <label class="afld" style="grid-auto-flow:column;justify-content:start;align-items:center;gap:10px"><input type="checkbox" id="ptest"><span>Samo test: pošalji samo na posljednji uređaj koji je uključio obavještenja</span></label>
+    <button class="btn p full" id="psend" ${d.configured ? '' : 'disabled'}>Pošalji</button>
+    <h2 style="margin:26px 0 10px;font-size:1.05rem">Poslednje promocije</h2>
+    <div class="alist" id="prows">${rows || '<small>Još ništa nije poslato.</small>'}</div>
+  </div>`;
+  document.getElementById('bk').onclick = () => { location.hash = '#/'; };
+  const cnt = (i, o) => { const f = () => { document.getElementById(o).textContent = document.getElementById(i).value.length + '/' + document.getElementById(i).maxLength; }; document.getElementById(i).oninput = f; f(); };
+  cnt('pt', 'ptc'); cnt('pb', 'pbc');
+  document.getElementById('pw').onchange = (e) => { document.getElementById('pwl').hidden = e.target.value !== 'later'; };
+  document.getElementById('prows').onclick = async (e) => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    try { await api('DELETE', '/push/campaign/' + b.getAttribute('data-del')); toast('Otkazano'); viewPush(); } catch (er) { toast(er.message, true); }
+  };
+  document.getElementById('psend').onclick = async () => {
+    if (busy) return;
+    const later = v('pw') === 'later';
+    const body = { title: v('pt'), body: v('pb'), title_en: v('pte'), body_en: v('pbe'), url: v('pu2') || '/', audience: document.getElementById('ptest').checked ? 'test' : 'all' };
+    if (later) { if (!v('pd')) { toast('Izaberi datum i sat', true); return; } body.send_at = new Date(v('pd')).toISOString(); }
+    if (body.audience === 'all' && !confirm(later ? 'Zakazati obavještenje za sve korisnike?' : `Poslati obavještenje na ${d.subs.promo} uređaja?`)) return;
+    busy = true;
+    try { await api('POST', '/push/campaign', body); toast(later ? 'Zakazano' : 'Šalje se'); viewPush(); } catch (er) { toast(er.message, true); } finally { busy = false; }
+  };
+}
+
 function route() {
   if (!KEY) { viewLogin(); return; }
   const h = location.hash.slice(2);
-  if (h === 'new') viewEdit('new');
+  if (h === 'push') viewPush();
+  else if (h === 'new') viewEdit('new');
   else if (h.startsWith('e/')) viewEdit(decodeURIComponent(h.slice(2)));
   else viewList();
 }
