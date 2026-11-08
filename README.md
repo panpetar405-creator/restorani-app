@@ -33,3 +33,27 @@ Isto kao prije: `npx wrangler deploy`, ili push u `main` (GitHub Actions radi te
 - **Unos pravih događaja** za sada ide SQL-om (`INSERT INTO items ...`). Sljedeći korak je admin stranica ili obrazac za organizatore.
 - **Fotografije.** Hero fotografiju korisnik bira na uređaju. Za slike kartica dodaj polje `image` i R2 bucket.
 - **Mapa** nije uključena u ovoj verziji. Za nju dopuni `img-src` u `public/_headers`.
+
+## Obavještenja (push)
+Korisnik koji je instalirao aplikaciju uključi obavještenja u kartici **Moj put**. Šalju se dvije vrste:
+- **Promocije i akcije.** Admin ih piše na `/admin` (dugme „Obavještenja korisnicima”): odmah ili zakazano, sa tekstom na crnogorskom i (opciono) engleskom, i linkom koji se otvara dodirom. „Samo test” šalje samo na posljednji uređaj koji je uključio obavještenja.
+- **Podsjetnik prije događaja.** Automatski, dan prije početka događaja, u 10:00 po crnogorskom vremenu (`REMIND_HOUR`), svima kojima je događaj u „Moj put”. Događaji imaju samo datum bez sata, pa je to „dan prije”, a ne tačno 24 sata. Za tačan sat treba dodati vrijeme početka u tabelu `items`.
+
+### Podešavanje (jednom)
+```bash
+npm run vapid                      # ispiše javni i privatni ključ
+npx wrangler secret put VAPID_PUBLIC
+npx wrangler secret put VAPID_PRIVATE
+npx wrangler secret put VAPID_SUBJECT   # mailto:kontakt@tvoj-domen.me
+npm run db:remote                  # migracija 0012
+npx wrangler deploy                # uključuje i cron (svake minute)
+```
+Privatni ključ nikad ne ide u git. Ako ga promijeniš, svi korisnici moraju ponovo uključiti obavještenja.
+
+### Kako radi slanje
+Cron svake minute (1) stavlja dospjele promocije i podsjetnike u red (`push_queue`) i (2) šalje najviše `PUSH_BATCH` poruka iz reda (podrazumijevano 40, zbog ograničenja broja zahtjeva u jednom pozivu na besplatnom Cloudflare planu). Za 1.000 uređaja to je oko 25 minuta; na plaćenom planu postavi `PUSH_BATCH` na 500 i isto traje oko 2 minuta. Pretplate koje je push servis odbacio (404/410) brišu se same.
+
+### Napomene
+- **iPhone:** obavještenja rade tek kad se aplikacija doda na početni ekran (iOS 16.4+) i otvori odatle. Aplikacija to objašnjava korisniku.
+- **Obavezno uz promocije:** korisnik mora moći da ih isključi (kartica „Moj put”). Ne šalji u sate kad ljudi spavaju, a za promocije u EU provjeri pravila o direktnom marketingu.
+- Demo događaji (`demo = 1`) takođe šalju podsjetnike ako ih neko sačuva, pa ih obriši prije lansiranja.

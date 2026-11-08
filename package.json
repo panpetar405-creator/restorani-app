@@ -11,7 +11,8 @@
     "test": "node --test",
     "db:local": "wrangler d1 migrations apply DB --local",
     "db:remote": "wrangler d1 migrations apply DB --remote",
-    "owner-key": "node scripts/owner-key.js"
+    "owner-key": "node scripts/owner-key.js",
+    "vapid": "node scripts/vapid-keys.js"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"
