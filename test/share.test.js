@@ -63,3 +63,13 @@ test('dijeljenje: engleski naslov, opis i prebacivanje na engleski jezik', async
   const sr = await (await get('/s/i/skijaska-sezona')).text();
   assert.doesNotMatch(sr, /Ski &lt;season/);
 });
+
+test('de/ru/it: stranica za dijeljenje čuva jezik u linku, html lang i engleski sadržaj', async () => {
+  for (const [lang, htmlLang] of [['de', 'de'], ['ru', 'ru'], ['it', 'it']]) {
+    const h = await (await get(`/s/i/skijaska-sezona?lang=${lang}`)).text();
+    assert.match(h, new RegExp(`html lang="${htmlLang}"`));
+    assert.match(h, new RegExp(`refresh" content="0;url=\\/\\?lang=${lang}#d\\/i:skijaska-sezona"`));
+  }
+  const sr = await (await get('/s/i/skijaska-sezona?lang=fr')).text();
+  assert.match(sr, /html lang="sr-Latn-ME"/);
+});

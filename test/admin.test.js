@@ -178,3 +178,23 @@ test('engleski: admin čuva prevod, javni API ga vraća samo za lang=en, bez pre
   const rr = await call('PUT', '/admin/entry/r:konoba', { name: 'Konoba', city: 'Kotor', ambience: 'Mirno', ambience_en: 'Quiet and cosy' });
   assert.equal((await rr.json()).ambience_en, 'Quiet and cosy');
 });
+
+test('de/ru/it: javni API vraća engleski prevod (ako postoji), nepoznat jezik je crnogorski; ćirilica u pretrazi mjesta', async () => {
+  const cur = await (await call('GET', '/admin/entry/i:skijaska-sezona')).json();
+  await call('PUT', '/admin/entry/i:skijaska-sezona', { ...cur, title_en: 'Ski season', description_en: 'Skiing at Kolasin 1600.', details_en: 'Long text' });
+  for (const lang of ['de', 'ru', 'it']) {
+    const d = await (await call('GET', `/items/skijaska-sezona?lang=${lang}`, null, '')).json();
+    assert.equal(d.item.title, 'Ski season');
+    assert.equal(d.item.details, 'Long text');
+    const list = await (await call('GET', `/items?lang=${lang}`, null, '')).json();
+    assert.equal(list.items.find((x) => x.slug === 'skijaska-sezona').title, 'Ski season');
+  }
+  const fr = await (await call('GET', '/items/skijaska-sezona?lang=fr', null, '')).json();
+  assert.notEqual(fr.item.title, 'Ski season');
+  const place = cur.place || '';
+  if (place) {
+    const cyr = [...place.toLowerCase()].map((c) => ({ a:'а',b:'б',v:'в',d:'д',e:'е',i:'и',k:'к',l:'л',m:'м',n:'н',o:'о',p:'п',r:'р',s:'с',t:'т',u:'у' }[c] || c)).join('');
+    const hits = await (await call('GET', `/items?place=${encodeURIComponent(cyr)}`, null, '')).json();
+    assert.ok(hits.items.some((x) => x.slug === 'skijaska-sezona'), 'ćirilica: ' + cyr);
+  }
+});
