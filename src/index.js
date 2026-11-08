@@ -4,6 +4,7 @@ import {
 } from './lib.js';
 import { adminRoute, serveMedia } from './adminapi.js';
 import { sharePage } from './share.js';
+import { pushRoute, tick } from './push.js';
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
 
@@ -269,6 +270,7 @@ async function route(request, env, url) {
   if (pathname === '/api/items' && method === 'GET') return listItems(env, url);
   if (seg[1] === 'items' && seg.length === 3 && method === 'GET') return json(await getItem(env, seg[2], pickLang(url)));
   if (pathname === '/api/weather' && method === 'GET') return getWeather(env, url);
+  if (seg[1] === 'push') return pushRoute(request, env, seg, method);
 
   if (seg[1] === 'restaurants') {
     if (seg.length === 2 && method === 'GET') return listRestaurants(env, url);
@@ -304,6 +306,10 @@ async function route(request, env, url) {
 }
 
 export default {
+  // cron (wrangler.jsonc, triggers.crons): zakazane promocije, podsjetnici dan prije događaja i slanje reda
+  async scheduled(_event, env, ctx) {
+    ctx.waitUntil(tick(env).catch((e) => console.error('push tick', e)));
+  },
   async fetch(request, env) {
     const url = new URL(request.url);
     if (url.pathname.startsWith('/s/') && request.method === 'GET') {

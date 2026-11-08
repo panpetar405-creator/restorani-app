@@ -1,5 +1,6 @@
 // Admin API: izmjena opisa i podataka, te upload slika i videa (Cloudflare R2).
 // Zaštita: jedan tajni ključ (secret ADMIN_KEY), šalje se kao "Authorization: Bearer ...".
+import { adminPush } from './push.js';
 import { HttpError, KINDS, isDate, json, norm, parseList, readJson, sha256, shapeMedia } from './lib.js';
 
 const REF = /^[ir]:[a-z0-9-]{1,60}$/;
@@ -218,6 +219,8 @@ export async function adminRoute(request, env, pathname, method) {
   const what = seg[2];
 
   if (what === 'ping' && method === 'GET') return json({ ok: true, r2: !!env.MEDIA });
+
+  if (what === 'push') return adminPush(request, env, seg, method);
 
   if (what === 'list' && method === 'GET') {
     const a = await env.DB.prepare('SELECT slug, kind, title, place, active, date_from FROM items ORDER BY kind, date_from IS NULL, date_from, title').all();
