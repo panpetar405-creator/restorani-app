@@ -45,13 +45,17 @@ npm run vapid                      # ispiše javni i privatni ključ
 npx wrangler secret put VAPID_PUBLIC
 npx wrangler secret put VAPID_PRIVATE
 npx wrangler secret put VAPID_SUBJECT   # mailto:kontakt@tvoj-domen.me
+npx wrangler secret put PUSH_TICK_KEY   # nasumičan niz od najmanje 16 znakova
 npm run db:remote                  # migracija 0012
-npx wrangler deploy                # uključuje i cron (svake minute)
+npx wrangler deploy
 ```
 Privatni ključ nikad ne ide u git. Ako ga promijeniš, svi korisnici moraju ponovo uključiti obavještenja.
 
+### Okidač (svake minute)
+Besplatni Cloudflare nalog dozvoljava samo 5 cron okidača. Zato slanje pokreće vanjski cron: na cron-job.org napravi posao koji svake minute otvara `https://TVOJ-SAJT/api/push/tick` sa zaglavljem `Authorization: Bearer <PUSH_TICK_KEY>`. (Ako imaš slobodan Cloudflare cron, možeš umjesto toga dodati `triggers.crons` u `wrangler.jsonc`.)
+
 ### Kako radi slanje
-Cron svake minute (1) stavlja dospjele promocije i podsjetnike u red (`push_queue`) i (2) šalje najviše `PUSH_BATCH` poruka iz reda (podrazumijevano 40, zbog ograničenja broja zahtjeva u jednom pozivu na besplatnom Cloudflare planu). Za 1.000 uređaja to je oko 25 minuta; na plaćenom planu postavi `PUSH_BATCH` na 500 i isto traje oko 2 minuta. Pretplate koje je push servis odbacio (404/410) brišu se same.
+Svake minute (1) stavlja dospjele promocije i podsjetnike u red (`push_queue`) i (2) šalje najviše `PUSH_BATCH` poruka iz reda (podrazumijevano 40, zbog ograničenja broja zahtjeva u jednom pozivu na besplatnom Cloudflare planu). Za 1.000 uređaja to je oko 25 minuta; na plaćenom planu postavi `PUSH_BATCH` na 500 i isto traje oko 2 minuta. Pretplate koje je push servis odbacio (404/410) brišu se same.
 
 ### Napomene
 - **iPhone:** obavještenja rade tek kad se aplikacija doda na početni ekran (iOS 16.4+) i otvori odatle. Aplikacija to objašnjava korisniku.
