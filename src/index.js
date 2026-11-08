@@ -103,7 +103,7 @@ async function getItem(env, slug, lang = 'sr') {
   const row = await env.DB.prepare('SELECT * FROM items WHERE active = 1 AND slug = ?').bind(slug).first();
   if (!row) throw new HttpError(404, 'Stavka nije pronađena');
   const site = /^https?:\/\//.test(row.website) ? row.website : '';
-  return { item: { ...shapeItem(row, false, lang), details: (lang === 'en' && row.details_en) || row.details, address: row.address, website: site }, media: await loadMedia(env.DB, 'i:' + slug) };
+  return { item: { ...shapeItem(row, false, lang), details: (lang !== 'sr' && row.details_en) || row.details, address: row.address, website: site }, media: await loadMedia(env.DB, 'i:' + slug) };
 }
 
 /* ---- prognoza (Open-Meteo): do 16 dana unaprijed stvarna, dalje prosjek istih datuma iz 3 prethodne godine ---- */

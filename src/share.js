@@ -1,6 +1,22 @@
 // Stranica za dijeljenje: /s/i/<slug> ili /s/r/<slug>
 // Bot (WhatsApp, Viber, Instagram, Facebook...) pročita naslov, opis i sliku, a korisnik se odmah prebaci u aplikaciju.
-import { shapeMedia } from './lib.js';
+import { shapeMedia, pickLang } from './lib.js';
+
+const HTML_LANG = { sr: 'sr-Latn-ME', en: 'en', de: 'de', ru: 'ru', it: 'it' };
+const DEFAULT_DESC = {
+  sr: 'Događaji, plaže, kultura i gastronomija u Crnoj Gori.',
+  en: 'Events, beaches, culture and food in Montenegro.',
+  de: 'Veranstaltungen, Strände, Kultur und Gastronomie in Montenegro.',
+  ru: 'События, пляжи, культура и гастрономия Черногории.',
+  it: 'Eventi, spiagge, cultura e gastronomia in Montenegro.',
+};
+const OPEN_IN = {
+  sr: 'otvori u aplikaciji Montepalm',
+  en: 'open in the Montepalm app',
+  de: 'in der Montepalm-App öffnen',
+  ru: 'открыть в приложении Montepalm',
+  it: "apri nell'app Montepalm",
+};
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -11,7 +27,7 @@ export async function sharePage(env, url) {
   const m = /^\/s\/([ir])\/([^/]+)\/?$/.exec(url.pathname);
   if (!m || !SLUG.test(m[2])) return null;
   const [, t, slug] = m, ref = `${t}:${slug}`, origin = url.origin;
-  const en = url.searchParams.get('lang') === 'en';
+  const lang = pickLang(url), en = lang !== 'sr'; // de/ru/it: engleski sadržaj
   let title, desc;
   if (t === 'i') {
     const r = await env.DB.prepare('SELECT * FROM items WHERE active = 1 AND slug = ?').bind(slug).first();
@@ -35,10 +51,10 @@ export async function sharePage(env, url) {
   const custom = !!img;
   if (!img) img = `${origin}/og.png`;
   const pageTitle = `${title} · Montepalm`;
-  const d = clip(desc || (en ? 'Events, beaches, culture and food in Montenegro.' : 'Događaji, plaže, kultura i gastronomija u Crnoj Gori.'), 200);
-  const target = `/${en ? '?lang=en' : ''}#d/${ref}`;
+  const d = clip(desc || DEFAULT_DESC[lang], 200);
+  const target = `/${lang === 'sr' ? '' : '?lang=' + lang}#d/${ref}`;
   const html = `<!DOCTYPE html>
-<html lang="${en ? 'en' : 'sr-Latn-ME'}"><head><meta charset="utf-8">
+<html lang="${HTML_LANG[lang]}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(pageTitle)}</title>
 <meta name="description" content="${esc(d)}">
@@ -54,7 +70,7 @@ ${custom ? '' : '<meta property="og:image:width" content="1200">\n<meta property
 <meta name="twitter:description" content="${esc(d)}">
 <meta name="twitter:image" content="${esc(img)}">
 <meta http-equiv="refresh" content="0;url=${esc(target)}">
-</head><body><p><a href="${esc(target)}">${esc(title)}: ${en ? 'open in the Montepalm app' : 'otvori u aplikaciji Montepalm'}</a></p></body></html>`;
+</head><body><p><a href="${esc(target)}">${esc(title)}: ${OPEN_IN[lang]}</a></p></body></html>`;
   return new Response(html, {
     headers: {
       'content-type': 'text/html; charset=utf-8',

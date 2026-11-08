@@ -15,8 +15,11 @@ export const clamp = (v, lo, hi, d) => {
   return Number.isFinite(n) ? Math.min(hi, Math.max(lo, n)) : d;
 };
 
+// Ćirilica (ruski, srpski) se pretvara u latinicu da bi pretraga mjesta radila i kad se kuca ćirilicom.
+const CYR = { 'а':'a','б':'b','в':'v','г':'g','д':'d','ђ':'d','е':'e','ё':'e','ж':'z','з':'z','и':'i','й':'j','ј':'j','к':'k','л':'l','љ':'lj','м':'m','н':'n','њ':'nj','о':'o','п':'p','р':'r','с':'s','т':'t','ћ':'c','у':'u','ф':'f','х':'h','ц':'c','ч':'c','џ':'dz','ш':'s','щ':'sc','ъ':'','ы':'i','ь':'','э':'e','ю':'ju','я':'ja' };
 export const norm = (t) =>
-  String(t).toLowerCase().replace(/đ/g, 'd').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  String(t).toLowerCase().replace(/[\u0400-\u04ff]/g, (c) => (c in CYR ? CYR[c] : c)).replace(/gerceg/g, 'herceg').replace(/cetine\b/g, 'cetinje')
+    .replace(/đ/g, 'd').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 export const json = (data, status = 200) =>
   new Response(JSON.stringify(data), {
@@ -93,7 +96,7 @@ export function shapeRestaurant(row, items, lang = 'sr') {
     amenities: parseList(row.amenities),
     moods: parseList(row.moods),
     why: parseList(row.why),
-    ambience: (lang === 'en' && row.ambience_en) || row.ambience,
+    ambience: (foreign(lang) && row.ambience_en) || row.ambience,
     art: ART_KEYS.includes(row.art) ? row.art : 'terasa',
     km: row.km,
     phone: row.phone && /^\+?[0-9 ]{6,20}$/.test(row.phone) ? row.phone : null,
@@ -122,10 +125,13 @@ export function monthsBetween(from, to) {
   return out;
 }
 
-export const pickLang = (url) => (url && url.searchParams && url.searchParams.get('lang') === 'en' ? 'en' : 'sr');
+export const LANGS = ['sr', 'en', 'de', 'ru', 'it'];
+export const pickLang = (url) => { const l = url && url.searchParams && url.searchParams.get('lang'); return LANGS.includes(l) ? l : 'sr'; };
+// Sadržaj u bazi je crnogorski + engleski. Za de/ru/it se prikazuje engleski prevod (ako postoji), inače crnogorski.
+export const foreign = (lang) => lang !== 'sr';
 
 export function shapeItem(row, offSeason = false, lang = 'sr') {
-  const en = lang === 'en';
+  const en = foreign(lang);
   return {
     slug: row.slug,
     kind: row.kind,
