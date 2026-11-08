@@ -64,7 +64,7 @@ button{cursor:pointer}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:52px;padding:0 20px;border-radius:var(--r-md);border:1.5px solid transparent;background:none;font-weight:800;font-size:1rem;transition:transform .08s,border-color .15s,filter .15s}
 .btn:active{transform:scale(.98)}
 .btn.full{width:100%}
-.btn.p{background:linear-gradient(100deg,#01145c 0%,#014985 32%,#0175a1 58%,#03a1bc 80%,#1aedad 100%);color:#fff;box-shadow:0 6px 16px rgba(1,73,133,.28)}
+.btn.p{background:linear-gradient(100deg,#01145c 0%,#014985 32%,#0175a1 58%,#03a1bc 80%,#1aedad 100%);color:#fff;background-origin:border-box;box-shadow:0 6px 16px rgba(1,73,133,.28)}
 .btn.p:hover{filter:brightness(1.06)}
 .btn.s{border-color:var(--line);color:var(--ink);background:var(--card)}
 .btn.s:hover{border-color:var(--sea)}
@@ -394,3 +394,13 @@ a.ev{color:inherit;text-decoration:none}
   @keyframes heart{0%{transform:scale(.6)}50%{transform:scale(1.3)}100%{transform:scale(1)}}
 }
 @media (prefers-reduced-motion:reduce){.js .cv img,.js .evi img,.js .sl img{opacity:1}}
+
+/* ===== prazna stanja i greške ===== */
+.empty{gap:12px;padding:40px 20px}
+.empty .bd{position:relative;display:grid;place-items:center;width:76px;height:76px;border-radius:50%;color:#fff;background:linear-gradient(135deg,#01145c,#0175a1 60%,#1aedad);box-shadow:0 0 0 8px rgba(11,110,163,.10),0 0 0 18px rgba(11,110,163,.05)}
+.empty .bd .ic{width:34px;height:34px}
+.empty.err .bd{background:linear-gradient(135deg,#b8482a,#e0245e);box-shadow:0 0 0 8px rgba(224,36,94,.10),0 0 0 18px rgba(224,36,94,.05)}
+.empty b{font-size:1.15rem}
+.empty .btn{margin-top:6px;min-width:180px;text-decoration:none}
+.offbar{position:fixed;left:0;right:0;top:0;z-index:40;padding:calc(6px + env(safe-area-inset-top,0px)) 12px 6px;background:#3a4377;color:#fff;font-size:.82rem;font-weight:600;text-align:center}
+.offbar[hidden]{display:none}

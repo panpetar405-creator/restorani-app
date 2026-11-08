@@ -53,7 +53,12 @@ function card(key, kind, title, place, desc, meta, pills, off, cover) {
   const inp = plan.includes(key);
   return `<article class="card${off ? ' off' : ''}${cover ? ' hascv' : ''}" data-c="${kind}">${cover ? `<div class="cv" aria-hidden="true"><img src="${esc(cover)}" alt="" loading="lazy" decoding="async"></div>` : ''}<div class="ch"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="kd">${KIND[kind]}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</div><h3 class="t"><a class="lk" href="#d/${esc(key)}">${esc(title)}</a>${ic('right')}</h3>${desc ? `<p class="d">${esc(desc)}</p>` : ''}<ul class="meta">${meta.join('')}</ul><button type="button" class="btn p add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button></article>`;
 }
-const emptyBox = (g, title, text, extra = '') => `<div class="empty"><span class="bd">${ic(g)}</span><b>${title}</b><p>${text}</p>${extra}</div>`;
+const emptyBox = (g, title, text, extra = '') => `<div class="empty${g === 'alert' ? ' err' : ''}"><span class="bd">${ic(g)}</span><b>${title}</b><p>${text}</p>${extra}</div>`;
+// greška pri učitavanju: razlikuje nema interneta od greške servera i nudi ponovni pokušaj
+const retryBtn = (what) => `<button type="button" class="btn p" data-retry="${what}">${t('retry')}</button>`;
+const errBox = (what, extra = '') => navigator.onLine === false
+  ? emptyBox('alert', t('offlineT'), t('offlineD'), retryBtn(what) + extra)
+  : emptyBox('alert', t('loadErrT'), t('loadErrD'), retryBtn(what) + extra);
 function railCard(x) {
   known['i:' + x.slug] = x;
   const d = parse(x.from);
@@ -66,29 +71,29 @@ async function loadAll() {
     const [a, b] = await Promise.all([api('/items'), api('/restaurants?limit=100')]);
     all = a.items; rests = b.restaurants;
     if (typeof renderTiles === 'function') renderTiles();
-  } catch { all = []; rests = []; $('rail').innerHTML = emptyBox('alert', t('loadErrT'), t('loadErrD')); }
+  } catch { all = []; rests = []; $('rail').innerHTML = errBox('home'); }
   places = [...new Set([...all.map((x) => x.place), ...rests.map((r) => r.city)])].sort((a, b) => a.localeCompare(b, 'sr'));
   const up = all.filter((x) => x.kind === 'event' && (x.to || x.from) >= today).sort((a, b) => (a.from < b.from ? -1 : 1)).slice(0, 6);
   if (up.length) $('rail').innerHTML = up.map(railCard).join('');
-  else if (all.length) $('rail').innerHTML = emptyBox('cal', t('noUpT'), t('noUpD'));
+  else if (all.length) $('rail').innerHTML = emptyBox('cal', t('noUpT'), t('noUpD'), `<a class="btn s" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
   planView();
 }
 let timer;
 const later = () => { clearTimeout(timer); timer = setTimeout(search, 250); };
 async function search() {
-  const place = $('p').value.trim(), { f, t } = D.x;
+  const place = $('p').value.trim(), { f, t: to } = D.x;
   const qs = new URLSearchParams();
   if (place) qs.set('place', place);
   if (f) qs.set('from', f);
-  if (t || f) qs.set('to', t || f);
+  if (to || f) qs.set('to', to || f);
   if (cat !== 'all' && cat !== 'food') qs.set('kind', cat);
   let items = [];
-  if (cat !== 'food') { try { items = (await api('/items?' + qs)).items; } catch { $('count').textContent = ''; $('out').innerHTML = emptyBox('alert', t('loadErrT'), t('loadErrD')); return; } }
+  if (cat !== 'food') { try { items = (await api('/items?' + qs)).items; } catch { $('count').textContent = ''; $('out').innerHTML = errBox('search'); return; } }
   const q = norm(place);
   const rs = cat === 'all' || cat === 'food' ? rests.filter((r) => !q || norm(r.city).includes(q)) : [];
   const list = items.sort((a, b) => (a.offSeason - b.offSeason)).map(itemCard).concat(rs.map(restCard));
   $('count').textContent = list.length ? t('found') + list.length : '';
-  $('out').innerHTML = list.length ? list.join('') : emptyBox('search', t('nothingT'), t('nothingD'));
+  $('out').innerHTML = list.length ? list.join('') : emptyBox('search', t('nothingT'), t('nothingD'), `<button type="button" class="btn s" data-clear-search>${t('clearSearch')}</button>`);
 }
 
 /* ---- plan ---- */
@@ -333,7 +338,7 @@ async function showDetail(key) {
   box.innerHTML = '<div class="wrap top" style="display:grid;gap:14px"><div class="skb" style="height:240px"></div><div class="skb" style="width:70%;height:32px"></div><div class="skb"></div><div class="skb" style="width:85%"></div></div>';
   let d;
   try { d = await api((isI ? '/items/' : '/restaurants/') + key.slice(2)); }
-  catch (err) { if (tok === detailTok) box.innerHTML = `<div class="wrap top">${err.status === 404 ? emptyBox('search', t('notFoundT'), t('notFoundGone'), back) : emptyBox('alert', t('detailErrT'), t('loadErrD'), back)}</div>`; return; }
+  catch (err) { if (tok === detailTok) box.innerHTML = `<div class="wrap top">${err.status === 404 ? emptyBox('search', t('notFoundT'), t('notFoundGone'), back) : (navigator.onLine === false ? emptyBox('alert', t('offlineT'), t('offlineD'), retryBtn('detail') + back) : emptyBox('alert', t('detailErrT'), t('loadErrD'), retryBtn('detail') + back))}</div>`; return; }
   if (tok !== detailTok) return;
   const x = isI ? d.item : d, kind = isI ? x.kind : 'food', title = isI ? x.title : x.name, place = isI ? x.place : x.city;
   known[key] = x; document.title = title + ' | Montepalm';
@@ -444,6 +449,32 @@ $('dt').addEventListener('click', (e) => {
     const b = $('burst'); if (b) { b.classList.remove('go'); void b.offsetWidth; b.classList.add('go'); }
   } else lastTap = now;
 }, true);
+
+document.addEventListener('click', (e) => {
+  const r = e.target.closest('[data-retry]');
+  if (r) {
+    const w = r.getAttribute('data-retry');
+    r.disabled = true;
+    if (w === 'home') loadAll(); else if (w === 'search') search(); else route();
+    return;
+  }
+  if (e.target.closest('[data-clear-search]')) {
+    $('p').value = ''; D.x = { f: '', t: '' }; showDates();
+    $('p').closest('.fld').querySelector('.clr').hidden = true;
+    search();
+  }
+});
+/* traka „nema interneta“ + automatski ponovni pokušaj čim se veza vrati */
+const offBar = document.createElement('div');
+offBar.className = 'offbar'; offBar.setAttribute('role', 'status'); offBar.hidden = true;
+document.body.appendChild(offBar);
+const syncOnline = () => { offBar.textContent = t('offBar'); offBar.hidden = navigator.onLine !== false; };
+window.addEventListener('offline', syncOnline);
+window.addEventListener('online', () => {
+  syncOnline();
+  if (document.querySelector('.empty.err')) { if (!all.length) loadAll(); route(); }
+});
+syncOnline();
 
 $('dt').addEventListener('click', async (e) => {
   const t = e.target;
