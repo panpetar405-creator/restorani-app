@@ -80,11 +80,32 @@
         <label class="pr"><input type="checkbox" data-pk="remind" ${prefs.remind ? 'checked' : ''}><span>${tx('remind')}</span></label>
         <button class="btn s full" type="button" data-poff>${tx('off')}</button>`;
     }
-    el.innerHTML = `<h2>${tx('h')}</h2>${inner}`;
+    const dx = /[?&]dx=1/.test(location.search) ? '<button class="btn s full" type="button" data-pdx>Dijagnostika i probno obavještenje</button><pre id="pdxout" style="white-space:pre-wrap;font-size:.8rem;margin:0"></pre>' : '';
+    el.innerHTML = `<h2>${tx('h')}</h2>${inner}${dx}`;
+  }
+
+  /* Dijagnostika (samo uz ?dx=1 u adresi): pokazuje stanje i prikazuje probno obavještenje direktno, bez servera. */
+  async function diagnose() {
+    const out = document.getElementById('pdxout'); if (!out) return;
+    const L = [];
+    const add = (t) => { L.push(t); out.textContent = L.join('\n'); };
+    try {
+      add('Dozvola: ' + Notification.permission);
+      const reg = await navigator.serviceWorker.ready;
+      try { await reg.update(); add('Provjera nove verzije: ok'); } catch (e) { add('Provjera nove verzije: ' + e.message); }
+      add('Aktivni worker: ' + (reg.active ? reg.active.scriptURL.split('/').pop() + ' (' + reg.active.state + ')' : 'nema') + (reg.waiting ? ', čeka novi' : '') + (reg.installing ? ', instalira novi' : ''));
+      const src = await (await fetch('/sw.js', { cache: 'no-store' })).text();
+      add('sw.js na serveru: ' + ((src.match(/montepalm-v\d+/) || ['?'])[0]) + (src.includes("'push'") ? ', ima push' : ', NEMA push'));
+      const s = await reg.pushManager.getSubscription();
+      add('Pretplata: ' + (s ? 'da (' + new URL(s.endpoint).hostname + ')' : 'ne'));
+      await reg.showNotification('Probno obavještenje', { body: 'Ako ovo vidiš, telefon prikazuje obavještenja.', icon: '/icons/icon-192.png', tag: 'dx' });
+      add('Probno obavještenje poslato telefonu: da li je stiglo u traku?');
+    } catch (e) { add('Greška: ' + e.message); }
   }
 
   document.addEventListener('click', (e) => {
-    if (e.target.closest('[data-pon]')) enable();
+    if (e.target.closest('[data-pdx]')) diagnose();
+    else if (e.target.closest('[data-pon]')) enable();
     else if (e.target.closest('[data-poff]')) disable();
   });
   document.addEventListener('change', (e) => {
