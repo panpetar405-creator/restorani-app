@@ -1,5 +1,5 @@
 // Shell iz keša (stale-while-revalidate); lista restorana mrežom, a keš samo kad nema veze.
-const V = 'montepalm-v35';
+const V = 'montepalm-v36';
 const SHELL = ['/', '/styles.css', '/app.js', '/i18n.js', '/korisno.js', '/push.js', '/inbox.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -71,7 +71,7 @@ self.addEventListener('push', (e) => {
     inboxAdd({ t: Date.now(), title, body, url, read: 0 }).catch(() => {}),
     self.registration.showNotification(title, {
       body,
-      icon: '/icons/icon-192.png',
+      icon: '/icons/notif-192.png',
       badge: '/icons/badge-96.png',
       tag: typeof d.tag === 'string' ? d.tag.slice(0, 60) : undefined,
       data: { url },
