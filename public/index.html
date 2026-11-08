@@ -35,6 +35,7 @@
   <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
   <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="16" rx="2.5"/><path d="M8 3v4M16 3v4M4 10h16"/></symbol>
   <symbol id="i-route" viewBox="0 0 24 24"><circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h8a3 3 0 0 0 0-6H8a3 3 0 0 1 0-6h8"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
   <symbol id="i-down" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
   <symbol id="i-left" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
   <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
@@ -153,6 +154,14 @@
   </div>
 </section>
 
+<section class="view" id="v-korisno">
+  <div class="wrap top">
+    <h1 data-i18n="useful">Korisno</h1>
+    <p class="sub" data-i18n="usefulSub">Brojevi, prevoz, novac i običaji na jednom mjestu.</p>
+    <div id="kout"></div>
+  </div>
+</section>
+
 <section class="view" id="v-detalj">
   <div id="dt" aria-live="polite"></div>
 </section>
@@ -161,6 +170,7 @@
   <a href="#pocetna"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg></span><span data-i18n="home">Početna</span></a>
   <a href="#istrazi"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></span><span data-i18n="explore">Istraži</span></a>
   <a href="#plan"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-route"/></svg><span class="badge" id="pb" hidden></span></span><span data-i18n="myTrip">Moj put</span></a>
+  <a href="#korisno"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg></span><span data-i18n="useful">Korisno</span></a>
 </nav>
 
 <!-- kalendar -->
@@ -199,6 +209,7 @@
 
 <noscript>Za korištenje aplikacije Montepalm potreban je JavaScript. / The Montepalm app needs JavaScript.</noscript>
 <script src="/i18n.js" defer></script>
+<script src="/korisno.js" defer></script>
 <script src="/app.js" defer></script>
 </body>
 </html>

@@ -54,6 +54,7 @@ const DICT = {
     placeLbl: 'Mjesto', phone: 'Telefon', rating: 'Ocjena', reviews: ' recenzija', billPer: 'Račun po osobi', pricesChecked: 'Cijene provjerene', allYear: 'Cijele godine',
     wxFail: 'Prognoza trenutno nije dostupna.', retry: 'Pokušaj ponovo', next7: 'Narednih 7 dana, ', next7b: '. Izaberi period da vidiš prognozu za svoj termin.',
     estNote: 'Dani sa isprekidanom ivicom su procjena na osnovu prethodnih godina. Stvarna prognoza je dostupna 16 dana unaprijed.', estAria: 'procjena, ', degrees: ' stepeni, ', data: 'Podaci: ',
+    useful: 'Korisno', usefulSub: 'Brojevi, prevoz, novac i običaji na jednom mjestu.',
     euroDec: ',',
   },
   en: {
@@ -92,6 +93,7 @@ const DICT = {
     placeLbl: 'Place', phone: 'Phone', rating: 'Rating', reviews: ' reviews', billPer: 'Bill per person', pricesChecked: 'Prices verified', allYear: 'All year',
     wxFail: 'The forecast is not available right now.', retry: 'Try again', next7: 'Next 7 days, ', next7b: '. Pick dates to see the forecast for your trip.',
     estNote: 'Days with a dashed border are estimates based on previous years. The actual forecast is available 16 days ahead.', estAria: 'estimate, ', degrees: ' degrees, ', data: 'Data: ',
+    useful: 'Useful', usefulSub: 'Numbers, transport, money and local customs in one place.',
     euroDec: '.',
   },
   de: {
@@ -130,6 +132,7 @@ const DICT = {
     placeLbl: 'Ort', phone: 'Telefon', rating: 'Bewertung', reviews: ' Bewertungen', billPer: 'Rechnung pro Person', pricesChecked: 'Preise geprüft', allYear: 'Ganzjährig',
     wxFail: 'Die Vorhersage ist derzeit nicht verfügbar.', next7: 'Nächste 7 Tage, ', next7b: '. Wähle einen Zeitraum, um die Vorhersage für deine Reise zu sehen.',
     estNote: 'Tage mit gestricheltem Rand sind Schätzungen auf Grundlage früherer Jahre. Die tatsächliche Vorhersage gibt es 16 Tage im Voraus.', estAria: 'Schätzung, ', degrees: ' Grad, ', data: 'Daten: ',
+    useful: 'Wissenswert', usefulSub: 'Nummern, Verkehr, Geld und Bräuche an einem Ort.',
     euroDec: ',',
   },
   ru: {
@@ -169,6 +172,7 @@ const DICT = {
     placeLbl: 'Место', phone: 'Телефон', rating: 'Рейтинг', reviews: ' отзывов', billPer: 'Счёт на человека', pricesChecked: 'Цены проверены', allYear: 'Круглый год',
     wxFail: 'Прогноз сейчас недоступен.', next7: 'Ближайшие 7 дней, ', next7b: '. Выберите даты, чтобы увидеть прогноз на время поездки.',
     estNote: 'Дни с пунктирной рамкой — оценка по данным прошлых лет. Фактический прогноз доступен за 16 дней.', estAria: 'оценка, ', degrees: ' градусов, ', data: 'Данные: ',
+    useful: 'Полезное', usefulSub: 'Номера, транспорт, деньги и обычаи в одном месте.',
     euroDec: ',',
   },
   it: {
@@ -207,6 +211,7 @@ const DICT = {
     placeLbl: 'Luogo', phone: 'Telefono', rating: 'Valutazione', reviews: ' recensioni', billPer: 'Conto a persona', pricesChecked: 'Prezzi verificati', allYear: 'Tutto l’anno',
     wxFail: 'Le previsioni non sono al momento disponibili.', next7: 'Prossimi 7 giorni, ', next7b: '. Scegli le date per vedere le previsioni del tuo viaggio.',
     estNote: 'I giorni con bordo tratteggiato sono stime basate sugli anni precedenti. Le previsioni effettive sono disponibili 16 giorni prima.', estAria: 'stima, ', degrees: ' gradi, ', data: 'Dati: ',
+    useful: 'Utile', usefulSub: 'Numeri, trasporti, denaro e usanze in un unico posto.',
     euroDec: ',',
   },
 };

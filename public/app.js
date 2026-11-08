@@ -617,7 +617,17 @@ $('sf').addEventListener('submit', (e) => e.preventDefault());
 $('hgo').onclick = () => { $('p').value = $('hp').value; D.x = { ...D.h }; showDates(); search(); location.hash = '#istrazi'; };
 $('hp').addEventListener('keydown', (e) => { if (e.key === 'Enter' && $('hs').hidden) $('hgo').click(); });
 
-const VIEWS = ['pocetna', 'istrazi', 'plan', 'detalj'];
+/* ---------- Korisno: statične informacije (korisno.js), jezik kao u aplikaciji ---------- */
+function usefulView() {
+  const u = USEFUL[LANG] || USEFUL.en;
+  $('kout').innerHTML = u.groups.map((g) => {
+    const calls = (g.calls || []).map(([n, d]) => `<a class="call" href="tel:${esc(n)}"><b>${esc(n)}</b><span>${esc(d)}</span>${ic('phone')}</a>`).join('');
+    const notes = (g.notes || []).map((x) => `<li>${esc(x)}</li>`).join('');
+    return `<section class="sec" id="k-${esc(g.id)}"><h2 class="uh">${ic(g.icon)}${esc(g.title)}</h2><div class="box">${calls ? `<div class="calls">${calls}</div>` : ''}<ul class="unotes">${notes}</ul></div></section>`;
+  }).join('') + `<p class="note">${esc(u.updated)}</p>`;
+}
+
+const VIEWS = ['pocetna', 'istrazi', 'plan', 'korisno', 'detalj'];
 function route() {
   const raw = (location.hash || '#pocetna').slice(1);
   let h = raw, dkey = '';
@@ -633,6 +643,7 @@ function route() {
   let done = Promise.resolve();
   if (h === 'istrazi') { $('p').closest('.fld').querySelector('.clr').hidden = !$('p').value; done = search(); }
   if (h === 'plan') planView();
+  if (h === 'korisno') usefulView();
   if (h === 'detalj') showDetail(dkey);
   window.scrollTo(0, 0);
   if (back !== null) done.then(() => window.scrollTo(0, back));
