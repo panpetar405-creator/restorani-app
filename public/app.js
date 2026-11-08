@@ -28,7 +28,16 @@ const api = async (p) => { const r = await fetch('/api' + p + (p.includes('?') ?
 let all = [], rests = [], places = [], cat = 'all', plan = [], known = {};
 const D = { h: { f: '', t: '' }, x: { f: '', t: '' } };
 try { plan = JSON.parse(localStorage.getItem('mp.plan') || '[]'); } catch { plan = []; }
-const savePlan = () => { try { localStorage.setItem('mp.plan', JSON.stringify(plan)); } catch { /* ignore */ } };
+/* kopija sačuvanih stavki plana: plan se vidi i bez interneta */
+let snap = {};
+try { snap = JSON.parse(localStorage.getItem('mp.planData') || '{}') || {}; } catch { snap = {}; }
+const saveSnap = () => {
+  const o = {};
+  plan.forEach((k) => { const v = known[k] || snap[k]; if (v) o[k] = v; });
+  snap = o;
+  try { localStorage.setItem('mp.planData', JSON.stringify(o)); } catch { /* ignore */ }
+};
+const savePlan = () => { try { localStorage.setItem('mp.plan', JSON.stringify(plan)); } catch { /* ignore */ } saveSnap(); };
 
 /* ---- kartice ---- */
 function itemCard(x) {
@@ -76,6 +85,7 @@ async function loadAll() {
   const up = all.filter((x) => x.kind === 'event' && (x.to || x.from) >= today).sort((a, b) => (a.from < b.from ? -1 : 1)).slice(0, 6);
   if (up.length) $('rail').innerHTML = up.map(railCard).join('');
   else if (all.length) $('rail').innerHTML = emptyBox('cal', t('noUpT'), t('noUpD'), `<a class="btn s" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
+  saveSnap();
   planView();
 }
 let timer;
@@ -97,10 +107,34 @@ async function search() {
 }
 
 /* ---- plan ---- */
+/* ---- izvoz u kalendar (.ics) ---- */
+const icsEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
+const icsFold = (l) => { let o = ''; while (l.length > 70) { o += l.slice(0, 70) + '\r\n '; l = l.slice(70); } return o + l; };
+const icsDay = (s) => s.replace(/-/g, '');
+const icsNext = (s) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1); return d.toISOString().slice(0, 10).replace(/-/g, ''); };
+function icsFor(list) {
+  const now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const ev = list.filter((x) => x && x.kind === 'event' && x.from).map((x) => {
+    const link = `${location.origin}/s/i/${x.slug}`;
+    return ['BEGIN:VEVENT', `UID:${x.slug}@montepalm`, `DTSTAMP:${now}`, `DTSTART;VALUE=DATE:${icsDay(x.from)}`, `DTEND;VALUE=DATE:${icsNext(x.to || x.from)}`,
+      `SUMMARY:${icsEsc(x.title)}`, `LOCATION:${icsEsc(x.place)}`, `DESCRIPTION:${icsEsc((x.description ? x.description + '\n' : '') + link)}`, `URL:${link}`, 'END:VEVENT'].map(icsFold).join('\r\n');
+  });
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Montepalm//SR', 'CALSCALE:GREGORIAN', ...ev, 'END:VCALENDAR'].join('\r\n') + '\r\n';
+}
+async function saveIcs(list, name) {
+  const file = new File([icsFor(list)], name, { type: 'text/calendar' });
+  try { if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file] }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+  const u = URL.createObjectURL(file), el = document.createElement('a');
+  el.href = u; el.download = name; document.body.appendChild(el); el.click(); el.remove();
+  setTimeout(() => URL.revokeObjectURL(u), 4000);
+}
+$('ics').onclick = () => saveIcs(plan.map((k) => known[k]), 'montepalm-plan.ics');
 function planView() {
+  plan.forEach((k) => { if (!known[k] && snap[k]) known[k] = snap[k]; });
   const l = plan.filter((k) => known[k]);
   $('pout').innerHTML = l.length ? l.map((k) => (k[0] === 'i' ? itemCard(known[k]) : restCard(known[k]))).join('') : emptyBox('route', t('emptyPlanT'), t('emptyPlanD'), `<a class="btn p" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
   $('share').style.display = l.length ? 'inline-flex' : 'none';
+  $('ics').hidden = !l.some((k) => known[k].kind === 'event' && known[k].from);
   $('pb').textContent = plan.length; $('pb').hidden = !plan.length;
 }
 const setAdd = (a, on) => { a.setAttribute('aria-pressed', on); a.innerHTML = on ? ic('check') + t('inPlan') : ic('plus') + t('addPlan'); };
@@ -338,10 +372,14 @@ async function showDetail(key) {
   box.innerHTML = '<div class="wrap top" style="display:grid;gap:14px"><div class="skb" style="height:240px"></div><div class="skb" style="width:70%;height:32px"></div><div class="skb"></div><div class="skb" style="width:85%"></div></div>';
   let d;
   try { d = await api((isI ? '/items/' : '/restaurants/') + key.slice(2)); }
-  catch (err) { if (tok === detailTok) box.innerHTML = `<div class="wrap top">${err.status === 404 ? emptyBox('search', t('notFoundT'), t('notFoundGone'), back) : (navigator.onLine === false ? emptyBox('alert', t('offlineT'), t('offlineD'), retryBtn('detail') + back) : emptyBox('alert', t('detailErrT'), t('loadErrD'), retryBtn('detail') + back))}</div>`; return; }
+  catch (err) {
+    const s = err.status !== 404 && (known[key] || snap[key]);
+    if (s) d = isI ? { item: s } : s;
+    else { if (tok === detailTok) box.innerHTML = `<div class="wrap top">${err.status === 404 ? emptyBox('search', t('notFoundT'), t('notFoundGone'), back) : (navigator.onLine === false ? emptyBox('alert', t('offlineT'), t('offlineD'), retryBtn('detail') + back) : emptyBox('alert', t('detailErrT'), t('loadErrD'), retryBtn('detail') + back))}</div>`; return; }
+  }
   if (tok !== detailTok) return;
   const x = isI ? d.item : d, kind = isI ? x.kind : 'food', title = isI ? x.title : x.name, place = isI ? x.place : x.city;
-  known[key] = x; document.title = title + ' | Montepalm';
+  known[key] = x; if (plan.includes(key)) saveSnap(); document.title = title + ' | Montepalm';
   const pills = [];
   if (isI && x.status !== 'potvrdjeno') pills.push(`<span class="pill">${esc(STATUS[x.status])}</span>`);
   if (isI && x.demo) pills.push(`<span class="pill demo">${t('demo')}</span>`);
@@ -355,7 +393,7 @@ async function showDetail(key) {
     ${postHtml(x, key, kind, title, place, pills, media)}
     <div class="wrap">
       <div class="dh"><h1>${esc(title)}</h1></div>
-      <div class="acts2"><button type="button" class="btn p add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button><a class="btn s" href="${esc(maps)}" target="_blank" rel="noopener">${ic('nav')}${t('map')}</a></div>
+      <div class="acts2"><button type="button" class="btn p add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button><a class="btn s" href="${esc(maps)}" target="_blank" rel="noopener">${ic('nav')}${t('map')}</a>${isI && x.kind === 'event' && x.from ? `<button type="button" class="btn s" data-ics style="grid-column:1/-1">${ic('cal')}${t('addCal')}</button>` : ''}</div>
       ${gridHtml(media)}
       <section class="sec"><h2>${t('forecast')}</h2><p class="sub" id="wsub"></p><div id="wbody"><div class="skb" style="height:132px"></div></div></section>
       ${text ? `<section class="sec"><h2>${isI ? (kind === 'event' ? t('about').event : t('about').loc) : t('about').rest}</h2><div class="box"><p class="prose">${esc(text)}</p></div></section>` : ''}
@@ -480,6 +518,7 @@ $('dt').addEventListener('click', async (e) => {
   const t = e.target;
   if (t.closest('[data-back]')) { if (navs > 0) history.back(); else location.hash = '#istrazi'; return; }
   const lk = t.closest('[data-like]'); if (lk) { toggleLike(lk.getAttribute('data-like')); return; }
+  if (t.closest('[data-ics]')) { const x = known[decodeURIComponent(location.hash.slice(3))]; if (x) saveIcs([x], (x.slug || 'dogadjaj') + '.ics'); return; }
   const bm = t.closest('[data-bm]'); if (bm) { const a = document.querySelector('.acts2 .add'); if (a) a.click(); return; }
   const vt = t.closest('[data-vt]');
   if (vt) { const v = vt.parentNode.querySelector('video'); if (v.paused) v.play().catch(() => {}); else v.pause(); return; }
