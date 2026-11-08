@@ -216,3 +216,20 @@ test('cleanCampaign: duži tekstovi i datum u prošlosti se odbijaju', () => {
   assert.throws(() => cleanCampaign({ title: 't', body: 'b', send_at: '2020-01-01T00:00:00Z' }, Date.parse('2027-01-01')), /prošlosti/);
   assert.equal(cleanCampaign({ title: 't', body: 'b' }).url, '/');
 });
+
+test('okidač: /api/push/tick traži tajni ključ i pokreće slanje', async () => {
+  const call = (headers = {}, qs = '') => worker.fetch(new Request('https://mp.test/api/push/tick' + qs, { headers }), env);
+  assert.equal((await call()).status, 503); // PUSH_TICK_KEY nije podešen
+  env.PUSH_TICK_KEY = 'k'.repeat(20);
+  assert.equal((await call()).status, 401);
+  assert.equal((await call({ authorization: 'Bearer ' + 'x'.repeat(20) })).status, 401);
+  const admin = (b) => worker.fetch(new Request('https://mp.test/api/admin/push/campaign', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: JSON.stringify(b) }), env);
+  env.NOW = '2027-05-01T10:00:00Z';
+  await admin({ title: 'Preko okidača', body: 'x', audience: 'test' });
+  sent.length = 0;
+  const r = await call({ authorization: 'Bearer ' + 'k'.repeat(20) });
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), { ok: true, configured: true, sent: 1 });
+  assert.equal(sent.length, 1);
+  assert.equal((await call({}, '?key=' + 'k'.repeat(20))).status, 200); // i preko ?key=
+});
