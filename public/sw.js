@@ -1,6 +1,6 @@
 // Shell iz keša (stale-while-revalidate); lista restorana mrežom, a keš samo kad nema veze.
-const V = 'montepalm-v32';
-const SHELL = ['/', '/styles.css', '/app.js', '/i18n.js', '/korisno.js', '/push.js', '/manifest.webmanifest', '/icons/icon-192.png'];
+const V = 'montepalm-v34';
+const SHELL = ['/', '/styles.css', '/app.js', '/i18n.js', '/korisno.js', '/push.js', '/inbox.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(V).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
@@ -43,16 +43,40 @@ self.addEventListener('fetch', (e) => {
 });
 
 /* ---- push obavještenja ---- */
+/* sanduče: svako primljeno obavještenje se čuva u IndexedDB da ga aplikacija može prikazati (najviše 50) */
+const inboxDb = () => new Promise((ok, no) => {
+  const r = indexedDB.open('mp-inbox', 1);
+  r.onupgradeneeded = () => r.result.createObjectStore('n', { keyPath: 'id', autoIncrement: true });
+  r.onsuccess = () => ok(r.result);
+  r.onerror = () => no(r.error);
+});
+async function inboxAdd(rec) {
+  const db = await inboxDb();
+  await new Promise((ok, no) => {
+    const tx = db.transaction('n', 'readwrite'), st = tx.objectStore('n');
+    st.add(rec);
+    st.getAllKeys().onsuccess = (e) => { const k = e.target.result; k.slice(0, Math.max(0, k.length - 50)).forEach((x) => st.delete(x)); };
+    tx.oncomplete = ok; tx.onerror = () => no(tx.error); tx.onabort = () => no(tx.error);
+  });
+  db.close();
+  const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+  list.forEach((c) => c.postMessage({ type: 'inbox' }));
+}
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = {}; }
-  e.waitUntil(self.registration.showNotification(String(d.title || 'Montepalm').slice(0, 80), {
-    body: String(d.body || '').slice(0, 200),
-    icon: '/icons/icon-192.png',
-    badge: '/icons/icon-192.png',
-    tag: typeof d.tag === 'string' ? d.tag.slice(0, 60) : undefined,
-    data: { url: typeof d.url === 'string' ? d.url : '/' },
-  }));
+  const title = String(d.title || 'Montepalm').slice(0, 80), body = String(d.body || '').slice(0, 200);
+  const url = typeof d.url === 'string' ? d.url : '/';
+  e.waitUntil(Promise.all([
+    inboxAdd({ t: Date.now(), title, body, url, read: 0 }).catch(() => {}),
+    self.registration.showNotification(title, {
+      body,
+      icon: '/icons/icon-192.png',
+      badge: '/icons/badge-96.png',
+      tag: typeof d.tag === 'string' ? d.tag.slice(0, 60) : undefined,
+      data: { url },
+    }),
+  ]));
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();

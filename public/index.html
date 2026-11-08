@@ -20,6 +20,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<link rel="preload" as="image" href="/media/hero-m.webp" media="(max-width:700px)">
 <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -65,11 +66,12 @@
   <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3.2 3 3.2 15 0 18M12 3c-3.2 3-3.2 15 0 18"/></symbol>
   <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a1 1 0 0 1-1 1A16 16 0 0 1 4 5a1 1 0 0 1 1-1z"/></symbol>
   <symbol id="i-nav" viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
 </svg>
 
 <section class="view on" id="v-pocetna">
-  <header class="hero" id="hero">
+  <header class="hero has" id="hero">
     <svg class="scene" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       <defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fa9cf"/><stop offset="1" stop-color="#d6e6ea"/></linearGradient><linearGradient id="se" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2487a0"/><stop offset="1" stop-color="#0b3c52"/></linearGradient></defs>
       <rect width="400" height="520" fill="url(#sk)"/>
@@ -82,6 +84,7 @@
     </svg>
     <div class="brand"><img src="/icons/icon-192.png" width="32" height="32" alt="" class="blogo">Montepalm</div>
     <button class="lang" id="lbtn" type="button" aria-label="Jezik" aria-haspopup="true" aria-expanded="false"><span class="on">SR</span><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></button>
+    <button class="bell" id="nbtn" type="button" aria-haspopup="dialog"><svg class="ic" aria-hidden="true"><use href="#i-bell"/></svg><span class="badge" id="nbd" hidden></span></button>
     <div class="lmenu" id="lmenu" hidden></div>
     <button class="photo" id="pbtn" type="button" aria-label="Dodaj fotografiju" title="Dodaj fotografiju" data-i18n-aria="addPhoto" data-i18n-title="addPhoto"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></button>
     <input type="file" id="pfile" accept="image/*" hidden>
@@ -199,6 +202,17 @@
   </div>
 </div>
 
+<!-- obavještenja (sanduče) -->
+<div class="sheet" id="inbox" hidden>
+  <div class="scrim" data-x></div>
+  <div class="panel" role="dialog" aria-modal="true" aria-labelledby="inb-t">
+    <div class="grab" aria-hidden="true"></div>
+    <div class="ph"><h2 id="inb-t"></h2><button class="ib" type="button" data-x id="inbx"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <div id="inbl" class="inbl"></div>
+    <button class="btn g full" type="button" id="inbc" hidden></button>
+  </div>
+</div>
+
 <!-- galerija preko cijelog ekrana -->
 <div class="lb" id="lb" hidden role="dialog" aria-modal="true" aria-label="Galerija fotografija" data-i18n-aria="gallery">
   <button class="ib lbx" type="button" id="lbx" aria-label="Zatvori" data-i18n-aria="close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
@@ -213,5 +227,6 @@
 <script src="/korisno.js" defer></script>
 <script src="/app.js" defer></script>
 <script src="/push.js" defer></script>
+<script src="/inbox.js" defer></script>
 </body>
 </html>
