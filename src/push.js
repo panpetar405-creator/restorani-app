@@ -3,7 +3,7 @@
 //  1) korisnik uključi obavještenja u aplikaciji -> /api/push/subscribe
 //  2) admin napravi promociju (odmah ili zakazanu) -> tabela push_campaigns
 //  3) cron (svake minute) -> tick(): zakazane promocije i podsjetnici idu u push_queue, pa se red šalje u paketima
-import { HttpError, addDaysISO, json, readJson } from './lib.js';
+import { HttpError, addDaysISO, json, readJson, sha256 } from './lib.js';
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
 const LANGS = ['sr', 'en', 'de', 'ru', 'it'];
@@ -162,8 +162,23 @@ async function dropSubs(env, ids) {
   ]);
 }
 
+/* Okidač za slanje: koristi ga vanjski besplatni cron (npr. cron-job.org) kad Cloudflare cron nije dostupan.
+   Ključ ide u zaglavlju „Authorization: Bearer ...” (ili ?key=...) i mora biti jednak tajni PUSH_TICK_KEY. */
+async function tickRoute(request, env) {
+  const secret = String(env.PUSH_TICK_KEY || '');
+  if (secret.length < 16) throw new HttpError(503, 'Nedostaje PUSH_TICK_KEY');
+  const m = /^Bearer (.{16,200})$/.exec(request.headers.get('authorization') || '');
+  const given = m ? m[1] : new URL(request.url).searchParams.get('key') || '';
+  const [a, b] = await Promise.all([sha256(given), sha256(secret)]);
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  if (diff) throw new HttpError(401, 'Neispravan ključ');
+  return json({ ok: true, ...(await tick(env)) });
+}
+
 export async function pushRoute(request, env, seg, method) {
   const what = seg[2];
+  if (what === 'tick' && (method === 'GET' || method === 'POST')) return tickRoute(request, env);
   if (what === 'key' && method === 'GET') return json({ enabled: pushConfigured(env), key: pushConfigured(env) ? env.VAPID_PUBLIC : '' });
   if (what === 'subscribe' && method === 'POST') return subscribe(env, request);
   if (what === 'prefs' && method === 'PUT') return updatePrefs(env, request);
@@ -318,12 +333,13 @@ export async function drain(env) {
 }
 
 export async function tick(env) {
-  if (!pushConfigured(env)) return;
+  if (!pushConfigured(env)) return { configured: false };
   const now = nowLocal(env);
   await dueCampaigns(env, now.iso);
   await queueReminders(env, now);
-  await drain(env);
+  const r = await drain(env);
   await env.DB.prepare("DELETE FROM push_queue WHERE created_at < datetime('now', '-3 day')").run();
   await env.DB.prepare("DELETE FROM push_log WHERE created_at < datetime('now', '-60 day')").run();
+  return { configured: true, sent: r.sent };
 }
 
