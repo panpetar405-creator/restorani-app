@@ -420,3 +420,13 @@ a.ev{color:inherit;text-decoration:none}
 .hero::after{background:linear-gradient(to bottom,rgba(8,24,34,.32) 0%,rgba(8,24,34,.04) 28%,rgba(8,24,34,.5) 58%,rgba(8,24,34,.9) 100%)}
 .hero h1,.hero p{text-shadow:0 1px 3px rgba(0,0,0,.45),0 2px 14px rgba(0,0,0,.35)}
 .hero p{color:#fff}
+
+/* ===== Danas i u blizini ===== */
+.evi.ph{background:linear-gradient(150deg,var(--t1,#01145c),var(--t2,#0b5aa8) 60%,#0175a1)}
+.nc{width:236px}
+.nc .evr{display:block;padding:12px 14px 14px}
+.nc .tx{display:grid;gap:4px}
+.dst{display:inline-flex;align-items:center;gap:5px;color:var(--c,var(--sea));font-weight:700;font-size:.88rem}
+.dst .ic{width:14px;height:14px}
+#nsec[hidden]{display:none}
+#nchips + .rail{margin-top:8px}

@@ -86,6 +86,7 @@ async function loadAll() {
   if (up.length) $('rail').innerHTML = up.map(railCard).join('');
   else if (all.length) $('rail').innerHTML = emptyBox('cal', t('noUpT'), t('noUpD'), `<a class="btn s" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
   saveSnap();
+  renderNear();
   planView();
 }
 let timer;
@@ -107,6 +108,67 @@ async function search() {
 }
 
 /* ---- plan ---- */
+/* ---- Danas i u blizini ---- */
+let nearMode = 'today', here = null; // lokacija se drži samo u memoriji, nikad se ne šalje ni ne čuva
+const isoPlus = (s, n) => iso(addDays(parse(s), n));
+function weekendRange() {
+  const d = parse(today), w = d.getDay(); // 0 = nedjelja
+  if (w === 0) return [today, today];
+  if (w === 6) return [today, isoPlus(today, 1)];
+  return [isoPlus(today, 6 - w), isoPlus(today, 7 - w)];
+}
+const hasLoc = (x) => Number.isFinite(+x.lat) && Number.isFinite(+x.lng) && x.lat !== null && x.lng !== null && x.lat !== '' && x.lng !== '';
+function kmBetween(a, b) {
+  const r = Math.PI / 180, dla = (b.lat - a.lat) * r, dlo = (b.lng - a.lng) * r;
+  const h = Math.sin(dla / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dlo / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
+function fmtKm(k) {
+  if (k < 1) return Math.max(50, Math.round(k * 20) * 50) + ' m';
+  const s = k < 10 ? k.toFixed(1) : String(Math.round(k));
+  return (LANG === 'sr' ? s.replace('.', ',') : s) + ' km';
+}
+const askLoc = () => new Promise((res) => {
+  if (!navigator.geolocation) { res(null); return; }
+  navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res(null), { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+});
+function nearList() {
+  const run = (x, f, to) => x.from <= to && (x.to || x.from) >= f;
+  const pool = [...all.map((x) => ({ x, r: false })), ...rests.map((x) => ({ x, r: true }))];
+  let list;
+  if (nearMode === 'near') list = pool.filter(({ x, r }) => hasLoc(x) && (r || x.kind !== 'event' || (x.from && run(x, today, isoPlus(today, 30)))));
+  else { const [f, to] = nearMode === 'today' ? [today, today] : weekendRange(); list = pool.filter(({ x, r }) => !r && x.kind === 'event' && x.from && run(x, f, to)); }
+  list.forEach((o) => { o.d = here && hasLoc(o.x) ? kmBetween(here, { lat: +o.x.lat, lng: +o.x.lng }) : null; });
+  if (here) list.sort((p, q) => (p.d === null) - (q.d === null) || p.d - q.d);
+  return list.slice(0, 10);
+}
+function nearCard({ x, r, d }) {
+  const key = (r ? 'r:' : 'i:') + x.slug; known[key] = x;
+  const kind = r ? 'food' : x.kind, title = r ? x.name : x.title, place = r ? x.city : x.place;
+  const sub = !r && x.kind === 'event' && x.from ? span(x) : (KIND[kind] || '');
+  const img = x.cover ? `<span class="evi"><img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async"></span>` : `<span class="evi ph" aria-hidden="true">${ic(GLYPH[kind] || GLYPH.event)}</span>`;
+  return `<a class="ev nc" data-c="${esc(kind)}" href="#d/${esc(key)}">${img}<span class="evr"><span class="tx"><span class="tt">${esc(title)}</span><span class="pl">${ic('pin')}<span>${esc(place)}</span></span><span class="rng">${esc(sub)}</span>${d !== null ? `<span class="dst">${ic('nav')}${fmtKm(d)}</span>` : ''}</span></span></a>`;
+}
+function renderNear() {
+  const sec = $('nsec'); if (!sec) return;
+  sec.hidden = !(all.length || rests.length);
+  const list = nearList();
+  $('nrail').innerHTML = list.length ? list.map(nearCard).join('')
+    : nearMode === 'near' ? emptyBox('pin', t('nearNoLocT'), t('nearNoLocD'))
+      : emptyBox('cal', t('nearNoneT'), t('nearNoneD'), `<button type="button" class="btn s" data-n="near">${t('nNear')}</button>`);
+}
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-n]'); if (!b) return;
+  const m = b.getAttribute('data-n');
+  if (m === 'near' && !here) {
+    b.disabled = true; here = await askLoc(); b.disabled = false;
+    if (!here) { toast(t('locDenied')); return; }
+  }
+  nearMode = m;
+  document.querySelectorAll('#nchips [data-n]').forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-n') === m));
+  renderNear();
+});
+
 /* ---- izvoz u kalendar (.ics) ---- */
 const icsEsc = (s) => String(s || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n');
 const icsFold = (l) => { let o = ''; while (l.length > 70) { o += l.slice(0, 70) + '\r\n '; l = l.slice(70); } return o + l; };

@@ -105,6 +105,15 @@
   <div class="wrap">
     <div class="hd"><h2 data-i18n="soon">Uskoro</h2><button class="lnk" id="allev" type="button"><span data-i18n="allEvents">Svi događaji</span><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
     <div class="rail" id="rail"></div>
+    <section id="nsec" hidden>
+      <div class="hd"><h2 data-i18n="nearTitle">Danas i u blizini</h2></div>
+      <div class="chips" id="nchips" role="group" aria-label="Danas i u blizini">
+        <button class="chip" type="button" data-n="today" aria-pressed="true"><span data-i18n="nToday">Danas</span></button>
+        <button class="chip" type="button" data-n="weekend" aria-pressed="false"><span data-i18n="nWeekend">Vikend</span></button>
+        <button class="chip" type="button" data-n="near" aria-pressed="false"><span data-i18n="nNear">Blizu mene</span></button>
+      </div>
+      <div class="rail" id="nrail"></div>
+    </section>
     <div class="hd"><h2 data-i18n="whatToday">Šta želiš danas?</h2></div>
     <div class="tiles" id="tiles"></div>
   </div>
