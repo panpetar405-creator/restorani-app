@@ -1,0 +1,218 @@
+import { test, before } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { createDecipheriv, createECDH, hkdfSync, generateKeyPairSync, createPublicKey, verify } from 'node:crypto';
+import worker from '../src/index.js';
+import { b64u, unb64u, encryptPayload, vapidHeader, pushConfigured, cleanCampaign, tick } from '../src/push.js';
+
+// D1 shim nad SQLite-om
+function d1(db) {
+  return {
+    prepare(sql) {
+      let args = [];
+      const st = {
+        bind: (...a) => ((args = a), st),
+        all: async () => ({ results: db.prepare(sql).all(...args).map((r) => ({ ...r })) }),
+        first: async () => { const r = db.prepare(sql).get(...args); return r ? { ...r } : null; },
+        run: async () => ({ meta: { changes: db.prepare(sql).run(...args).changes } }),
+      };
+      return st;
+    },
+    async batch(stmts) {
+      db.exec('BEGIN');
+      try { const o = []; for (const s of stmts) o.push(await s.run()); db.exec('COMMIT'); return o; } catch (e) { db.exec('ROLLBACK'); throw e; }
+    },
+  };
+}
+
+// VAPID par ključeva za test
+const kp = generateKeyPairSync('ec', { namedCurve: 'prime256v1' });
+const jwk = kp.privateKey.export({ format: 'jwk' });
+const PUB = b64u(Buffer.concat([Buffer.from([4]), Buffer.from(jwk.x, 'base64url'), Buffer.from(jwk.y, 'base64url')]));
+
+// „Uređaj” korisnika: ima svoj par ključeva i auth tajnu
+function device() {
+  const ecdh = createECDH('prime256v1'); ecdh.generateKeys();
+  const auth = Buffer.from(crypto.getRandomValues(new Uint8Array(16)));
+  return { ecdh, auth, sub: { p256dh: b64u(ecdh.getPublicKey()), auth: b64u(auth) } };
+}
+// Nezavisno dešifrovanje po RFC 8291 (node:crypto), da test ne ovisi o istom kodu kao šifrovanje
+function decrypt(dev, body) {
+  const salt = body.subarray(0, 16), idlen = body[20], asPub = body.subarray(21, 21 + idlen), ct = body.subarray(21 + idlen);
+  assert.equal(body.readUInt32BE(16), 4096);
+  const secret = dev.ecdh.computeSecret(asPub);
+  const ikm = Buffer.from(hkdfSync('sha256', secret, dev.auth, Buffer.concat([Buffer.from('WebPush: info\0'), dev.ecdh.getPublicKey(), asPub]), 32));
+  const cek = Buffer.from(hkdfSync('sha256', ikm, salt, 'Content-Encoding: aes128gcm\0', 16));
+  const nonce = Buffer.from(hkdfSync('sha256', ikm, salt, 'Content-Encoding: nonce\0', 12));
+  const d = createDecipheriv('aes-128-gcm', cek, nonce);
+  d.setAuthTag(ct.subarray(ct.length - 16));
+  const pt = Buffer.concat([d.update(ct.subarray(0, ct.length - 16)), d.final()]);
+  assert.equal(pt[pt.length - 1], 2); // delimiter posljednjeg zapisa
+  return pt.subarray(0, pt.length - 1).toString('utf8');
+}
+
+let db, env, sent;
+const EP = (n) => `https://fcm.googleapis.com/fcm/send/dev-${n}`;
+const devs = {};
+const post = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api' + path, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }), env);
+const sub = async (n, extra = {}) => { devs[n] = device(); return post('/push/subscribe', { endpoint: EP(n), keys: devs[n].sub, ...extra }); };
+const count = (sql, ...a) => db.prepare(sql).get(...a).n;
+
+before(() => {
+  db = new DatabaseSync(':memory:');
+  for (const f of readdirSync(new URL('../migrations/', import.meta.url)).sort()) {
+    if (!/^(0007|0008|0009|0011|0012)_/.test(f)) continue;
+    db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8').replace(/^ALTER TABLE restaurants.*$/m, ''));
+  }
+  sent = [];
+  env = {
+    DB: d1(db), RL: null, RL_AUTH: null, ADMIN_KEY: 'x'.repeat(24),
+    VAPID_PUBLIC: PUB, VAPID_PRIVATE: jwk.d, VAPID_SUBJECT: 'mailto:test@example.com',
+    PUSH_FETCH: async (url, init) => { sent.push({ url, init }); return new Response(null, { status: url.endsWith('dev-gone') ? 410 : 201 }); },
+  };
+});
+
+test('šifrovanje: uređaj može da dešifruje poruku (RFC 8291)', async () => {
+  const dev = device();
+  const msg = JSON.stringify({ title: 'Fašinada u Perastu', body: 'Sutra · Perast ✓' });
+  const body = await encryptPayload(dev.sub, new TextEncoder().encode(msg));
+  assert.equal(decrypt(dev, Buffer.from(body)), msg);
+});
+
+test('VAPID: potpis se provjerava javnim ključem, aud je origin push servisa', async () => {
+  const h = await vapidHeader(env, 'https://fcm.googleapis.com/fcm/send/abc', 1_800_000_000);
+  const m = /^vapid t=([\w-]+)\.([\w-]+)\.([\w-]+), k=(.+)$/.exec(h);
+  assert.ok(m && m[4] === PUB);
+  assert.deepEqual(JSON.parse(Buffer.from(m[2], 'base64url')), { aud: 'https://fcm.googleapis.com', exp: 1_800_000_000 + 43200, sub: 'mailto:test@example.com' });
+  const ok = verify('sha256', Buffer.from(m[1] + '.' + m[2]), { key: createPublicKey({ key: { kty: 'EC', crv: 'P-256', x: jwk.x, y: jwk.y }, format: 'jwk' }), dsaEncoding: 'ieee-p1363' }, Buffer.from(m[3], 'base64url'));
+  assert.ok(ok);
+});
+
+test('konfiguracija: bez ključeva ili bez kontakta push nije uključen', () => {
+  assert.equal(pushConfigured(env), true);
+  assert.equal(pushConfigured({ ...env, VAPID_SUBJECT: '' }), false);
+  assert.equal(pushConfigured({ ...env, VAPID_PRIVATE: 'abc' }), false);
+  assert.equal(pushConfigured({}), false);
+});
+
+test('pretplata: javni ključ se vraća, a loši zahtjevi se odbijaju', async () => {
+  const k = await (await worker.fetch(new Request('https://mp.test/api/push/key'), env)).json();
+  assert.deepEqual(k, { enabled: true, key: PUB });
+  const d = device();
+  assert.equal((await post('/push/subscribe', { endpoint: 'https://evil.example/x', keys: d.sub })).status, 400);
+  assert.equal((await post('/push/subscribe', { endpoint: 'http://fcm.googleapis.com/x', keys: d.sub })).status, 400);
+  assert.equal((await post('/push/subscribe', { endpoint: 'https://fcm.googleapis.com.evil.com/x', keys: d.sub })).status, 400);
+  assert.equal((await post('/push/subscribe', { endpoint: EP('bad'), keys: { p256dh: 'AAAA', auth: 'AAAA' } })).status, 400);
+  assert.equal((await post('/push/prefs', { endpoint: EP('nema') }, 'PUT')).status, 404);
+});
+
+test('pretplata: upis, izmjena izbora i odjava', async () => {
+  assert.equal((await sub('a', { lang: 'en', saved: ['fasinada', 'x y', 5] })).status, 200);
+  let r = db.prepare('SELECT * FROM push_subs WHERE endpoint = ?').get(EP('a'));
+  assert.equal(r.lang, 'en'); assert.equal(r.promo, 1); assert.deepEqual(JSON.parse(r.saved), ['fasinada']);
+  assert.equal((await post('/push/prefs', { endpoint: EP('a'), promo: false, saved: ['fasinada', 'bokeljska-noc'] }, 'PUT')).status, 200);
+  r = db.prepare('SELECT * FROM push_subs WHERE endpoint = ?').get(EP('a'));
+  assert.equal(r.promo, 0); assert.equal(r.remind, 1); assert.deepEqual(JSON.parse(r.saved), ['fasinada', 'bokeljska-noc']);
+  await sub('b'); await sub('c', { lang: 'sr', saved: ['fasinada'] });
+  assert.equal((await post('/push/unsubscribe', { endpoint: EP('b') })).status, 204);
+  assert.equal(count('SELECT COUNT(*) n FROM push_subs'), 2);
+});
+
+test('pretplata: nova adresa preuzima izbor stare (replaces)', async () => {
+  await sub('old', { lang: 'de', promo: false, saved: ['fasinada'] });
+  devs.nw = device();
+  await post('/push/subscribe', { endpoint: EP('nw'), keys: devs.nw.sub, replaces: EP('old') });
+  const r = db.prepare('SELECT * FROM push_subs WHERE endpoint = ?').get(EP('nw'));
+  assert.equal(r.lang, 'de'); assert.equal(r.promo, 0); assert.deepEqual(JSON.parse(r.saved), ['fasinada']);
+  assert.equal(count('SELECT COUNT(*) n FROM push_subs WHERE endpoint = ?', EP('old')), 0);
+  await post('/push/unsubscribe', { endpoint: EP('nw') });
+});
+
+test('podsjetnik: dan prije događaja, samo onima koji su ga sačuvali, jednom', async () => {
+  // fasinada je 2027-07-22; „sada” je 21.7. u 11:00 po crnogorskom vremenu
+  env.NOW = '2027-07-21T09:00:00Z';
+  sent.length = 0;
+  await tick(env); // red + slanje
+  const bodies = sent.map((s) => ({ ep: s.url, msg: JSON.parse(decrypt(devs[s.url.split('dev-')[1]], Buffer.from(s.init.body))) }));
+  assert.deepEqual(bodies.map((b) => b.ep).sort(), [EP('a'), EP('c')]);
+  const en = bodies.find((b) => b.ep === EP('a')).msg, sr = bodies.find((b) => b.ep === EP('c')).msg;
+  assert.equal(sr.body, 'Sutra · Perast'); assert.equal(en.body, 'Tomorrow · Perast');
+  assert.equal(sr.url, '/#d/i%3Afasinada'); assert.equal(sr.tag, 'ev-fasinada');
+  assert.ok(sent[0].init.headers.authorization.startsWith('vapid t='));
+  sent.length = 0;
+  await tick(env);
+  assert.equal(sent.length, 0); // nema duplog podsjetnika
+});
+
+test('podsjetnik: ne šalje se prije 10h, ni za događaje koji nisu sutra', async () => {
+  await sub('d', { saved: ['bokeljska-noc', 'fasinada'] });
+  sent.length = 0;
+  env.NOW = '2027-07-21T05:00:00Z'; // 07:00 lokalno
+  await tick(env);
+  assert.equal(sent.length, 0);
+  env.NOW = '2027-07-20T09:00:00Z'; // fasinada je za dva dana
+  await tick(env);
+  assert.equal(sent.length, 0);
+  env.NOW = '2027-07-21T09:00:00Z'; // novi uređaj sačuvao događaj kasnije: dobija podsjetnik
+  await tick(env);
+  assert.deepEqual(sent.map((s) => s.url), [EP('d')]);
+});
+
+test('promocija: admin je pravi, zakazana ide tek kad dospije, poštuje izbor korisnika i jezik', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  assert.equal((await worker.fetch(new Request('https://mp.test/api/admin/push', { method: 'GET' }), env)).status, 401);
+  assert.equal((await admin('/push/campaign', { title: 'Popust', body: 'Akcija', url: '//evil.com' })).status, 400);
+  assert.equal((await admin('/push/campaign', { title: '', body: 'x' })).status, 400);
+  env.NOW = '2027-03-01T10:00:00Z';
+  const r = await admin('/push/campaign', { title: 'Vikend akcija', body: '20% popusta u restoranima', title_en: 'Weekend deal', body_en: '20% off', url: '/#istrazi', send_at: '2027-03-01T12:00:00Z' });
+  assert.equal(r.status, 201);
+  const { id } = await r.json();
+  sent.length = 0;
+  await tick(env);
+  assert.equal(sent.length, 0); // još nije vrijeme
+  env.NOW = '2027-03-01T12:00:30Z';
+  await tick(env);
+  const got = sent.map((s) => ({ ep: s.url, msg: JSON.parse(decrypt(devs[s.url.split('dev-')[1]], Buffer.from(s.init.body))) }));
+  // „a” je isključio promocije; ostali (c: sr, d: sr) primaju crnogorski tekst
+  assert.deepEqual(got.map((g) => g.ep).sort(), [EP('c'), EP('d')]);
+  assert.equal(got[0].msg.title, 'Vikend akcija');
+  assert.equal(got[0].msg.tag, 'promo-' + id);
+  const list = await (await admin('/push', undefined, 'GET')).json();
+  assert.equal(list.subs.total, 3); assert.equal(list.campaigns[0].recipients, 2); assert.equal(list.campaigns[0].pending, 0);
+  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 409);
+});
+
+test('promocija: test šalje samo na najnoviji uređaj, a zakazanu je moguće otkazati', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  env.NOW = '2027-03-02T10:00:00Z'; sent.length = 0;
+  await admin('/push/campaign', { title: 'Test', body: 'Samo ja', audience: 'test' });
+  await tick(env);
+  assert.deepEqual(sent.map((s) => s.url), [EP('d')]);
+  const { id } = await (await admin('/push/campaign', { title: 'Kasnije', body: 'x', send_at: '2027-03-05T10:00:00Z' })).json();
+  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 204);
+  sent.length = 0; env.NOW = '2027-03-06T10:00:00Z'; await tick(env);
+  assert.equal(sent.length, 0);
+});
+
+test('slanje: neispravna pretplata (410) se briše, a greške servisa se ponavljaju najviše tri puta', async () => {
+  await sub('gone', { saved: [] });
+  const admin = (path, body) => worker.fetch(new Request('https://mp.test/api/admin' + path, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: JSON.stringify(body) }), env);
+  env.NOW = '2027-04-01T10:00:00Z';
+  await admin('/push/campaign', { title: 'Svima', body: 'x' });
+  await tick(env);
+  assert.equal(count('SELECT COUNT(*) n FROM push_subs WHERE endpoint = ?', EP('gone')), 0);
+  const real = env.PUSH_FETCH;
+  env.PUSH_FETCH = async () => new Response(null, { status: 503 });
+  await admin('/push/campaign', { title: 'Opet', body: 'x' });
+  for (let i = 0; i < 5; i++) await tick(env);
+  assert.equal(count('SELECT COUNT(*) n FROM push_queue'), 0);
+  assert.ok(count('SELECT COUNT(*) n FROM push_subs') >= 3); // 503 ne briše pretplate
+  env.PUSH_FETCH = real;
+});
+
+test('cleanCampaign: duži tekstovi i datum u prošlosti se odbijaju', () => {
+  assert.throws(() => cleanCampaign({ title: 'x'.repeat(61), body: 'b' }), /predugo/);
+  assert.throws(() => cleanCampaign({ title: 't', body: 'b', send_at: '2020-01-01T00:00:00Z' }, Date.parse('2027-01-01')), /prošlosti/);
+  assert.equal(cleanCampaign({ title: 't', body: 'b' }).url, '/');
+});
