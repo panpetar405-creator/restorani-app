@@ -430,3 +430,14 @@ a.ev{color:inherit;text-decoration:none}
 .dst .ic{width:14px;height:14px}
 #nsec[hidden]{display:none}
 #nchips + .rail{margin-top:8px}
+
+/* izbor jezika: trenutni jezik + padajući meni (SR, EN, DE, RU, IT) */
+.lang{gap:4px;padding:4px 10px 4px 4px;cursor:pointer}
+.lang .ic{width:16px;height:16px;flex:none}
+.lmenu{position:absolute;z-index:5;top:58px;right:64px;min-width:170px;padding:6px;background:#fff;color:#10303f;border-radius:16px;box-shadow:0 10px 30px rgba(8,24,34,.35);display:flex;flex-direction:column;gap:2px}
+.lmenu[hidden]{display:none}
+.lmenu button{display:flex;align-items:center;gap:10px;width:100%;min-height:44px;padding:0 12px;border:0;border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:.95rem;text-align:left;cursor:pointer}
+.lmenu button b{display:inline-block;min-width:26px;font-weight:800}
+.lmenu button[aria-current]{background:#e6f4f0;font-weight:700}
+.lmenu button:hover{background:#eef3f6}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .lmenu{background:#14323f;color:#fff}:root:not([data-theme="light"]) .lmenu button[aria-current]{background:#1f4a5a}:root:not([data-theme="light"]) .lmenu button:hover{background:#1b3f4e}}

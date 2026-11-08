@@ -9,19 +9,21 @@ const bump = (el, cls) => { if (!el) return; el.classList.remove(cls); void el.o
 const $ = (i) => document.getElementById(i);
 const CATS = DICT[LANG].cats, KIND = DICT[LANG].kind;
 const GLYPH = { event: 'ticket', beach: 'umbrella', food: 'fork', culture: 'columns' };
-const STATUS = DICT[LANG].status, MS = DICT[LANG].ms, MONTHS = DICT[LANG].months;
+const STATUS = DICT[LANG].status, MS = DICT[LANG].ms, MONTHS = DICT[LANG].months, MONTHS_G = DICT[LANG].monthsG || MONTHS;
+const DOT = LANG === 'sr' || LANG === 'de'; // iza dana ide tačka (1. maj / 1. Mai)
 const ic = (n, c = '') => `<svg class="ic ${c}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const norm = (t) => String(t).toLowerCase().replace(/đ/g, 'd').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const CYR = { 'а':'a','б':'b','в':'v','г':'g','д':'d','ђ':'d','е':'e','ё':'e','ж':'z','з':'z','и':'i','й':'j','ј':'j','к':'k','л':'l','љ':'lj','м':'m','н':'n','њ':'nj','о':'o','п':'p','р':'r','с':'s','т':'t','ћ':'c','у':'u','ф':'f','х':'h','ц':'c','ч':'c','џ':'dz','ш':'s','щ':'sc','ъ':'','ы':'i','ь':'','э':'e','ю':'ju','я':'ja' };
+const norm = (t) => String(t).toLowerCase().replace(/[\u0400-\u04ff]/g, (c) => (c in CYR ? CYR[c] : c)).replace(/gerceg/g, 'herceg').replace(/cetine\b/g, 'cetinje').replace(/đ/g, 'd').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 /* ---- datumi (lokalno vrijeme, bez UTC pomaka) ---- */
 const pad = (n) => String(n).padStart(2, '0');
 const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const parse = (s) => { const a = String(s).slice(0, 10).split('-'); return new Date(+a[0], +a[1] - 1, +a[2]); };
 const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-const fmt = (s) => { const a = String(s).slice(0, 10).split('-'); return LANG === 'en' ? `${+a[2]} ${MS[+a[1] - 1]} ${a[0]}` : `${+a[2]}. ${+a[1]}. ${a[0]}.`; };
+const fmt = (s) => { const a = String(s).slice(0, 10).split('-'); return LANG === 'sr' ? `${+a[2]}. ${+a[1]}. ${a[0]}.` : `${+a[2]}${DOT ? '.' : ''} ${MS[+a[1] - 1]} ${a[0]}`; };
 const span = (x) => fmt(x.from) + (x.to && x.to !== x.from ? ' – ' + fmt(x.to) : '');
-const nice = (s) => { const d = parse(s); return d.getDate() + (LANG === 'en' ? ' ' : '. ') + MS[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''); };
+const nice = (s) => { const d = parse(s); return d.getDate() + (DOT ? '. ' : ' ') + MS[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''); };
 const today = iso(new Date());
 const api = async (p) => { const r = await fetch('/api' + p + (p.includes('?') ? '&' : '?') + 'lang=' + LANG); if (!r.ok) throw Object.assign(new Error('api'), { status: r.status }); return r.json(); };
 
@@ -126,7 +128,7 @@ function kmBetween(a, b) {
 function fmtKm(k) {
   if (k < 1) return Math.max(50, Math.round(k * 20) * 50) + ' m';
   const s = k < 10 ? k.toFixed(1) : String(Math.round(k));
-  return (LANG === 'sr' ? s.replace('.', ',') : s) + ' km';
+  return (LANG === 'en' ? s : s.replace('.', ',')) + ' km';
 }
 const askLoc = () => new Promise((res) => {
   if (!navigator.geolocation) { res(null); return; }
@@ -270,7 +272,7 @@ function renderCal() {
     if (cal.f && s === cal.f) c.push('sel', 'rs');
     if (cal.t && s === cal.t) c.push('sel', 're');
     if (cal.f && cal.t && s > cal.f && s < cal.t) c.push('ri');
-    h += `<button type="button" class="${c.join(' ')}" data-d="${s}" aria-label="${d} ${MONTHS[m]} ${y}" aria-pressed="${c.includes('sel')}"><span>${d}</span></button>`;
+    h += `<button type="button" class="${c.join(' ')}" data-d="${s}" aria-label="${d} ${MONTHS_G[m]} ${y}" aria-pressed="${c.includes('sel')}"><span>${d}</span></button>`;
   }
   $('days').innerHTML = h;
   const e = !cal.f;
@@ -484,7 +486,7 @@ async function loadWeather(key, x, tok) {
     const dt = parse(dd.date), cl = dd.src === 'climate', g = cl ? climIcon(dd.wet) : wxIcon(dd.code), pr = cl ? dd.wet : dd.prob;
     const mh = dt.getMonth() !== lastM ? `<div class="wxm" aria-hidden="true"><span>${MONTHS[dt.getMonth()]}</span></div>` : '';
     lastM = dt.getMonth();
-    return `${mh}<div class="wx${cl ? ' cl' : ''}" data-w="${g}" role="group" aria-label="${DAYN[dt.getDay()]} ${nice(dd.date)}, ${cl ? t('estAria') : ''}${dd.tmax}${t('degrees')}${wxText[g]}"><span class="dn">${DAYN[dt.getDay()]}</span><span class="dd">${dt.getDate()}${LANG === 'en' ? ' ' : '. '}${MS[dt.getMonth()]}</span>${ic(g)}<span class="tp">${dd.tmax}° <span>${dd.tmin}°</span></span>${pr != null ? `<span class="rn">${ic('drop')}${pr}%</span>` : ''}</div>`;
+    return `${mh}<div class="wx${cl ? ' cl' : ''}" data-w="${g}" role="group" aria-label="${DAYN[dt.getDay()]} ${nice(dd.date)}, ${cl ? t('estAria') : ''}${dd.tmax}${t('degrees')}${wxText[g]}"><span class="dn">${DAYN[dt.getDay()]}</span><span class="dd">${dt.getDate()}${DOT ? '. ' : ' '}${MS[dt.getMonth()]}</span>${ic(g)}<span class="tp">${dd.tmax}° <span>${dd.tmin}°</span></span>${pr != null ? `<span class="rn">${ic('drop')}${pr}%</span>` : ''}</div>`;
   }).join('')}</div>${est ? `<p class="note">${t('estNote')}</p>` : ''}${attr}`;
 }
 
@@ -591,7 +593,7 @@ $('dt').addEventListener('click', async (e) => {
   if (yt) { yt.parentNode.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${esc(yt.getAttribute('data-yt'))}?autoplay=1&rel=0&playsinline=1" title="Video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`; return; }
   if (t.closest('[data-retry]')) { const k = decodeURIComponent(location.hash.slice(3)); $('wbody').innerHTML = '<div class="skb" style="height:132px"></div>'; if (known[k]) loadWeather(k, known[k], detailTok); return; }
   if (t.closest('[data-share]')) {
-    const k = decodeURIComponent(location.hash.slice(3)), x = known[k] || {}, link = /^[ir]:[a-z0-9-]+$/.test(k) ? `${location.origin}/s/${k[0]}/${k.slice(2)}${LANG === 'en' ? '?lang=en' : ''}` : location.href, data = { title: x.title || x.name || 'Montepalm', url: link };
+    const k = decodeURIComponent(location.hash.slice(3)), x = known[k] || {}, link = /^[ir]:[a-z0-9-]+$/.test(k) ? `${location.origin}/s/${k[0]}/${k.slice(2)}${LANG === 'sr' ? '' : '?lang=' + LANG}` : location.href, data = { title: x.title || x.name || 'Montepalm', url: link };
     try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(link); toast(t('linkCopied')); } } catch { /* otkazano */ }
   }
 });
@@ -638,6 +640,11 @@ function route() {
 window.addEventListener('hashchange', () => { navs++; route(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 applyStatic();
-$('lbtn').onclick = () => setLang(LANG === 'sr' ? 'en' : 'sr');
+const lbtn = $('lbtn'), lmenu = $('lmenu');
+const lopen = (on) => { lmenu.hidden = !on; lbtn.setAttribute('aria-expanded', on); };
+lbtn.onclick = (e) => { e.stopPropagation(); lopen(lmenu.hidden); if (!lmenu.hidden) { const c = lmenu.querySelector('[aria-current]'); if (c) c.focus(); } };
+lmenu.onclick = (e) => { const b = e.target.closest('[data-lang]'); if (b) setLang(b.getAttribute('data-lang')); };
+document.addEventListener('click', () => { if (!lmenu.hidden) lopen(false); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !lmenu.hidden) { lopen(false); lbtn.focus(); } });
 showDates();
 loadAll().then(route);
