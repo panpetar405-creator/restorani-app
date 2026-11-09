@@ -257,6 +257,8 @@ function bindMedia() {
 /* ---------- rute ---------- */
 /* ---------- obavještenja (push) ---------- */
 const fmtT = (iso) => { try { return new Date(iso).toLocaleString('sr-Latn-ME', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return iso; } };
+const LANG_LBL = { sr: 'crnogorski', en: 'engleski', de: 'njemački', ru: 'ruski', it: 'italijanski' };
+const langLine = (m) => { const e = Object.entries(m || {}).sort((a, b) => b[1].total - a[1].total); return e.length ? e.map(([l, x]) => `${LANG_LBL[l] || l}: <b>${x.total}</b> (${x.promo})`).join(', ') : 'još nema uređaja'; };
 async function viewPush() {
   $app.innerHTML = '<div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>Obavještenja</h1></div></div><div class="wrap"><div class="skb" style="height:60px;margin-top:16px"></div></div>';
   document.getElementById('bk').onclick = () => { location.hash = '#/'; };
@@ -269,10 +271,14 @@ async function viewPush() {
   <div class="wrap" style="padding-top:14px">
     ${d.configured ? '' : '<p class="afld"><b>Slanje nije podešeno.</b> <small>Dodaj tajne VAPID_PUBLIC, VAPID_PRIVATE i VAPID_SUBJECT (vidi README, dio „Obavještenja”).</small></p>'}
     <p class="afld"><small>Uređaja sa uključenim obavještenjima: <b>${d.subs.total}</b> (promocije: ${d.subs.promo}, podsjetnici: ${d.subs.remind}). Podsjetnik dan prije događaja šalje se automatski u 10:00 svima kojima je događaj u „Moj put”.</small></p>
+    <p class="afld"><small>Po jezicima (uređaja, od toga primaju promocije): ${langLine(d.subs.langs)}. Broji se uređaj, ne osoba: ista osoba sa dva telefona ili preglednika je dva uređaja. Imena i nalozi se ne čuvaju.</small></p>
     <div class="afld"><label for="pt">Naslov <span class="cnt2" id="ptc"></span></label><input type="text" id="pt" maxlength="60" placeholder="Vikend akcija na primorju"></div>
     <div class="afld"><label for="pb">Tekst <span class="cnt2" id="pbc"></span></label><textarea id="pb" maxlength="180" style="min-height:80px" placeholder="20% popusta u restoranima do nedjelje"></textarea></div>
     <div class="afld"><label for="pte">Naslov na engleskom (nije obavezno)</label><input type="text" id="pte" maxlength="60"></div>
-    <div class="afld"><label for="pbe">Tekst na engleskom (nije obavezno)</label><textarea id="pbe" maxlength="180" style="min-height:80px"></textarea><small>Gosti koji koriste njemački, ruski ili italijanski dobijaju engleski tekst, a ako ga nema, crnogorski.</small></div>
+    <div class="afld"><label for="pbe">Tekst na engleskom (nije obavezno)</label><textarea id="pbe" maxlength="180" style="min-height:80px"></textarea></div>
+    ${[['de', 'njemačkom'], ['ru', 'ruskom'], ['it', 'italijanskom']].map(([l, n]) => `<details class="afld"><summary>Na ${n} (nije obavezno)</summary><div class="afld"><label for="pt${l}">Naslov na ${n}</label><input type="text" id="pt${l}" maxlength="60"></div><div class="afld"><label for="pb${l}">Tekst na ${n}</label><textarea id="pb${l}" maxlength="180" style="min-height:80px"></textarea></div></details>`).join('')}
+    <div class="afld"><button class="btn s full" type="button" id="ptr">Prevedi sa crnogorskog (EN, DE, RU, IT)</button><small>Popuni sva jezička polja iz naslova i teksta gore. Pregledaj prevod prije slanja; ručne izmjene se prepisuju pri novom prevođenju.</small></div>
+    <p class="afld"><small>Gost dobija tekst na svom jeziku. Ako ga nema, dobija engleski, a ako nema ni njega, crnogorski.</small></p>
     <div class="afld"><label for="pu2">Šta se otvara dodirom</label><input type="text" id="pu2" value="/" maxlength="200"><small>Početna: <code>/</code> · pretraga: <code>/#istrazi</code> · događaj: <code>/#d/i%3Afasinada</code> (slug iz adrese u adminu)</small></div>
     <div class="afld"><label for="pw">Kada</label><select id="pw"><option value="now">Pošalji odmah</option><option value="later">Zakaži</option></select></div>
     <div class="afld" id="pwl" hidden><label for="pd">Datum i sat slanja</label><input type="datetime-local" id="pd" style="min-height:48px;padding:0 12px;border:1.5px solid var(--line);border-radius:var(--r-md);background:var(--bg)"></div>
@@ -289,10 +295,22 @@ async function viewPush() {
     const b = e.target.closest('[data-del]'); if (!b) return;
     try { await api('DELETE', '/push/campaign/' + b.getAttribute('data-del')); toast('Otkazano'); viewPush(); } catch (er) { toast(er.message, true); }
   };
+  document.getElementById('ptr').onclick = async () => {
+    if (busy) return;
+    if (!v('pt') || !v('pb')) { toast('Prvo upiši naslov i tekst', true); return; }
+    busy = true; const b = document.getElementById('ptr'); b.disabled = true; const lbl = b.textContent; b.textContent = 'Prevodim…';
+    try {
+      const r = await api('POST', '/push/translate', { title: v('pt'), body: v('pb') });
+      const set = (id, val) => { document.getElementById(id).value = val || ''; };
+      set('pte', r.title_en); set('pbe', r.body_en);
+      ['de', 'ru', 'it'].forEach((l) => { set('pt' + l, r['title_' + l]); set('pb' + l, r['body_' + l]); document.getElementById('pt' + l).closest('details').open = true; });
+      toast('Prevedeno, provjeri tekst');
+    } catch (er) { toast(er.message, true); } finally { busy = false; b.disabled = false; b.textContent = lbl; }
+  };
   document.getElementById('psend').onclick = async () => {
     if (busy) return;
     const later = v('pw') === 'later';
-    const body = { title: v('pt'), body: v('pb'), title_en: v('pte'), body_en: v('pbe'), url: v('pu2') || '/', audience: document.getElementById('ptest').checked ? 'test' : 'all' };
+    const body = { title: v('pt'), body: v('pb'), title_en: v('pte'), body_en: v('pbe'), title_de: v('ptde'), body_de: v('pbde'), title_ru: v('ptru'), body_ru: v('pbru'), title_it: v('ptit'), body_it: v('pbit'), url: v('pu2') || '/', audience: document.getElementById('ptest').checked ? 'test' : 'all' };
     if (later) { if (!v('pd')) { toast('Izaberi datum i sat', true); return; } body.send_at = new Date(v('pd')).toISOString(); }
     if (body.audience === 'all' && !confirm(later ? 'Zakazati obavještenje za sve korisnike?' : `Poslati obavještenje na ${d.subs.promo} uređaja?`)) return;
     busy = true;
