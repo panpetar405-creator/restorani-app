@@ -209,27 +209,68 @@ export function cleanCampaign(b, nowMs = Date.now()) {
     body: text(b.body, 180, 'Tekst', true),
     title_en: text(b.title_en, 60, 'Naslov (EN)'),
     body_en: text(b.body_en, 180, 'Tekst (EN)'),
+    title_de: text(b.title_de, 60, 'Naslov (DE)'),
+    body_de: text(b.body_de, 180, 'Tekst (DE)'),
+    title_ru: text(b.title_ru, 60, 'Naslov (RU)'),
+    body_ru: text(b.body_ru, 180, 'Tekst (RU)'),
+    title_it: text(b.title_it, 60, 'Naslov (IT)'),
+    body_it: text(b.body_it, 180, 'Tekst (IT)'),
     url,
     audience: b.audience === 'test' ? 'test' : 'all',
     send_at: sendAt.toISOString(),
   };
 }
 
+
+/* ---------------- admin: automatski prevod (Cloudflare Workers AI, binding „AI”) ---------------- */
+const TR_MODEL = '@cf/meta/m2m100-1.2b';
+const TR_LANGS = ['en', 'de', 'ru', 'it'];
+function clip(v, max) {
+  const s = String(v || '').trim();
+  if (s.length <= max) return s;
+  const cut = s.slice(0, max - 1), sp = cut.lastIndexOf(' ');
+  return (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:.-]+$/, '') + '…';
+}
+export async function translateCampaign(env, b) {
+  if (!env.AI || typeof env.AI.run !== 'function') throw new HttpError(503, 'Prevođenje nije uključeno (u wrangler.jsonc treba dodati "ai": { "binding": "AI" })');
+  const title = text(b.title, 60, 'Naslov', true), body = text(b.body, 180, 'Tekst', true);
+  const one = async (src, lang, max) => {
+    const r = await env.AI.run(TR_MODEL, { text: src, source_lang: 'hr', target_lang: lang });
+    const t = r && typeof r.translated_text === 'string' ? r.translated_text.trim() : '';
+    if (!t) throw new Error('prazan prevod');
+    return clip(t, max);
+  };
+  try {
+    const out = {};
+    await Promise.all(TR_LANGS.map(async (l) => {
+      const [t, x] = await Promise.all([one(title, l, 60), one(body, l, 180)]);
+      out['title_' + l] = t; out['body_' + l] = x;
+    }));
+    return json(out);
+  } catch (e) {
+    console.error('prevod', e && e.message);
+    throw new HttpError(502, 'Prevođenje nije uspjelo. Pokušaj ponovo ili upiši tekst ručno.');
+  }
+}
+
 export async function adminPush(request, env, seg, method) {
   const nowMs = env.NOW ? new Date(env.NOW).getTime() : Date.now();
   if (seg.length === 3 && method === 'GET') {
     const c = await env.DB.prepare('SELECT COUNT(*) AS total, COALESCE(SUM(promo), 0) AS promo, COALESCE(SUM(remind), 0) AS remind FROM push_subs').first();
+    const { results: langRows } = await env.DB.prepare('SELECT lang, COUNT(*) AS total, COALESCE(SUM(promo), 0) AS promo FROM push_subs GROUP BY lang').all();
+    c.langs = Object.fromEntries(langRows.map((r) => [r.lang, { total: r.total, promo: r.promo }]));
     const { results } = await env.DB
       .prepare('SELECT c.id, c.title, c.body, c.url, c.audience, c.send_at, c.enqueued_at, c.recipients, (SELECT COUNT(*) FROM push_queue q WHERE q.campaign_id = c.id) AS pending FROM push_campaigns c ORDER BY c.id DESC LIMIT 20')
       .all();
     return json({ configured: pushConfigured(env), subs: c, campaigns: results });
   }
+  if (seg[3] === 'translate' && seg.length === 4 && method === 'POST') return translateCampaign(env, await readJson(request, 4000));
   if (seg[3] === 'campaign' && seg.length === 4 && method === 'POST') {
     if (!pushConfigured(env)) throw new HttpError(503, 'Podesi VAPID_PUBLIC, VAPID_PRIVATE i VAPID_SUBJECT (vidi README)');
     const o = cleanCampaign(await readJson(request, 4000), nowMs);
     const r = await env.DB
-      .prepare('INSERT INTO push_campaigns (title, body, title_en, body_en, url, audience, send_at) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id')
-      .bind(o.title, o.body, o.title_en, o.body_en, o.url, o.audience, o.send_at)
+      .prepare('INSERT INTO push_campaigns (title, body, title_en, body_en, title_de, body_de, title_ru, body_ru, title_it, body_it, url, audience, send_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id')
+      .bind(o.title, o.body, o.title_en, o.body_en, o.title_de, o.body_de, o.title_ru, o.body_ru, o.title_it, o.body_it, o.url, o.audience, o.send_at)
       .first();
     return json({ id: r.id, send_at: o.send_at }, 201);
   }
@@ -263,7 +304,9 @@ async function dueCampaigns(env, iso) {
         .bind(c.id, JSON.stringify({ title, body, url: c.url, tag: 'promo-' + c.id }));
     await env.DB.batch([
       ins("lang = 'sr'", c.title, c.body),
-      ins("lang != 'sr'", c.title_en || c.title, c.body_en || c.body),
+      ins("lang NOT IN ('sr', 'de', 'ru', 'it')", c.title_en || c.title, c.body_en || c.body),
+      // njemački, ruski, italijanski: svoj tekst, a ako ga nema engleski, pa crnogorski
+      ...['de', 'ru', 'it'].map((l) => ins(`lang = '${l}'`, c['title_' + l] || c.title_en || c.title, c['body_' + l] || c.body_en || c.body)),
       env.DB.prepare('UPDATE push_campaigns SET enqueued_at = ?, recipients = (SELECT COUNT(*) FROM push_queue WHERE campaign_id = ?) WHERE id = ?').bind(iso, c.id, c.id),
     ]);
   }
