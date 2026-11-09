@@ -287,9 +287,20 @@ export async function adminPush(request, env, seg, method) {
       .first();
     return json({ id: r.id, send_at: o.send_at }, 201);
   }
+  // brisanje cijele istorije poslatih (one koje se još šalju ostaju)
+  if (seg[3] === 'campaign' && seg.length === 5 && seg[4] === 'sent' && method === 'DELETE') {
+    const r = await env.DB.prepare('DELETE FROM push_campaigns WHERE enqueued_at IS NOT NULL AND id NOT IN (SELECT DISTINCT campaign_id FROM push_queue WHERE campaign_id IS NOT NULL)').run();
+    return json({ deleted: r.meta.changes || 0 });
+  }
+  // otkazivanje zakazane, zaustavljanje promocije koja se još šalje, ili brisanje iz istorije poslate
   if (seg[3] === 'campaign' && seg.length === 5 && method === 'DELETE' && /^\d{1,9}$/.test(seg[4])) {
-    const r = await env.DB.prepare('DELETE FROM push_campaigns WHERE id = ? AND enqueued_at IS NULL').bind(Number(seg[4])).run();
-    if (!r.meta.changes) throw new HttpError(409, 'Promocija je već krenula na slanje i ne može se otkazati');
+    const id = Number(seg[4]);
+    const row = await env.DB.prepare('SELECT id FROM push_campaigns WHERE id = ?').bind(id).first();
+    if (!row) throw new HttpError(404, 'Promocija nije pronađena');
+    await env.DB.batch([
+      env.DB.prepare('DELETE FROM push_queue WHERE campaign_id = ?').bind(id),
+      env.DB.prepare('DELETE FROM push_campaigns WHERE id = ?').bind(id),
+    ]);
     return new Response(null, { status: 204 });
   }
   throw new HttpError(404, 'Nepoznata ruta');
