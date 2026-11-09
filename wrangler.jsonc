@@ -24,5 +24,7 @@
   // Slanje obavještenja pokreće vanjski cron koji svake minute otvara /api/push/tick (vidi README).
   // Ako nalog ima slobodan Cloudflare cron, može se dodati: "triggers": { "crons": ["* * * * *"] }
   // Tajne: VAPID_PUBLIC, VAPID_PRIVATE, VAPID_SUBJECT, PUSH_TICK_KEY. Opciono: PUSH_BATCH (podrazumijevano 40), REMIND_HOUR (podrazumijevano 10).
+  // Automatski prevod promocija u adminu (Workers AI). Bez ovoga dugme „Prevedi” javlja da prevod nije uključen.
+  "ai": { "binding": "AI" },
   "observability": { "enabled": true }
 }
