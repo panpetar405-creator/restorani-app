@@ -228,17 +228,30 @@ const TR_LANGS = ['en', 'de', 'ru', 'it'];
 function clip(v, max) {
   const s = String(v || '').trim();
   if (s.length <= max) return s;
-  const cut = s.slice(0, max - 1), sp = cut.lastIndexOf(' ');
+  let cut = s.slice(0, max - 1);
+  if (/[\uD800-\uDBFF]$/.test(cut)) cut = cut.slice(0, -1); // ne presijecaj emoji na pola
+  const sp = cut.lastIndexOf(' ');
   return (sp > max * 0.6 ? cut.slice(0, sp) : cut).replace(/[\s,;:.-]+$/, '') + '…';
+}
+/* Model za prevod kvari emoji, pa ih izdvajamo prije prevoda i vraćamo nepromijenjene (početni ostaju na početku, ostali idu na kraj). */
+const EMOJI = /(?:\p{Extended_Pictographic}|\p{Regional_Indicator})(?:\uFE0F|\u200D|\p{Emoji_Modifier}|\p{Extended_Pictographic})*/gu;
+const EMOJI_LEAD = new RegExp(`^(?:${EMOJI.source}\\s*)+`, 'u');
+export function splitEmoji(v) {
+  const t = String(v || '').trim();
+  const lead = (t.match(EMOJI_LEAD) || [''])[0].trim();
+  const rest = t.slice(lead.length);
+  return { lead, tail: (rest.match(EMOJI) || []).join(''), clean: rest.replace(EMOJI, '').replace(/\s{2,}/g, ' ').trim() };
 }
 export async function translateCampaign(env, b) {
   if (!env.AI || typeof env.AI.run !== 'function') throw new HttpError(503, 'Prevođenje nije uključeno (u wrangler.jsonc treba dodati "ai": { "binding": "AI" })');
   const title = text(b.title, 60, 'Naslov', true), body = text(b.body, 180, 'Tekst', true);
   const one = async (src, lang, max) => {
-    const r = await env.AI.run(TR_MODEL, { text: src, source_lang: 'hr', target_lang: lang });
+    const { lead, tail, clean } = splitEmoji(src);
+    if (!clean) return clip(src, max);
+    const r = await env.AI.run(TR_MODEL, { text: clean, source_lang: 'hr', target_lang: lang });
     const t = r && typeof r.translated_text === 'string' ? r.translated_text.trim() : '';
     if (!t) throw new Error('prazan prevod');
-    return clip(t, max);
+    return clip([lead, t, tail].filter(Boolean).join(' '), max);
   };
   try {
     const out = {};
