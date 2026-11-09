@@ -180,7 +180,9 @@ test('promocija: admin je pravi, zakazana ide tek kad dospije, poštuje izbor ko
   assert.equal(got[0].msg.tag, 'promo-' + id);
   const list = await (await admin('/push', undefined, 'GET')).json();
   assert.equal(list.subs.total, 3); assert.ok(list.subs.langs.sr.total >= 1 && Object.values(list.subs.langs).reduce((n, x) => n + x.total, 0) === 3); assert.equal(list.campaigns[0].recipients, 2); assert.equal(list.campaigns[0].pending, 0);
-  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 409);
+  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 204); // poslata se briše iz istorije
+  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 404);
+  assert.ok(!(await (await admin('/push', undefined, 'GET')).json()).campaigns.some((c) => c.id === id));
 });
 
 test('promocija: test šalje samo na najnoviji uređaj, a zakazanu je moguće otkazati', async () => {
@@ -279,4 +281,26 @@ test('prevod: emoji se ne šalju modelu nego se vraćaju netaknuti', async () =>
     assert.equal(o.title_de, '🎉 de: Akcija');
     assert.equal(o.body_ru, 'ru: Popust 20% na ručak 🍽️🥳');
   } finally { delete env.AI; }
+});
+
+test('istorija: poslate se brišu pojedinačno i skupno, a zaustavljanje čisti red za slanje', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  env.NOW = '2027-05-01T10:00:00Z';
+  const mk = async (t, extra = {}) => (await (await admin('/push/campaign', { title: t, body: 'x', send_at: '2027-05-01T10:00:00Z', ...extra })).json()).id;
+  const one = await mk('Prva', { audience: 'test' });
+  await tick(env); // test promocija ide jednom uređaju i odmah je poslata
+  const busy = await mk('Duga');
+  env.PUSH_BATCH = 1;
+  try { await tick(env); } finally { delete env.PUSH_BATCH; }
+  const list = await (await admin('/push', undefined, 'GET')).json();
+  assert.equal(list.campaigns.find((c) => c.id === one).pending, 0);
+  assert.ok(list.campaigns.find((c) => c.id === busy).pending > 0);
+  const r = await admin('/push/campaign/sent', undefined, 'DELETE');
+  assert.equal(r.status, 200); assert.ok((await r.json()).deleted >= 1);
+  const after = (await (await admin('/push', undefined, 'GET')).json()).campaigns;
+  assert.ok(!after.some((c) => c.id === one)); // poslata obrisana
+  assert.ok(after.some((c) => c.id === busy)); // ona koja se još šalje ostaje
+  assert.equal((await admin('/push/campaign/' + busy, undefined, 'DELETE')).status, 204);
+  const left = await env.DB.prepare('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?').bind(busy).first();
+  assert.equal(left.n, 0);
 });
