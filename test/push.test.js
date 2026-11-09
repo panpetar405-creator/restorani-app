@@ -62,7 +62,7 @@ const count = (sql, ...a) => db.prepare(sql).get(...a).n;
 before(() => {
   db = new DatabaseSync(':memory:');
   for (const f of readdirSync(new URL('../migrations/', import.meta.url)).sort()) {
-    if (!/^(0007|0008|0009|0011|0012)_/.test(f)) continue;
+    if (!/^(0007|0008|0009|0011|0012|0013)_/.test(f)) continue;
     db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8').replace(/^ALTER TABLE restaurants.*$/m, ''));
   }
   sent = [];
@@ -179,7 +179,7 @@ test('promocija: admin je pravi, zakazana ide tek kad dospije, poštuje izbor ko
   assert.equal(got[0].msg.title, 'Vikend akcija');
   assert.equal(got[0].msg.tag, 'promo-' + id);
   const list = await (await admin('/push', undefined, 'GET')).json();
-  assert.equal(list.subs.total, 3); assert.equal(list.campaigns[0].recipients, 2); assert.equal(list.campaigns[0].pending, 0);
+  assert.equal(list.subs.total, 3); assert.ok(list.subs.langs.sr.total >= 1 && Object.values(list.subs.langs).reduce((n, x) => n + x.total, 0) === 3); assert.equal(list.campaigns[0].recipients, 2); assert.equal(list.campaigns[0].pending, 0);
   assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 409);
 });
 
@@ -232,4 +232,39 @@ test('okidač: /api/push/tick traži tajni ključ i pokreće slanje', async () =
   assert.deepEqual(await r.json(), { ok: true, configured: true, sent: 1 });
   assert.equal(sent.length, 1);
   assert.equal((await call({}, '?key=' + 'k'.repeat(20))).status, 200); // i preko ?key=
+});
+
+test('promocija: gost dobija tekst na svom jeziku, a ako ga nema engleski pa crnogorski', async () => {
+  const admin = (path, body) => worker.fetch(new Request('https://mp.test/api/admin' + path, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: JSON.stringify(body) }), env);
+  for (const l of ['de', 'ru', 'it', 'en']) await sub('l-' + l, { lang: l, saved: [] });
+  env.NOW = '2027-04-01T10:00:00Z';
+  const r = await admin('/push/campaign', { title: 'Akcija', body: 'Popust', title_en: 'Deal', body_en: 'Discount', title_de: 'Angebot', body_de: 'Rabatt', title_it: 'Offerta', body_it: 'Sconto', send_at: '2027-04-01T10:00:00Z' });
+  assert.equal(r.status, 201);
+  sent.length = 0;
+  await tick(env);
+  const by = {};
+  for (const s of sent) { const n = s.url.split('dev-')[1]; if (n.startsWith('l-')) by[n.slice(2)] = JSON.parse(decrypt(devs[n], Buffer.from(s.init.body))); }
+  assert.equal(by.de.title, 'Angebot'); assert.equal(by.de.body, 'Rabatt');
+  assert.equal(by.it.title, 'Offerta');
+  assert.equal(by.ru.title, 'Deal'); // nema ruskog: engleski
+  assert.equal(by.en.title, 'Deal');
+  assert.equal((await admin('/push/campaign', { title: 'x', body: 'y', title_de: 'x'.repeat(61) })).status, 400);
+});
+
+test('prevod: admin dobija prevod za sva četiri jezika, skraćen na dozvoljenu dužinu; bez AI vezanja javlja 503', async () => {
+  const admin = (body) => worker.fetch(new Request('https://mp.test/api/admin/push/translate', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: JSON.stringify(body) }), env);
+  assert.equal((await admin({ title: 'Akcija', body: 'Popust' })).status, 503);
+  const calls = [];
+  env.AI = { run: async (m, p) => { calls.push(p); return { translated_text: p.target_lang === 'ru' ? 'слово '.repeat(40) : `${p.target_lang}: ${p.text}` }; } };
+  try {
+    const r = await admin({ title: 'Akcija', body: 'Popust' });
+    assert.equal(r.status, 200);
+    const o = await r.json();
+    assert.equal(o.title_de, 'de: Akcija'); assert.equal(o.body_it, 'it: Popust'); assert.equal(o.title_en, 'en: Akcija');
+    assert.ok(o.title_ru.length <= 60 && o.body_ru.length <= 180 && o.title_ru.endsWith('…'));
+    assert.equal(calls.length, 8); assert.ok(calls.every((c) => c.source_lang === 'hr'));
+    assert.equal((await admin({ title: '', body: 'x' })).status, 400);
+    env.AI = { run: async () => { throw new Error('boom'); } };
+    assert.equal((await admin({ title: 'a', body: 'b' })).status, 502);
+  } finally { delete env.AI; }
 });
