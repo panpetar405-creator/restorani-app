@@ -268,3 +268,15 @@ test('prevod: admin dobija prevod za sva četiri jezika, skraćen na dozvoljenu 
     assert.equal((await admin({ title: 'a', body: 'b' })).status, 502);
   } finally { delete env.AI; }
 });
+
+test('prevod: emoji se ne šalju modelu nego se vraćaju netaknuti', async () => {
+  const admin = (body) => worker.fetch(new Request('https://mp.test/api/admin/push/translate', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: JSON.stringify(body) }), env);
+  const seen = [];
+  env.AI = { run: async (m, p) => { seen.push(p.text); return { translated_text: `${p.target_lang}: ${p.text}` }; } };
+  try {
+    const o = await (await admin({ title: '🎉 Akcija', body: 'Popust 20% na ručak 🍽️🥳' })).json();
+    assert.ok(seen.every((t) => !/\p{Extended_Pictographic}/u.test(t)));
+    assert.equal(o.title_de, '🎉 de: Akcija');
+    assert.equal(o.body_ru, 'ru: Popust 20% na ručak 🍽️🥳');
+  } finally { delete env.AI; }
+});
