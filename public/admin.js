@@ -265,7 +265,7 @@ async function viewPush() {
   let d; try { d = await api('GET', '/push'); } catch (e) { if (KEY) toast(e.message, true); return; }
   const rows = d.campaigns.map((c) => {
     const st = !c.enqueued_at ? `zakazano za ${fmtT(c.send_at)}` : c.pending ? `šalje se (čeka još ${c.pending})` : `poslato ${c.recipients}`;
-    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}</small></span>${c.enqueued_at ? '' : `<button class="ghost" data-del="${c.id}">Otkaži</button>`}</div>`;
+    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}</small></span><button class="ghost" data-del="${c.id}" data-st="${!c.enqueued_at ? 'plan' : c.pending ? 'busy' : 'done'}">${!c.enqueued_at ? 'Otkaži' : c.pending ? 'Zaustavi' : 'Obriši'}</button></div>`;
   }).join('');
   $app.innerHTML = `<div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>Obavještenja</h1></div></div>
   <div class="wrap" style="padding-top:14px">
@@ -285,6 +285,7 @@ async function viewPush() {
     <label class="afld" style="grid-auto-flow:column;justify-content:start;align-items:center;gap:10px"><input type="checkbox" id="ptest"><span>Samo test: pošalji samo na posljednji uređaj koji je uključio obavještenja</span></label>
     <button class="btn p full" id="psend" ${d.configured ? '' : 'disabled'}>Pošalji</button>
     <h2 style="margin:26px 0 10px;font-size:1.05rem">Poslednje promocije</h2>
+    ${d.campaigns.some((c) => c.enqueued_at && !c.pending) ? '<button class="btn s full" type="button" id="pdelall" style="margin-bottom:10px">Obriši sve poslate iz istorije</button>' : ''}
     <div class="alist" id="prows">${rows || '<small>Još ništa nije poslato.</small>'}</div>
   </div>`;
   document.getElementById('bk').onclick = () => { location.hash = '#/'; };
@@ -293,7 +294,15 @@ async function viewPush() {
   document.getElementById('pw').onchange = (e) => { document.getElementById('pwl').hidden = e.target.value !== 'later'; };
   document.getElementById('prows').onclick = async (e) => {
     const b = e.target.closest('[data-del]'); if (!b) return;
-    try { await api('DELETE', '/push/campaign/' + b.getAttribute('data-del')); toast('Otkazano'); viewPush(); } catch (er) { toast(er.message, true); }
+    const st = b.getAttribute('data-st');
+    if (st === 'busy' && !confirm('Zaustaviti slanje? Onima koji su već dobili obavještenje ono ostaje na telefonu.')) return;
+    if (st === 'done' && !confirm('Obrisati iz istorije? Obavještenja koja su već stigla ostaju na telefonima i u njihovom zvoncu.')) return;
+    try { await api('DELETE', '/push/campaign/' + b.getAttribute('data-del')); toast(st === 'plan' ? 'Otkazano' : st === 'busy' ? 'Zaustavljeno' : 'Obrisano'); viewPush(); } catch (er) { toast(er.message, true); }
+  };
+  const da = document.getElementById('pdelall');
+  if (da) da.onclick = async () => {
+    if (!confirm('Obrisati sve poslate promocije iz istorije? Zakazane i one koje se još šalju ostaju. Obavještenja koja su već stigla ostaju na telefonima.')) return;
+    try { const r = await api('DELETE', '/push/campaign/sent'); toast('Obrisano: ' + r.deleted); viewPush(); } catch (er) { toast(er.message, true); }
   };
   document.getElementById('ptr').onclick = async () => {
     if (busy) return;
