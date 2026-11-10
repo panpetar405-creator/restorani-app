@@ -176,6 +176,24 @@ async function tickRoute(request, env) {
   return json({ ok: true, ...(await tick(env)) });
 }
 
+/* Telefon javlja da je promocija prikazana ili da je korisnik kucnuo na nju. Uređaj se dokazuje svojom adresom pretplate (koju niko drugi ne zna),
+   a računa se najviše jednom po promociji i uređaju, pa brojke ne mogu preći broj primalaca. */
+async function recordEvent(env, request) {
+  const b = await readJson(request, 2000);
+  const c = Number(b.c), kind = b.kind === 'click' ? 'click' : b.kind === 'shown' ? 'shown' : '';
+  if (!Number.isInteger(c) || c < 1 || c > 1e9 || !kind) throw new HttpError(400, 'Neispravan događaj');
+  const row = await env.DB.prepare('SELECT id FROM push_subs WHERE endpoint = ?').bind(cleanEndpoint(b.endpoint)).first();
+  if (row) {
+    await env.DB
+      .prepare(kind === 'click'
+        ? "UPDATE push_stats SET clicked_at = COALESCE(clicked_at, datetime('now')), shown_at = COALESCE(shown_at, datetime('now')) WHERE campaign_id = ? AND sub_id = ?"
+        : "UPDATE push_stats SET shown_at = COALESCE(shown_at, datetime('now')) WHERE campaign_id = ? AND sub_id = ?")
+      .bind(c, row.id)
+      .run();
+  }
+  return new Response(null, { status: 204 });
+}
+
 export async function pushRoute(request, env, seg, method) {
   const what = seg[2];
   if (what === 'tick' && (method === 'GET' || method === 'POST')) return tickRoute(request, env);
@@ -183,6 +201,7 @@ export async function pushRoute(request, env, seg, method) {
   if (what === 'subscribe' && method === 'POST') return subscribe(env, request);
   if (what === 'prefs' && method === 'PUT') return updatePrefs(env, request);
   if (what === 'unsubscribe' && method === 'POST') return unsubscribe(env, request);
+  if (what === 'event' && method === 'POST') return recordEvent(env, request);
   throw new HttpError(404, 'Nepoznata ruta');
 }
 
@@ -273,7 +292,7 @@ export async function adminPush(request, env, seg, method) {
     const { results: langRows } = await env.DB.prepare('SELECT lang, COUNT(*) AS total, COALESCE(SUM(promo), 0) AS promo FROM push_subs GROUP BY lang').all();
     c.langs = Object.fromEntries(langRows.map((r) => [r.lang, { total: r.total, promo: r.promo }]));
     const { results } = await env.DB
-      .prepare('SELECT c.id, c.title, c.body, c.url, c.audience, c.send_at, c.enqueued_at, c.recipients, (SELECT COUNT(*) FROM push_queue q WHERE q.campaign_id = c.id) AS pending FROM push_campaigns c ORDER BY c.id DESC LIMIT 20')
+      .prepare('SELECT c.id, c.title, c.body, c.url, c.audience, c.send_at, c.enqueued_at, c.recipients, (SELECT COUNT(*) FROM push_queue q WHERE q.campaign_id = c.id) AS pending, (SELECT COUNT(*) FROM push_stats t WHERE t.campaign_id = c.id) AS tracked, (SELECT COUNT(t.shown_at) FROM push_stats t WHERE t.campaign_id = c.id) AS shown, (SELECT COUNT(t.clicked_at) FROM push_stats t WHERE t.campaign_id = c.id) AS clicked FROM push_campaigns c ORDER BY c.id DESC LIMIT 20')
       .all();
     return json({ configured: pushConfigured(env), subs: c, campaigns: results });
   }
@@ -289,8 +308,11 @@ export async function adminPush(request, env, seg, method) {
   }
   // brisanje cijele istorije poslatih (one koje se još šalju ostaju)
   if (seg[3] === 'campaign' && seg.length === 5 && seg[4] === 'sent' && method === 'DELETE') {
-    const r = await env.DB.prepare('DELETE FROM push_campaigns WHERE enqueued_at IS NOT NULL AND id NOT IN (SELECT DISTINCT campaign_id FROM push_queue WHERE campaign_id IS NOT NULL)').run();
-    return json({ deleted: r.meta.changes || 0 });
+    const [r] = await env.DB.batch([
+      env.DB.prepare('DELETE FROM push_campaigns WHERE enqueued_at IS NOT NULL AND id NOT IN (SELECT DISTINCT campaign_id FROM push_queue WHERE campaign_id IS NOT NULL)'),
+      env.DB.prepare('DELETE FROM push_stats WHERE campaign_id NOT IN (SELECT id FROM push_campaigns)'),
+    ]);
+    return json({ deleted: (r.meta && r.meta.changes) || 0 });
   }
   // otkazivanje zakazane, zaustavljanje promocije koja se još šalje, ili brisanje iz istorije poslate
   if (seg[3] === 'campaign' && seg.length === 5 && method === 'DELETE' && /^\d{1,9}$/.test(seg[4])) {
@@ -299,6 +321,7 @@ export async function adminPush(request, env, seg, method) {
     if (!row) throw new HttpError(404, 'Promocija nije pronađena');
     await env.DB.batch([
       env.DB.prepare('DELETE FROM push_queue WHERE campaign_id = ?').bind(id),
+      env.DB.prepare('DELETE FROM push_stats WHERE campaign_id = ?').bind(id),
       env.DB.prepare('DELETE FROM push_campaigns WHERE id = ?').bind(id),
     ]);
     return new Response(null, { status: 204 });
@@ -325,12 +348,13 @@ async function dueCampaigns(env, iso) {
     const ins = (cond, title, body) =>
       env.DB
         .prepare(`INSERT INTO push_queue (sub_id, campaign_id, payload, ttl) SELECT id, ?, ?, 172800 FROM push_subs WHERE promo = 1 AND ${cond}${test}`)
-        .bind(c.id, JSON.stringify({ title, body, url: c.url, tag: 'promo-' + c.id }));
+        .bind(c.id, JSON.stringify({ title, body, url: c.url, tag: 'promo-' + c.id, c: c.id }));
     await env.DB.batch([
       ins("lang = 'sr'", c.title, c.body),
       ins("lang NOT IN ('sr', 'de', 'ru', 'it')", c.title_en || c.title, c.body_en || c.body),
       // njemački, ruski, italijanski: svoj tekst, a ako ga nema engleski, pa crnogorski
       ...['de', 'ru', 'it'].map((l) => ins(`lang = '${l}'`, c['title_' + l] || c.title_en || c.title, c['body_' + l] || c.body_en || c.body)),
+      env.DB.prepare('INSERT OR IGNORE INTO push_stats (campaign_id, sub_id) SELECT campaign_id, sub_id FROM push_queue WHERE campaign_id = ?').bind(c.id),
       env.DB.prepare('UPDATE push_campaigns SET enqueued_at = ?, recipients = (SELECT COUNT(*) FROM push_queue WHERE campaign_id = ?) WHERE id = ?').bind(iso, c.id, c.id),
     ]);
   }
