@@ -332,3 +332,24 @@ test('statistika: stiglo i otvoreno se računaju po uređaju najviše jednom, tu
   assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 204);
   assert.equal(count('SELECT COUNT(*) AS n FROM push_stats WHERE campaign_id = ?', id), 0);
 });
+
+test('izvještaj za partnera: ukupno i po jezicima, 404 za nepostojeću promociju', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  for (const [n, l] of [['r1', 'sr'], ['r2', 'de'], ['r3', 'de']]) await sub('rp-' + n, { lang: l, saved: [] });
+  env.NOW = '2027-07-01T10:00:00Z';
+  const id = (await (await admin('/push/campaign', { title: 'Izvještaj', body: 'x', send_at: '2027-07-01T10:00:00Z' })).json()).id;
+  for (let i = 0; i < 30 && (i === 0 || count('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?', id) !== 0); i++) await tick(env);
+  await post('/push/event', { c: id, kind: 'shown', endpoint: EP('rp-r2') });
+  await post('/push/event', { c: id, kind: 'click', endpoint: EP('rp-r3') });
+  const r = await (await admin('/push/report/' + id, undefined, 'GET')).json();
+  assert.equal(r.campaign.title, 'Izvještaj');
+  assert.equal(r.totals.sent, count('SELECT COUNT(*) AS n FROM push_stats WHERE campaign_id = ?', id));
+  assert.equal(r.totals.shown, 2); assert.equal(r.totals.clicked, 1);
+  assert.equal(r.langs.reduce((n, x) => n + x.sent, 0), r.totals.sent);
+  assert.equal(r.langs.reduce((n, x) => n + x.shown, 0), 2);
+  const de = r.langs.find((x) => x.lang === 'de');
+  assert.ok(de.sent >= 2 && de.shown === 2 && de.clicked === 1);
+  assert.ok(Number.isInteger(r.totals.h1) && Number.isInteger(r.totals.h24));
+  assert.equal((await admin('/push/report/' + (id + 999), undefined, 'GET')).status, 404);
+  assert.equal((await admin('/push/report/abc', undefined, 'GET')).status, 404);
+});
