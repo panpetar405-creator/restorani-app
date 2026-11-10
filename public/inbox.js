@@ -35,6 +35,14 @@
 
   const when = (t) => { try { return new Date(t).toLocaleString((typeof HTML_LANG === 'object' && HTML_LANG[LANG]) || 'en', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch { return ''; } };
   let items = [];
+  // kucanje na promociju u zvoncu se računa kao otvaranje (najviše jednom po uređaju, to čuva server)
+  const track = async (n) => {
+    if (!n || !n.c || !('serviceWorker' in navigator)) return;
+    try {
+      const reg = await navigator.serviceWorker.ready, s = await reg.pushManager.getSubscription();
+      if (s) fetch('/api/push/event', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ c: n.c, kind: 'click', endpoint: s.endpoint }) }).catch(() => {});
+    } catch { /* nije bitno */ }
+  };
 
   function paint() {
     const un = items.filter((n) => !n.read).length, b = $('nbd');
@@ -64,6 +72,7 @@
     const b = e.target.closest('.nit'); if (!b) return;
     const n = items[+b.getAttribute('data-i')]; if (!n) return;
     $('inbox').hidden = true;
+    track(n);
     try { const u = new URL(n.url || '/', location.origin); if (u.origin === location.origin) location.hash = u.hash || '#pocetna'; } catch { /* ostaje gdje jest */ }
     refresh();
   });

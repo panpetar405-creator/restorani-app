@@ -265,7 +265,9 @@ async function viewPush() {
   let d; try { d = await api('GET', '/push'); } catch (e) { if (KEY) toast(e.message, true); return; }
   const rows = d.campaigns.map((c) => {
     const st = !c.enqueued_at ? `zakazano za ${fmtT(c.send_at)}` : c.pending ? `šalje se (čeka još ${c.pending})` : `poslato ${c.recipients}`;
-    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}</small></span><button class="ghost" data-del="${c.id}" data-st="${!c.enqueued_at ? 'plan' : c.pending ? 'busy' : 'done'}">${!c.enqueued_at ? 'Otkaži' : c.pending ? 'Zaustavi' : 'Obriši'}</button></div>`;
+    const pc = (n) => (c.recipients ? Math.round((n * 100) / c.recipients) + '%' : '–');
+    const stats = c.enqueued_at && c.tracked ? `<br>stiglo <b>${c.shown}</b> (${pc(c.shown)}) · otvoreno <b>${c.clicked}</b> (${pc(c.clicked)})` : '';
+    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}${stats}</small></span><button class="ghost" data-del="${c.id}" data-st="${!c.enqueued_at ? 'plan' : c.pending ? 'busy' : 'done'}">${!c.enqueued_at ? 'Otkaži' : c.pending ? 'Zaustavi' : 'Obriši'}</button></div>`;
   }).join('');
   $app.innerHTML = `<div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>Obavještenja</h1></div></div>
   <div class="wrap" style="padding-top:14px">
@@ -285,6 +287,7 @@ async function viewPush() {
     <label class="afld" style="grid-auto-flow:column;justify-content:start;align-items:center;gap:10px"><input type="checkbox" id="ptest"><span>Samo test: pošalji samo na posljednji uređaj koji je uključio obavještenja</span></label>
     <button class="btn p full" id="psend" ${d.configured ? '' : 'disabled'}>Pošalji</button>
     <h2 style="margin:26px 0 10px;font-size:1.05rem">Poslednje promocije</h2>
+    <p class="afld"><small><b>Stiglo</b> = obavještenje se prikazalo na telefonu, <b>otvoreno</b> = korisnik je kucnuo na njega (iz trake ili iz zvonca u app-u). Procenti su u odnosu na broj poslatih. Brojke su donja granica: telefon bez interneta u tom trenutku ne javlja. Za promocije poslate prije ovog ažuriranja nema statistike.</small></p>
     ${d.campaigns.some((c) => c.enqueued_at && !c.pending) ? '<button class="btn s full" type="button" id="pdelall" style="margin-bottom:10px">Obriši sve poslate iz istorije</button>' : ''}
     <div class="alist" id="prows">${rows || '<small>Još ništa nije poslato.</small>'}</div>
   </div>`;

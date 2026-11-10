@@ -1,5 +1,5 @@
 // Shell iz keša (stale-while-revalidate); lista restorana mrežom, a keš samo kad nema veze.
-const V = 'montepalm-v37';
+const V = 'montepalm-v38';
 const SHELL = ['/', '/styles.css', '/app.js', '/i18n.js', '/korisno.js', '/push.js', '/inbox.js', '/manifest.webmanifest', '/icons/icon-192.png'];
 
 self.addEventListener('install', (e) => {
@@ -62,33 +62,44 @@ async function inboxAdd(rec) {
   const list = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
   list.forEach((c) => c.postMessage({ type: 'inbox' }));
 }
+/* statistika promocija: javi serveru da je obavještenje prikazano ili da je korisnik kucnuo na njega (brojke su donja granica: bez mreže se ne računa) */
+async function track(c, kind) {
+  if (!c) return;
+  try {
+    const s = await self.registration.pushManager.getSubscription();
+    if (s) await fetch('/api/push/event', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ c, kind, endpoint: s.endpoint }), keepalive: true });
+  } catch { /* nije bitno */ }
+}
 self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = {}; }
   const title = String(d.title || 'Montepalm').slice(0, 80), body = String(d.body || '').slice(0, 200);
   const url = typeof d.url === 'string' ? d.url : '/';
+  const cid = Number.isInteger(d.c) && d.c > 0 ? d.c : 0;
   e.waitUntil(Promise.all([
-    inboxAdd({ t: Date.now(), title, body, url, read: 0 }).catch(() => {}),
+    inboxAdd({ t: Date.now(), title, body, url, c: cid, read: 0 }).catch(() => {}),
     self.registration.showNotification(title, {
       body,
       icon: '/icons/notif-192.png',
       badge: '/icons/badge-96.png',
       tag: typeof d.tag === 'string' ? d.tag.slice(0, 60) : undefined,
-      data: { url },
+      data: { url, c: cid },
     }),
+    track(cid, 'shown'),
   ]));
 });
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   let url = new URL('/', self.location.origin).href;
   try { const u = new URL((e.notification.data && e.notification.data.url) || '/', self.location.origin); if (u.origin === self.location.origin) url = u.href; } catch { /* ostaje početna */ }
-  e.waitUntil(
+  e.waitUntil(Promise.all([
+    track(e.notification.data && e.notification.data.c, 'click'),
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       const c = list.find((x) => 'focus' in x);
       if (!c) return self.clients.openWindow(url);
       return c.focus().then(() => ('navigate' in c ? c.navigate(url).catch(() => c) : c));
     }),
-  );
+  ]));
 });
 /* preglednik je promijenio ili obnovio pretplatu: javi serveru novu adresu, uz izbor sa stare */
 self.addEventListener('pushsubscriptionchange', (e) => {
