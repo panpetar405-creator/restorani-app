@@ -296,6 +296,21 @@ export async function adminPush(request, env, seg, method) {
       .all();
     return json({ configured: pushConfigured(env), subs: c, campaigns: results });
   }
+  // izvještaj za jednu promociju (za partnera): ukupno, po jezicima i koliko ih je otvorilo u prvom satu / prva 24 sata
+  if (seg[3] === 'report' && seg.length === 5 && method === 'GET' && /^\d{1,9}$/.test(seg[4])) {
+    const id = Number(seg[4]);
+    const c = await env.DB.prepare('SELECT id, title, body, url, audience, send_at, enqueued_at, recipients FROM push_campaigns WHERE id = ?').bind(id).first();
+    if (!c) throw new HttpError(404, 'Promocija nije pronađena');
+    const totals = await env.DB
+      .prepare("SELECT COUNT(*) AS sent, COUNT(shown_at) AS shown, COUNT(clicked_at) AS clicked, COALESCE(SUM(clicked_at IS NOT NULL AND julianday(clicked_at) - julianday(?) <= 1.0 / 24), 0) AS h1, COALESCE(SUM(clicked_at IS NOT NULL AND julianday(clicked_at) - julianday(?) <= 1.0), 0) AS h24 FROM push_stats WHERE campaign_id = ?")
+      .bind(c.enqueued_at || c.send_at, c.enqueued_at || c.send_at, id)
+      .first();
+    const { results: langs } = await env.DB
+      .prepare("SELECT COALESCE(s.lang, '?') AS lang, COUNT(*) AS sent, COUNT(t.shown_at) AS shown, COUNT(t.clicked_at) AS clicked FROM push_stats t LEFT JOIN push_subs s ON s.id = t.sub_id WHERE t.campaign_id = ? GROUP BY COALESCE(s.lang, '?') ORDER BY sent DESC")
+      .bind(id)
+      .all();
+    return json({ campaign: c, totals, langs });
+  }
   if (seg[3] === 'translate' && seg.length === 4 && method === 'POST') return translateCampaign(env, await readJson(request, 4000));
   if (seg[3] === 'campaign' && seg.length === 4 && method === 'POST') {
     if (!pushConfigured(env)) throw new HttpError(503, 'Podesi VAPID_PUBLIC, VAPID_PRIVATE i VAPID_SUBJECT (vidi README)');
