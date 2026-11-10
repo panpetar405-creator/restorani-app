@@ -62,7 +62,7 @@ const count = (sql, ...a) => db.prepare(sql).get(...a).n;
 before(() => {
   db = new DatabaseSync(':memory:');
   for (const f of readdirSync(new URL('../migrations/', import.meta.url)).sort()) {
-    if (!/^(0007|0008|0009|0011|0012|0013)_/.test(f)) continue;
+    if (!/^(0007|0008|0009|0011|0012|0013|0014)_/.test(f)) continue;
     db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8').replace(/^ALTER TABLE restaurants.*$/m, ''));
   }
   sent = [];
@@ -303,4 +303,32 @@ test('istorija: poslate se brišu pojedinačno i skupno, a zaustavljanje čisti 
   assert.equal((await admin('/push/campaign/' + busy, undefined, 'DELETE')).status, 204);
   const left = await env.DB.prepare('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?').bind(busy).first();
   assert.equal(left.n, 0);
+});
+
+test('statistika: stiglo i otvoreno se računaju po uređaju najviše jednom, tuđa adresa ne mijenja brojke, brisanje čisti statistiku', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  for (const n of ['s1', 's2', 's3']) await sub('st-' + n, { lang: 'sr', saved: [] });
+  env.NOW = '2027-06-01T10:00:00Z';
+  const id = (await (await admin('/push/campaign', { title: 'Stat', body: 'x', send_at: '2027-06-01T10:00:00Z' })).json()).id;
+  sent.length = 0;
+  for (let i = 0; i < 30 && count('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?', id) !== 0 || i === 0; i++) await tick(env);
+  const total = count('SELECT COUNT(*) AS n FROM push_stats WHERE campaign_id = ?', id);
+  assert.ok(total >= 3);
+  // poruka nosi id promocije
+  const mine = sent.find((s) => s.url.endsWith('dev-st-s1'));
+  assert.equal(JSON.parse(decrypt(devs['st-s1'], Buffer.from(mine.init.body))).c, id);
+  // dva uređaja prikazano, jedan kucnuo; ponavljanje se ne računa dvaput
+  for (let k = 0; k < 2; k++) assert.equal((await post('/push/event', { c: id, kind: 'shown', endpoint: EP('st-s1') })).status, 204);
+  assert.equal((await post('/push/event', { c: id, kind: 'shown', endpoint: EP('st-s2') })).status, 204);
+  for (let k = 0; k < 2; k++) assert.equal((await post('/push/event', { c: id, kind: 'click', endpoint: EP('st-s3') })).status, 204); // klik znači i da je prikazano
+  // nepoznata adresa i nepostojeća promocija ne mijenjaju ništa
+  assert.equal((await post('/push/event', { c: id, kind: 'click', endpoint: 'https://fcm.googleapis.com/fcm/send/nepoznat' })).status, 204);
+  assert.equal((await post('/push/event', { c: id + 999, kind: 'click', endpoint: EP('st-s1') })).status, 204);
+  assert.equal((await post('/push/event', { c: 'x', kind: 'click', endpoint: EP('st-s1') })).status, 400);
+  assert.equal((await post('/push/event', { c: id, kind: 'nesto', endpoint: EP('st-s1') })).status, 400);
+  const row = (await (await admin('/push', undefined, 'GET')).json()).campaigns.find((c) => c.id === id);
+  assert.equal(row.tracked, total); assert.equal(row.shown, 3); assert.equal(row.clicked, 1);
+  assert.ok(row.shown <= row.recipients && row.clicked <= row.shown);
+  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 204);
+  assert.equal(count('SELECT COUNT(*) AS n FROM push_stats WHERE campaign_id = ?', id), 0);
 });
