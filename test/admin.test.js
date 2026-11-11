@@ -153,10 +153,13 @@ test('link na sliku iz repoa (/media/...) i https; loši linkovi odbijeni', asyn
   const a = await call('POST', '/admin/media/link', { ref: 'i:zanjic', type: 'image', url: '/media/zanjic-1.jpg' });
   assert.equal(a.status, 201);
   assert.equal((await call('POST', '/admin/media/link', { ref: 'i:zanjic', type: 'video', url: '/media/zanjic.mp4' })).status, 201);
+  assert.equal((await call('POST', '/admin/media/link', { ref: 'i:zanjic', type: 'image', url: '/media/fašinada-4.jpg' })).status, 201); // kvačice u imenu fajla
+  assert.equal((await call('POST', '/admin/media/link', { ref: 'i:zanjic', type: 'image', url: '/media/.skriveno' })).status, 400);
   assert.equal((await call('POST', '/admin/media/link', { ref: 'i:zanjic', type: 'image', url: '/media/../x.jpg' })).status, 400);
   assert.equal((await call('POST', '/admin/media/link', { ref: 'i:zanjic', type: 'image', url: 'http://x.me/a.jpg' })).status, 400);
   const pub = await (await call('GET', '/items/zanjic', null, '')).json();
-  assert.deepEqual(pub.media.map((m) => m.type), ['image', 'video']);
+  assert.deepEqual(pub.media.map((m) => m.type), ['image', 'video', 'image']);
+  assert.equal(pub.media[2].url, '/media/fašinada-4.jpg');
 });
 
 test('engleski: admin čuva prevod, javni API ga vraća samo za lang=en, bez prevoda je crnogorski', async () => {

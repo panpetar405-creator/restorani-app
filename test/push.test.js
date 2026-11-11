@@ -62,7 +62,7 @@ const count = (sql, ...a) => db.prepare(sql).get(...a).n;
 before(() => {
   db = new DatabaseSync(':memory:');
   for (const f of readdirSync(new URL('../migrations/', import.meta.url)).sort()) {
-    if (!/^(0007|0008|0009|0011|0012|0013)_/.test(f)) continue;
+    if (!/^(0007|0008|0009|0011|0012|0013|0014)_/.test(f)) continue;
     db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8').replace(/^ALTER TABLE restaurants.*$/m, ''));
   }
   sent = [];
@@ -180,7 +180,9 @@ test('promocija: admin je pravi, zakazana ide tek kad dospije, poštuje izbor ko
   assert.equal(got[0].msg.tag, 'promo-' + id);
   const list = await (await admin('/push', undefined, 'GET')).json();
   assert.equal(list.subs.total, 3); assert.ok(list.subs.langs.sr.total >= 1 && Object.values(list.subs.langs).reduce((n, x) => n + x.total, 0) === 3); assert.equal(list.campaigns[0].recipients, 2); assert.equal(list.campaigns[0].pending, 0);
-  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 409);
+  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 204); // poslata se briše iz istorije
+  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 404);
+  assert.ok(!(await (await admin('/push', undefined, 'GET')).json()).campaigns.some((c) => c.id === id));
 });
 
 test('promocija: test šalje samo na najnoviji uređaj, a zakazanu je moguće otkazati', async () => {
@@ -267,4 +269,87 @@ test('prevod: admin dobija prevod za sva četiri jezika, skraćen na dozvoljenu 
     env.AI = { run: async () => { throw new Error('boom'); } };
     assert.equal((await admin({ title: 'a', body: 'b' })).status, 502);
   } finally { delete env.AI; }
+});
+
+test('prevod: emoji se ne šalju modelu nego se vraćaju netaknuti', async () => {
+  const admin = (body) => worker.fetch(new Request('https://mp.test/api/admin/push/translate', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: JSON.stringify(body) }), env);
+  const seen = [];
+  env.AI = { run: async (m, p) => { seen.push(p.text); return { translated_text: `${p.target_lang}: ${p.text}` }; } };
+  try {
+    const o = await (await admin({ title: '🎉 Akcija', body: 'Popust 20% na ručak 🍽️🥳' })).json();
+    assert.ok(seen.every((t) => !/\p{Extended_Pictographic}/u.test(t)));
+    assert.equal(o.title_de, '🎉 de: Akcija');
+    assert.equal(o.body_ru, 'ru: Popust 20% na ručak 🍽️🥳');
+  } finally { delete env.AI; }
+});
+
+test('istorija: poslate se brišu pojedinačno i skupno, a zaustavljanje čisti red za slanje', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  env.NOW = '2027-05-01T10:00:00Z';
+  const mk = async (t, extra = {}) => (await (await admin('/push/campaign', { title: t, body: 'x', send_at: '2027-05-01T10:00:00Z', ...extra })).json()).id;
+  const one = await mk('Prva', { audience: 'test' });
+  await tick(env); // test promocija ide jednom uređaju i odmah je poslata
+  const busy = await mk('Duga');
+  env.PUSH_BATCH = 1;
+  try { await tick(env); } finally { delete env.PUSH_BATCH; }
+  const list = await (await admin('/push', undefined, 'GET')).json();
+  assert.equal(list.campaigns.find((c) => c.id === one).pending, 0);
+  assert.ok(list.campaigns.find((c) => c.id === busy).pending > 0);
+  const r = await admin('/push/campaign/sent', undefined, 'DELETE');
+  assert.equal(r.status, 200); assert.ok((await r.json()).deleted >= 1);
+  const after = (await (await admin('/push', undefined, 'GET')).json()).campaigns;
+  assert.ok(!after.some((c) => c.id === one)); // poslata obrisana
+  assert.ok(after.some((c) => c.id === busy)); // ona koja se još šalje ostaje
+  assert.equal((await admin('/push/campaign/' + busy, undefined, 'DELETE')).status, 204);
+  const left = await env.DB.prepare('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?').bind(busy).first();
+  assert.equal(left.n, 0);
+});
+
+test('statistika: stiglo i otvoreno se računaju po uređaju najviše jednom, tuđa adresa ne mijenja brojke, brisanje čisti statistiku', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  for (const n of ['s1', 's2', 's3']) await sub('st-' + n, { lang: 'sr', saved: [] });
+  env.NOW = '2027-06-01T10:00:00Z';
+  const id = (await (await admin('/push/campaign', { title: 'Stat', body: 'x', send_at: '2027-06-01T10:00:00Z' })).json()).id;
+  sent.length = 0;
+  for (let i = 0; i < 30 && count('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?', id) !== 0 || i === 0; i++) await tick(env);
+  const total = count('SELECT COUNT(*) AS n FROM push_stats WHERE campaign_id = ?', id);
+  assert.ok(total >= 3);
+  // poruka nosi id promocije
+  const mine = sent.find((s) => s.url.endsWith('dev-st-s1'));
+  assert.equal(JSON.parse(decrypt(devs['st-s1'], Buffer.from(mine.init.body))).c, id);
+  // dva uređaja prikazano, jedan kucnuo; ponavljanje se ne računa dvaput
+  for (let k = 0; k < 2; k++) assert.equal((await post('/push/event', { c: id, kind: 'shown', endpoint: EP('st-s1') })).status, 204);
+  assert.equal((await post('/push/event', { c: id, kind: 'shown', endpoint: EP('st-s2') })).status, 204);
+  for (let k = 0; k < 2; k++) assert.equal((await post('/push/event', { c: id, kind: 'click', endpoint: EP('st-s3') })).status, 204); // klik znači i da je prikazano
+  // nepoznata adresa i nepostojeća promocija ne mijenjaju ništa
+  assert.equal((await post('/push/event', { c: id, kind: 'click', endpoint: 'https://fcm.googleapis.com/fcm/send/nepoznat' })).status, 204);
+  assert.equal((await post('/push/event', { c: id + 999, kind: 'click', endpoint: EP('st-s1') })).status, 204);
+  assert.equal((await post('/push/event', { c: 'x', kind: 'click', endpoint: EP('st-s1') })).status, 400);
+  assert.equal((await post('/push/event', { c: id, kind: 'nesto', endpoint: EP('st-s1') })).status, 400);
+  const row = (await (await admin('/push', undefined, 'GET')).json()).campaigns.find((c) => c.id === id);
+  assert.equal(row.tracked, total); assert.equal(row.shown, 3); assert.equal(row.clicked, 1);
+  assert.ok(row.shown <= row.recipients && row.clicked <= row.shown);
+  assert.equal((await admin('/push/campaign/' + id, undefined, 'DELETE')).status, 204);
+  assert.equal(count('SELECT COUNT(*) AS n FROM push_stats WHERE campaign_id = ?', id), 0);
+});
+
+test('izvještaj za partnera: ukupno i po jezicima, 404 za nepostojeću promociju', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  for (const [n, l] of [['r1', 'sr'], ['r2', 'de'], ['r3', 'de']]) await sub('rp-' + n, { lang: l, saved: [] });
+  env.NOW = '2027-07-01T10:00:00Z';
+  const id = (await (await admin('/push/campaign', { title: 'Izvještaj', body: 'x', send_at: '2027-07-01T10:00:00Z' })).json()).id;
+  for (let i = 0; i < 30 && (i === 0 || count('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?', id) !== 0); i++) await tick(env);
+  await post('/push/event', { c: id, kind: 'shown', endpoint: EP('rp-r2') });
+  await post('/push/event', { c: id, kind: 'click', endpoint: EP('rp-r3') });
+  const r = await (await admin('/push/report/' + id, undefined, 'GET')).json();
+  assert.equal(r.campaign.title, 'Izvještaj');
+  assert.equal(r.totals.sent, count('SELECT COUNT(*) AS n FROM push_stats WHERE campaign_id = ?', id));
+  assert.equal(r.totals.shown, 2); assert.equal(r.totals.clicked, 1);
+  assert.equal(r.langs.reduce((n, x) => n + x.sent, 0), r.totals.sent);
+  assert.equal(r.langs.reduce((n, x) => n + x.shown, 0), 2);
+  const de = r.langs.find((x) => x.lang === 'de');
+  assert.ok(de.sent >= 2 && de.shown === 2 && de.clicked === 1);
+  assert.ok(Number.isInteger(r.totals.h1) && Number.isInteger(r.totals.h24));
+  assert.equal((await admin('/push/report/' + (id + 999), undefined, 'GET')).status, 404);
+  assert.equal((await admin('/push/report/abc', undefined, 'GET')).status, 404);
 });
