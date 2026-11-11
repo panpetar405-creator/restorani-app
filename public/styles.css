@@ -580,3 +580,66 @@ body{background:linear-gradient(180deg,#edf6ff 0,#f7fafd 38%,var(--bg) 100%)}
 .stop-move:disabled{opacity:.32;cursor:not-allowed}
 
 .stop-move .flip-y{transform:rotate(180deg)}
+
+/* Montepalm v5 — stvarni redizajn javnog interfejsa: adriatic editorial */
+:root{
+  --bg:#f7f4ec;--ink:#183b3a;--on-ink:#fff;--mute:#667a72;--card:#fffdf8;
+  --line:#e6e0d3;--acc:#e8ad45;--accink:#382607;--sea:#246d68;--sea-t:#e4efea;
+  --warn:#9c572c;--warn-t:#f7e9dc;--r-sm:13px;--r-md:18px;--r-lg:26px;
+  --sh:0 2px 6px rgba(30,54,45,.05),0 14px 34px rgba(30,54,45,.09);
+}
+body{background:var(--bg);font-family: "Bricolage Grotesque",system-ui,sans-serif}
+.hero{min-height:min(72svh,660px);background-image:url(/media/hero-m.webp);background-position:center 42%;}
+.hero::after{background:linear-gradient(180deg,rgba(8,30,31,.32) 0%,rgba(8,30,31,.02) 36%,rgba(8,30,31,.78) 100%)}
+.hero.has .scene{display:none}
+.brand{top:calc(16px + env(safe-area-inset-top,0px));left:20px;gap:10px;font-size:1.08rem;letter-spacing:-.025em;text-shadow:0 2px 12px #102d2d88}
+.blogo{width:38px;height:38px;border:1px solid #ffffff55;border-radius:12px}
+.hin{padding:0 22px 88px;max-width:760px}
+.hero h1{max-width:10ch;font-size:clamp(3.2rem,13vw,5.6rem);line-height:.91;letter-spacing:-.065em;text-wrap:balance}
+.hero p{max-width:29ch;font-size:1.06rem;line-height:1.45;color:#f4f2e8}
+.photo,.bell,.lang{background:rgba(15,43,40,.42);border-color:#ffffff55;backdrop-filter:blur(12px)}
+.search{max-width:700px;margin:-54px 16px 0;padding:17px;background:var(--card);border:1px solid #fff;border-radius:24px;box-shadow:0 16px 40px rgba(22,54,47,.16);gap:11px}
+.fld{background:#f7f5ef;border-color:#e9e3d8;border-radius:15px;min-height:60px}
+.fld>.ic{color:var(--sea)}
+.btn.p{background:linear-gradient(105deg,#245f59,#347e70);color:white;box-shadow:0 8px 18px rgba(36,95,89,.22);border-radius:15px}
+.wrap{max-width:760px;padding-left:20px;padding-right:20px}
+#v-pocetna>.wrap{padding-top:6px}
+.hd{margin:30px 0 14px;align-items:baseline}
+.hd h2{font-size:1.42rem;letter-spacing:-.04em}
+.lnk{color:var(--sea);font-weight:800}
+.rail{margin-inline:-20px;padding-inline:20px;gap:14px}
+.ev{width:280px;border:0;border-radius:22px;background:var(--card);box-shadow:0 8px 24px rgba(30,54,45,.08)}
+.dt{border-radius:15px;background:#e9efe5;color:#35675c}
+.tiles{gap:13px}
+.tile{min-height:164px;padding:16px;border-radius:22px;box-shadow:0 8px 22px rgba(30,54,45,.12);isolation:isolate}
+.tile .bd{width:42px;height:42px;border-radius:14px;background:#ffffff2b;backdrop-filter:blur(6px)}
+.tile .tl{font-size:1.22rem;letter-spacing:-.025em}
+.tile .tl small{font-size:.8rem;line-height:1.25;max-width:18ch}
+.tile.hasbg::after{background:linear-gradient(0deg,rgba(12,36,32,.84),rgba(12,36,32,.08) 85%)}
+.tile .tbg{transition:transform .45s ease}
+.tile:active .tbg{transform:scale(1.04)}
+.tile[data-c="event"]{--t1:#956c37;--t2:#c49a5c}
+.tile[data-c="beach"]{--t1:#347b78;--t2:#74aaa0}
+.tile[data-c="food"]{--t1:#a65e3d;--t2:#cf8b60}
+.tile[data-c="culture"]{--t1:#526b65;--t2:#80948a}
+.tabs{background:rgba(255,253,248,.96);border-top:1px solid #e6e0d3;backdrop-filter:blur(16px);padding-top:5px}
+.tabs a{font-size:.72rem;font-weight:750;color:#7b8980;padding-top:7px}
+.tabs a[aria-current="page"]{color:#245f59}
+.tabs a[aria-current="page"] .ti{background:#e4efea;color:#245f59}
+.ti{width:56px;height:31px}
+.top{padding-top:24px}
+.top h1{font-size:2.35rem;letter-spacing:-.055em}
+.chip{border-radius:999px;background:var(--card);border-color:var(--line)}
+.chip[aria-pressed="true"]{background:#245f59;border-color:#245f59;color:white}
+.card{border:1px solid #e9e3d8;border-radius:22px;background:var(--card);box-shadow:0 8px 24px rgba(30,54,45,.06);padding:16px}
+@media(min-width:700px){
+ .hero{min-height:610px;background-image:url(/media/hero-d.webp);background-position:center 42%;border-radius:0 0 34px 34px}
+ .hin{padding-bottom:100px}
+ .search{margin:-62px auto 0;position:relative}
+ #v-pocetna>.wrap{padding-top:8px}
+ .tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .tile{min-height:190px}
+ .rail{margin-inline:0;padding-inline:0}
+}
+@media(max-width:420px){.hero{min-height:590px}.search{margin-left:12px;margin-right:12px;padding:14px}.wrap{padding-left:16px;padding-right:16px}.tiles{gap:10px}.tile{min-height:150px;padding:13px}}
+@media(prefers-reduced-motion:no-preference){.tile,.ev,.card{transition:transform .18s ease,box-shadow .18s ease}.tile:active{transform:scale(.985)}}
