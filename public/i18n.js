@@ -19,7 +19,7 @@ let LANG = 'en';
 
 const DICT = {
   sr: {
-    heroTitle: 'Crna Gora<br>na dlanu', heroSub: 'Otkrij. Isplaniraj. Doživi.', heroNote: 'Tvoja polazna tačka za doživljaje širom Crne Gore.',
+    heroTitle: 'Crna Gora<br>na dlanu', heroSub: 'Šta se dešava, gdje i kada. Izaberi mjesto i period.',
     where: 'Gdje', wherePh: 'Herceg Novi, Kotor, Žabljak…', place: 'Mjesto', placePh: 'Cijela Crna Gora',
     from: 'Od', to: 'Do', pickDate: 'Izaberi datum', pickStart: 'Izaberi početni datum', pickEndHint: ' · izaberi krajnji datum ili primijeni za jedan dan',
     search: 'Pretraži', soon: 'Uskoro', allEvents: 'Svi događaji', whatToday: 'Šta želiš danas?',
@@ -58,7 +58,7 @@ const DICT = {
     euroDec: ',',
   },
   en: {
-    heroTitle: 'Montenegro<br>in your hand', heroSub: 'Discover. Plan. Experience.', heroNote: 'Your starting point for experiences across Montenegro.',
+    heroTitle: 'Montenegro<br>in your hand', heroSub: "What's on, where and when. Pick a place and your dates.",
     where: 'Where', wherePh: 'Herceg Novi, Kotor, Žabljak…', place: 'Place', placePh: 'All of Montenegro',
     from: 'From', to: 'To', pickDate: 'Pick a date', pickStart: 'Pick a start date', pickEndHint: ' · pick an end date, or apply for a single day',
     search: 'Search', soon: 'Coming up', allEvents: 'All events', whatToday: 'What would you like today?',
@@ -97,7 +97,7 @@ const DICT = {
     euroDec: '.',
   },
   de: {
-    heroTitle: 'Montenegro<br>in deiner Hand', heroSub: 'Entdecken. Planen. Erleben.', heroNote: 'Dein Ausgangspunkt für Erlebnisse in ganz Montenegro.',
+    heroTitle: 'Montenegro<br>in deiner Hand', heroSub: 'Was los ist, wo und wann. Wähle Ort und Reisezeitraum.',
     where: 'Wo', wherePh: 'Herceg Novi, Kotor, Žabljak…', place: 'Ort', placePh: 'Ganz Montenegro',
     from: 'Von', to: 'Bis', pickDate: 'Datum wählen', pickStart: 'Startdatum wählen', pickEndHint: ' · Enddatum wählen oder für einen Tag übernehmen',
     search: 'Suchen', soon: 'Demnächst', allEvents: 'Alle Veranstaltungen', whatToday: 'Was möchtest du heute?',
@@ -136,7 +136,7 @@ const DICT = {
     euroDec: ',',
   },
   ru: {
-    heroTitle: 'Черногория<br>на ладони', heroSub: 'Откройте. Спланируйте. Почувствуйте.', heroNote: 'Ваша отправная точка для путешествий по Черногории.',
+    heroTitle: 'Черногория<br>на ладони', heroSub: 'Что, где и когда. Выберите место и даты.',
     where: 'Где', wherePh: 'Герцег-Нови, Котор, Жабляк…', place: 'Место', placePh: 'Вся Черногория',
     from: 'С', to: 'По', pickDate: 'Выберите дату', pickStart: 'Выберите дату начала', pickEndHint: ' · выберите дату окончания или примените для одного дня',
     search: 'Найти', soon: 'Скоро', allEvents: 'Все события', whatToday: 'Что хотите сегодня?',
@@ -176,7 +176,7 @@ const DICT = {
     euroDec: ',',
   },
   it: {
-    heroTitle: 'Montenegro<br>a portata di mano', heroSub: 'Scopri. Pianifica. Vivi.', heroNote: 'Il tuo punto di partenza per vivere il Montenegro.',
+    heroTitle: 'Montenegro<br>a portata di mano', heroSub: 'Cosa succede, dove e quando. Scegli il luogo e le date.',
     where: 'Dove', wherePh: 'Herceg Novi, Kotor, Žabljak…', place: 'Luogo', placePh: 'Tutto il Montenegro',
     from: 'Dal', to: 'Al', pickDate: 'Scegli una data', pickStart: 'Scegli la data di inizio', pickEndHint: ' · scegli la data di fine oppure applica per un solo giorno',
     search: 'Cerca', soon: 'In arrivo', allEvents: 'Tutti gli eventi', whatToday: 'Cosa ti va oggi?',

@@ -27,20 +27,7 @@ const nice = (s) => { const d = parse(s); return d.getDate() + (DOT ? '. ' : ' '
 const today = iso(new Date());
 const api = async (p) => { const r = await fetch('/api' + p + (p.includes('?') ? '&' : '?') + 'lang=' + LANG); if (!r.ok) throw Object.assign(new Error('api'), { status: r.status }); return r.json(); };
 
-/* ---- mjesta u Crnoj Gori za prijedloge u polju „Gdje” (opštine, gradovi i poznata turistička mjesta; mjesta sa sadržajem u bazi se dodaju automatski) ---- */
-const CG_PLACES = [
-  // opštine
-  'Andrijevica', 'Bar', 'Berane', 'Bijelo Polje', 'Budva', 'Cetinje', 'Danilovgrad', 'Gusinje', 'Herceg Novi', 'Kolašin', 'Kotor', 'Mojkovac', 'Nikšić', 'Petnjica', 'Plav', 'Pljevlja', 'Plužine', 'Podgorica', 'Rožaje', 'Šavnik', 'Tivat', 'Tuzi', 'Ulcinj', 'Zeta', 'Žabljak',
-  // Boka kotorska i Luštica
-  'Baošići', 'Bigova', 'Bijela', 'Dobrota', 'Đenovići', 'Igalo', 'Kamenari', 'Kostanjica', 'Krašići', 'Kumbor', 'Lepetane', 'Luštica', 'Meljine', 'Morinj', 'Muo', 'Njivice', 'Orahovac', 'Perast', 'Porto Montenegro', 'Prčanj', 'Radovići', 'Risan', 'Rose', 'Stoliv', 'Zelenika',
-  // primorje: Budva, Bar, Ulcinj
-  'Bečići', 'Buljarica', 'Čanj', 'Kamenovo', 'Miločer', 'Petrovac', 'Pržno', 'Rafailovići', 'Sveti Stefan', 'Sutomore', 'Šušanj', 'Stari Bar', 'Utjeha', 'Ada Bojana', 'Velika plaža',
-  // Skadarsko jezero i centralni dio
-  'Virpazar', 'Rijeka Crnojevića', 'Skadarsko jezero', 'Golubovci', 'Spuž', 'Ostrog', 'Njeguši', 'Lovćen',
-  // sjever i planine
-  'Bjelasica', 'Biogradska gora', 'Crno jezero', 'Durmitor', 'Komovi', 'Prokletije', 'Sinjajevina', 'Piva', 'Tara', 'Plavsko jezero', 'Grnčar', 'Vusanje', 'Kolašin 1600', 'Savin Kuk'
-];
-let all = [], rests = [], places = [], dataPlaces = [], cat = 'all', plan = [], known = {};
+let all = [], rests = [], places = [], cat = 'all', plan = [], known = {};
 const D = { h: { f: '', t: '' }, x: { f: '', t: '' } };
 try { plan = JSON.parse(localStorage.getItem('mp.plan') || '[]'); } catch { plan = []; }
 /* kopija sačuvanih stavki plana: plan se vidi i bez interneta */
@@ -96,10 +83,7 @@ async function loadAll() {
     all = a.items; rests = b.restaurants;
     if (typeof renderTiles === 'function') renderTiles();
   } catch { all = []; rests = []; $('rail').innerHTML = errBox('home'); }
-  dataPlaces = [...new Set([...all.map((x) => x.place), ...rests.map((r) => r.city)])].filter(Boolean).sort((a, b) => a.localeCompare(b, 'sr'));
-  // za prijedloge: sva mjesta iz baze + spisak mjesta u Crnoj Gori, bez duplikata (poređenje bez dijakritike)
-  const seen = new Set(); places = [];
-  for (const p of [...dataPlaces, ...CG_PLACES]) { const k = norm(p); if (!seen.has(k)) { seen.add(k); places.push(p); } }
+  places = [...new Set([...all.map((x) => x.place), ...rests.map((r) => r.city)])].sort((a, b) => a.localeCompare(b, 'sr'));
   const up = all.filter((x) => x.kind === 'event' && (x.to || x.from) >= today).sort((a, b) => (a.from < b.from ? -1 : 1)).slice(0, 6);
   if (up.length) $('rail').innerHTML = up.map(railCard).join('');
   else if (all.length) $('rail').innerHTML = emptyBox('cal', t('noUpT'), t('noUpD'), `<a class="btn s" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
@@ -245,11 +229,7 @@ function bindPlace(id, sid, onChange) {
   const mark = () => [...box.children].forEach((b, i) => b.setAttribute('aria-selected', i === idx));
   const show = () => {
     const q = norm(inp.value.trim());
-    // bez unosa: mjesta koja imaju sadržaj; sa unosom: sva mjesta, prvo ona koja počinju unosom, pa ona sa sadržajem
-    const has = new Set(dataPlaces.map(norm));
-    const l = (q ? places.filter((p) => norm(p).includes(q)) : dataPlaces)
-      .sort((a, b) => q ? (norm(b).startsWith(q) - norm(a).startsWith(q)) || (has.has(norm(b)) - has.has(norm(a))) || a.localeCompare(b, 'sr') : 0)
-      .slice(0, q ? 10 : 7);
+    const l = places.filter((p) => !q || norm(p).includes(q)).slice(0, 7);
     clr.hidden = !inp.value;
     if (!l.length) { hide(); return; }
     box.innerHTML = l.map((p) => `<button type="button" role="option" aria-selected="false" data-p="${esc(p)}">${ic('pin')}${esc(p)}</button>`).join('');
