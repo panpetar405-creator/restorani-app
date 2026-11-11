@@ -154,7 +154,12 @@ export function shapeItem(row, offSeason = false, lang = 'sr') {
 }
 
 /* ---------- mediji ---------- */
-const httpsOnly = (u) => (typeof u === 'string' && (/^https:\/\/[^\s"'<>]+$/.test(u) || /^\/api\/m\/[0-9a-f-]{36}\.[a-z0-9]{3,4}$/.test(u) || /^\/media\/[A-Za-z0-9._-]{1,100}$/.test(u)) ? u : '');
+const httpsOnly = (u) => {
+  if (typeof u !== 'string') return '';
+  // imena fajlova u /media/ smiju imati slova sa kvačicama (š, č, ć, đ, ž), npr. /media/fašinada-4.jpg
+  const v = u.normalize('NFC');
+  return /^https:\/\/[^\s"'<>]+$/.test(v) || /^\/api\/m\/[0-9a-f-]{36}\.[a-z0-9]{3,4}$/.test(v) || /^\/media\/(?!\.)[\p{L}\p{N}._-]{1,100}$/u.test(v) ? v : '';
+};
 
 export function shapeMedia(row) {
   const base = { caption: row.caption || '', credit: row.credit || '' };
