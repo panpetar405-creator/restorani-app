@@ -223,11 +223,11 @@ export async function adminRoute(request, env, pathname, method) {
   if (what === 'push') return adminPush(request, env, seg, method);
 
   if (what === 'list' && method === 'GET') {
-    const a = await env.DB.prepare('SELECT slug, kind, title, place, active, date_from, date_to, demo, verified_at, status, source, source_url, address, website, lat, lng, description, title_en FROM items ORDER BY kind, date_from IS NULL, date_from, title').all();
-    const b = await env.DB.prepare('SELECT slug, name, city, active, verified_at, ambience, ambience_en, lat, lng FROM restaurants ORDER BY name').all();
+    const a = await env.DB.prepare('SELECT slug, kind, title, place, active, date_from FROM items ORDER BY kind, date_from IS NULL, date_from, title').all();
+    const b = await env.DB.prepare('SELECT slug, name, city, active FROM restaurants ORDER BY name').all();
     return json({
-      items: a.results.map((r) => ({ ref: 'i:' + r.slug, kind: r.kind, title: r.title, place: r.place, active: !!r.active, date_from: r.date_from, date_to: r.date_to, demo: !!r.demo, verified_at: r.verified_at, status: r.status, source: r.source, source_url: r.source_url, address: r.address, website: r.website, lat: r.lat, lng: r.lng, description: r.description, title_en: r.title_en })),
-      restaurants: b.results.map((r) => ({ ref: 'r:' + r.slug, kind: 'food', title: r.name, place: r.city, active: !!r.active, verified_at: r.verified_at, description: r.ambience, title_en: r.ambience_en, lat: r.lat, lng: r.lng })),
+      items: a.results.map((r) => ({ ref: 'i:' + r.slug, kind: r.kind, title: r.title, place: r.place, active: !!r.active })),
+      restaurants: b.results.map((r) => ({ ref: 'r:' + r.slug, kind: 'food', title: r.name, place: r.city, active: !!r.active })),
     });
   }
 
