@@ -209,14 +209,33 @@ async function saveIcs(list, name) {
   setTimeout(() => URL.revokeObjectURL(u), 4000);
 }
 $('ics').onclick = () => saveIcs(plan.map((k) => known[k]), 'montepalm-plan.ics');
+function planMapUrl(list) {
+  const points = list.map((k) => { const x = known[k] || snap[k] || {}; return [x.title || x.name, x.place || x.city].filter(Boolean).join(', '); }).filter(Boolean);
+  if (!points.length) return '';
+  const origin = encodeURIComponent(points[0]), destination = encodeURIComponent(points[points.length - 1]);
+  const waypoints = points.slice(1, -1).map(encodeURIComponent).join('%7C');
+  return `https://www.google.com/maps/dir/?api=1&origin=${origin}&destination=${destination}${waypoints ? '&waypoints=' + waypoints : ''}&travelmode=driving`;
+}
 function planView() {
   plan.forEach((k) => { if (!known[k] && snap[k]) known[k] = snap[k]; });
   const l = plan.filter((k) => known[k]);
-  $('pout').innerHTML = l.length ? l.map((k) => (k[0] === 'i' ? itemCard(known[k]) : restCard(known[k]))).join('') : emptyBox('route', t('emptyPlanT'), t('emptyPlanD'), `<a class="btn p" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
+  $('pout').innerHTML = l.length ? `<div class="plan-tools"><p class="plan-hint">${t('routeHint')}</p><a class="btn p" href="${esc(planMapUrl(l))}" target="_blank" rel="noopener">${ic('nav')}${t('planMap')}</a></div><div class="plan-stops">${l.map((k) => {
+    const x = known[k], title = x.title || x.name, place = x.place || x.city || '';
+    const cardHtml = k[0] === 'i' ? itemCard(x) : restCard(x);
+    const i = plan.indexOf(k);
+    return `<section class="plan-stop"><div class="stop-tools"><span>${t('stopLabel')} ${i + 1}</span><div><button type="button" class="ib stop-move" data-move="up" data-k="${esc(k)}" aria-label="${t('stopUp')}" ${i === 0 ? 'disabled' : ''}>${ic('down', 'flip-y')}</button><button type="button" class="ib stop-move" data-move="down" data-k="${esc(k)}" aria-label="${t('stopDown')}" ${i === l.length - 1 ? 'disabled' : ''}>${ic('down')}</button></div></div>${cardHtml}</section>`;
+  }).join('')}</div>` : emptyBox('route', t('emptyPlanT'), t('emptyPlanD'), `<a class="btn p" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
   $('share').style.display = l.length ? 'inline-flex' : 'none';
   $('ics').hidden = !l.some((k) => known[k].kind === 'event' && known[k].from);
   $('pb').textContent = plan.length; $('pb').hidden = !plan.length;
 }
+$('pout').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-move]'); if (!b) return;
+  const i = plan.indexOf(b.getAttribute('data-k')); if (i < 0) return;
+  const j = b.getAttribute('data-move') === 'up' ? i - 1 : i + 1;
+  if (j < 0 || j >= plan.length) return;
+  [plan[i], plan[j]] = [plan[j], plan[i]]; savePlan(); planView();
+});
 const setAdd = (a, on) => { a.setAttribute('aria-pressed', on); a.innerHTML = on ? ic('check') + t('inPlan') : ic('plus') + t('addPlan'); };
 document.addEventListener('click', (e) => {
   const b = e.target.closest('.add'); if (!b) return;

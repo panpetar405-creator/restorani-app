@@ -47,19 +47,49 @@ async function viewList() {
   document.getElementById('lo').onclick = () => logout();
   let d; try { d = await api('GET', '/list'); } catch (e) { if (KEY) toast(e.message, true); return; }
   const all = [...d.items, ...d.restaurants];
+  const missing = (x) => !x.title_en;
+  const needsReview = (x) => !x.verified_at || x.status === 'provjeriti' || x.demo;
+  const incomplete = (x) => !x.description || x.lat == null || x.lng == null || (x.kind !== 'food' && (!x.source || !x.source_url));
+  const stats = [
+    ['Ukupno', all.length, 'all'],
+    ['Skriveno', all.filter(x => !x.active).length, 'hidden'],
+    ['Primjeri', all.filter(x => x.demo).length, 'demo'],
+    ['Za provjeru', all.filter(needsReview).length, 'review'],
+    ['Nedostaju podaci', all.filter(incomplete).length, 'incomplete'],
+    ['Bez EN teksta', all.filter(missing).length, 'translation']
+  ];
+  let activeFilter = 'all';
   const draw = (q) => {
     const n = q.toLowerCase();
-    const rows = all.filter((x) => !n || (x.title + ' ' + x.place).toLowerCase().includes(n));
+    let rows = all.filter((x) => !n || (x.title + ' ' + x.place).toLowerCase().includes(n));
+    if (activeFilter === 'hidden') rows = rows.filter(x => !x.active);
+    if (activeFilter === 'demo') rows = rows.filter(x => x.demo);
+    if (activeFilter === 'review') rows = rows.filter(needsReview);
+    if (activeFilter === 'incomplete') rows = rows.filter(incomplete);
+    if (activeFilter === 'translation') rows = rows.filter(missing);
     const groups = ['event', 'beach', 'culture', 'food'];
-    return groups.map((g) => { const r = rows.filter((x) => x.kind === g); return r.length ? `<div class="agrp">${KIND[g]}</div><div class="alist">${r.map((x) => `<button class="arow${x.active ? '' : ' off'}" data-r="${esc(x.ref)}"><div class="t"><b>${esc(x.title)}</b><span>${esc(x.place)}</span></div>${x.active ? '' : '<span class="hid">Skriveno</span>'}</button>`).join('')}</div>` : ''; }).join('') || '<p class="m">Nema rezultata.</p>';
+    return groups.map((g) => { const r = rows.filter((x) => x.kind === g); return r.length ? `<div class="agrp">${KIND[g]} · ${r.length}</div><div class="alist">${r.map((x) => {
+      const flags = [!x.active ? 'Skriveno' : '', x.demo ? 'Primjer' : '', needsReview(x) ? 'Provjeriti' : '', incomplete(x) ? 'Nepotpuno' : '', missing(x) ? 'Bez EN' : ''].filter(Boolean);
+      return `<button class="arow${x.active ? '' : ' off'}" data-r="${esc(x.ref)}"><div class="t"><b>${esc(x.title)}</b><span>${esc(x.place)}</span><span class="admin-flags">${flags.map(esc).join(' · ') || 'Osnovni podaci popunjeni'}</span></div></button>`;
+    }).join('')}</div>` : ''; }).join('') || '<p class="m">Nema rezultata za ovaj filter.</p>';
   };
-  $app.innerHTML = `<div class="atop"><div class="in"><h1>Sadržaj</h1><button class="ghost" id="lo">Odjava</button></div></div>
-  <div class="wrap" style="padding-top:14px"><div class="afld"><input type="search" id="q" placeholder="Traži po nazivu ili mjestu" aria-label="Traži"></div>
-  <button class="btn p full" id="nw">+ Novi događaj ili lokacija</button><button class="btn s full" id="pu" style="margin-top:10px">Obavještenja korisnicima</button><div id="rows">${draw('')}</div></div>`;
+  const statsHtml = () => stats.map(([label, count, key]) => `<button type="button" class="astat${activeFilter === key ? ' selected' : ''}" data-filter="${key}"><b>${count}</b><span>${label}</span></button>`).join('');
+  $app.innerHTML = `<div class="atop"><div class="in"><h1>Pregled sadržaja</h1><button class="ghost" id="lo">Odjava</button></div></div>
+  <div class="wrap" style="padding-top:14px"><p class="admin-intro">Kontrola kvaliteta i ažurnosti sadržaja Montepalma.</p>
+  <div class="admin-stats">${statsHtml()}</div>
+  <div class="admin-tools"><div class="afld"><input type="search" id="q" placeholder="Traži po nazivu ili mjestu" aria-label="Traži"></div>
+  <button class="btn p full" id="nw">+ Novi događaj ili lokacija</button><button class="btn s full" id="pu" style="margin-top:8px">Obavještenja korisnicima</button></div><div id="rows">${draw('')}</div></div>`;
   document.getElementById('lo').onclick = () => logout();
   document.getElementById('nw').onclick = () => { location.hash = '#/new'; };
   document.getElementById('pu').onclick = () => { location.hash = '#/push'; };
-  document.getElementById('q').oninput = (e) => { document.getElementById('rows').innerHTML = draw(e.target.value); };
+  const search = document.getElementById('q');
+  search.oninput = () => { document.getElementById('rows').innerHTML = draw(search.value); };
+  $app.querySelector('.admin-stats').onclick = (e) => {
+    const b = e.target.closest('[data-filter]'); if (!b) return;
+    activeFilter = activeFilter === b.dataset.filter ? 'all' : b.dataset.filter;
+    $app.querySelector('.admin-stats').innerHTML = statsHtml();
+    document.getElementById('rows').innerHTML = draw(search.value);
+  };
   document.getElementById('rows').onclick = (e) => { const b = e.target.closest('[data-r]'); if (b) location.hash = '#/e/' + b.getAttribute('data-r'); };
 }
 
