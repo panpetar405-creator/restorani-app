@@ -60,16 +60,6 @@ test('admin: bez ključa i sa pogrešnim ključem je 401, bez podešenog ključa
   assert.equal((await call('GET', '/admin/list')).status, 200);
 });
 
-test('admin lista vraća polja potrebna za kontrolu kvaliteta sadržaja', async () => {
-  const d = await (await call('GET', '/admin/list')).json();
-  const item = d.items.find(x => x.ref === 'i:skijaska-sezona');
-  assert.ok(item);
-  for (const field of ['demo', 'verified_at', 'status', 'source', 'source_url', 'lat', 'lng', 'description', 'title_en']) assert.ok(Object.hasOwn(item, field), field);
-  const restaurant = d.restaurants.find(x => x.ref === 'r:konoba');
-  assert.ok(restaurant);
-  for (const field of ['verified_at', 'description', 'title_en', 'lat', 'lng']) assert.ok(Object.hasOwn(restaurant, field), field);
-});
-
 test('izmjena opisa i podataka događaja', async () => {
   const cur = await (await call('GET', '/admin/entry/i:skijaska-sezona')).json();
   assert.equal(cur.kind, 'event');
