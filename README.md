@@ -61,3 +61,10 @@ Svake minute (1) stavlja dospjele promocije i podsjetnike u red (`push_queue`) i
 - **iPhone:** obavještenja rade tek kad se aplikacija doda na početni ekran (iOS 16.4+) i otvori odatle. Aplikacija to objašnjava korisniku.
 - **Obavezno uz promocije:** korisnik mora moći da ih isključi (kartica „Moj put”). Ne šalji u sate kad ljudi spavaju, a za promocije u EU provjeri pravila o direktnom marketingu.
 - Demo događaji (`demo = 1`) takođe šalju podsjetnike ako ih neko sačuva, pa ih obriši prije lansiranja.
+
+
+## Montepalm v6 — vizuelni redizajn
+
+Ova verzija polazi od originalnog projekta i mijenja javni interfejs: fotografska naslovna sekcija, nova hijerarhija početne stranice, istaknuta pretraga, kartice kategorija, događaja i mobilna plutajuća navigacija. Postojeći API, model podataka, jezička podrška, administracija i funkcije planiranja ostaju sačuvani.
+
+Za v6 je ažuriran `public/index.html`, `public/styles.css` i tekstovi `heroSub`/`heroNote` u `public/i18n.js`.
