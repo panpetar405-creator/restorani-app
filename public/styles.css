@@ -566,3 +566,88 @@ body{font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif}
 .tabs a[aria-current="page"] .ti .ic.on{display:block}
 .tabs a[aria-current="page"] .ti .ic.off{display:none}
 .ti .badge{top:-4px;right:-9px}
+
+/* =====================================================================
+   SEKCIJA 2: ISTRAŽI (po dizajnu)
+   Zaglavlje sa nazad/naslov/lokacija, pretraga, čipovi, Lista/Mapa i velike kartice.
+   ===================================================================== */
+#v-istrazi{background:linear-gradient(180deg,#bcd8fa 0,#dcebfc 150px,var(--bg) 360px) no-repeat top/100% 380px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #v-istrazi{background:linear-gradient(180deg,#123556 0,#0f2b45 160px,var(--bg) 360px) no-repeat top/100% 380px}}
+.xw{padding-bottom:8px}
+.xbar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;height:60px;padding-top:env(safe-area-inset-top,0px)}
+.xbar h1{margin:0;text-align:center;font-size:1.15rem;font-weight:700;letter-spacing:-.01em}
+.xib{position:relative;width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--ink);padding:0}
+.xib .ic{width:26px;height:26px}
+#xpin{color:var(--sea)}
+#xpin .ic{width:24px;height:24px;stroke-width:2}
+.xib:active{background:rgba(255,255,255,.45)}
+.xdot{position:absolute;top:8px;right:8px;width:10px;height:10px;border-radius:50%;background:var(--teal);box-shadow:0 0 0 2px #dcebfc}
+.xdot[hidden]{display:none}
+.xfil{margin:2px 0 12px}
+.xfil[hidden]{display:none}
+.xfil .search.flat{background:var(--card);border-radius:20px;box-shadow:0 6px 20px rgba(12,60,120,.10)}
+.xfil .btn.s[aria-pressed="true"]{background:var(--sea-t);border-color:var(--sea);color:var(--sea)}
+
+/* pretraga */
+.xsr{display:flex;align-items:center;gap:12px;height:52px;margin-top:4px;padding:0 18px;background:var(--card);border-radius:26px;box-shadow:0 8px 24px rgba(12,60,120,.12),0 1px 2px rgba(12,60,120,.06)}
+.xsr .ic{width:22px;height:22px;flex:none;color:var(--ink)}
+.xsr input{flex:1;min-width:0;height:100%;border:0;background:transparent;font-size:.98rem;font-weight:500;outline:0;-webkit-appearance:none;appearance:none}
+.xsr input::placeholder{color:var(--mute);opacity:1}
+.xsr input::-webkit-search-cancel-button{display:none}
+.xsr:focus-within{box-shadow:0 0 0 3px var(--sea-t),0 8px 24px rgba(12,60,120,.12)}
+
+/* čipovi kategorija */
+.xch{padding:14px 16px 2px;gap:10px}
+.xch .chip{display:inline-flex;align-items:center;gap:4px;min-height:40px;padding:0 20px;border:1px solid var(--line);background:var(--card);border-radius:999px;font-size:.92rem;font-weight:600;box-shadow:0 2px 8px rgba(12,60,120,.06)}
+.xch .chip .ic{width:16px;height:16px;margin-right:-6px;stroke-width:2.4}
+.xch .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--on-ink);box-shadow:0 4px 12px rgba(15,34,54,.25)}
+
+/* Lista / Mapa */
+.xseg{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:14px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;box-shadow:0 2px 8px rgba(12,60,120,.06)}
+.xseg button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;border:0;border-radius:999px;background:transparent;color:var(--ink);font-size:.92rem;font-weight:700}
+.xseg button .ic{width:20px;height:20px}
+.xseg button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);box-shadow:0 4px 12px rgba(15,34,54,.25)}
+
+/* broj rezultata ostaje samo za čitače ekrana */
+#v-istrazi .count{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* kartice */
+.xlist{display:grid;gap:16px;margin-top:16px}
+.xc{position:relative;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 6px 20px rgba(12,60,120,.10)}
+.xc.off{opacity:.72}
+.xi{position:relative;aspect-ratio:2.1/1;background:linear-gradient(150deg,#01145c,#0b5aa8 60%,#0175a1)}
+.xi img{width:100%;height:100%;object-fit:cover;display:block}
+.xph{position:absolute;inset:0;display:grid;place-items:center;color:#fff}
+.xph .ic{width:44px;height:44px;stroke-width:1.4;opacity:.9}
+@media (prefers-reduced-motion:no-preference){
+  .js .xi img{opacity:0;filter:blur(14px);transform:scale(1.05);transition:opacity .45s ease,filter .5s ease,transform .5s ease}
+  .js .xi img.ld{opacity:1;filter:none;transform:none}
+}
+.xb{position:absolute;left:12px;bottom:12px;display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 5px;border-radius:999px;background:linear-gradient(135deg,#36d17c,#1fb86a);color:#fff;font-size:.78rem;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.2)}
+.xb .ic{width:16px;height:16px;padding:2px;border-radius:50%;background:#fff;color:#1fb86a;stroke-width:3.4;box-sizing:border-box}
+.xb.w{background:linear-gradient(135deg,#f6b400,#e29a00)}
+.xb.w .ic{color:#e29a00}
+.xc .sch{top:12px;right:12px;width:38px;height:38px;border:0;background:rgba(255,255,255,.28);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);color:#fff}
+.xc .sch .ic{width:21px;height:21px;stroke-width:2}
+.xc .sch[aria-pressed="true"]{background:#e0245e;color:#fff}
+.xbd{display:grid;gap:6px;padding:12px 14px 14px}
+.xt{margin:0;font-size:1.2rem;font-weight:800;line-height:1.2;letter-spacing:-.015em}
+.xt .lk{color:inherit;text-decoration:none}
+.xc{--r-lg:20px}
+.xm{display:flex;align-items:center;flex-wrap:wrap;gap:4px 14px;font-size:.86rem;font-weight:600}
+.xp{display:inline-flex;align-items:center;gap:5px;min-width:0}
+.xp .ic{width:15px;height:15px;flex:none;color:var(--sea)}
+.xp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.xr{display:inline-flex;align-items:center;gap:4px;color:var(--mute)}
+.xr .ic{width:15px;height:15px;color:#f2b01e}
+.xr b{color:var(--mute);font-weight:600}
+.xd{margin:0;color:var(--mute);font-size:.9rem;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.xf{display:flex;align-items:stretch;gap:10px;margin-top:6px}
+.xo{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);border:1px solid var(--line);border-radius:14px}
+.xo>.ic{width:20px;height:20px;flex:none;color:var(--mute)}
+.xo span{display:grid;line-height:1.2;min-width:0}
+.xo b{font-size:.8rem;font-weight:700}
+.xo small{font-size:.74rem;color:var(--mute);font-weight:500}
+.xo.w>.ic,.xo.w small{color:var(--warn)}
+.xdt{flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 16px;min-height:46px;border-radius:14px;background:var(--sea-t);color:var(--sea);font-size:.92rem;font-weight:700}
+.xdt .ic{width:18px;height:18px;stroke-width:2.2}

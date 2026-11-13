@@ -74,6 +74,26 @@ function restCard(r) {
   if (r.verifiedAt) meta.push(`<li>${ic('shield')}${t('verified')}${esc(fmt(r.verifiedAt))}</li>`);
   return card(key, 'food', r.name, r.city, r.tags.join(', ') || r.ambience, meta, [], false, r.cover);
 }
+/* ---- Istraži: velika kartica sa fotografijom (sekcija 2 po dizajnu) ---- */
+const kfmt = (n) => { n = +n; if (!(n >= 1000)) return String(n); const v = n / 1000; return (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10) + 'k'; };
+function xCard(x, rest) {
+  const key = (rest ? 'r:' : 'i:') + x.slug; known[key] = x;
+  const kind = rest ? 'food' : x.kind, title = rest ? x.name : x.title, place = rest ? x.city : x.place;
+  const desc = rest ? ((x.tags || []).join(', ') || x.ambience) : x.description;
+  const dist = here && hasLoc(x) ? ' • ' + fmtKm(kmBetween(here, { lat: +x.lat, lng: +x.lng })) : '';
+  let badge = '';
+  if (!rest && x.featured) badge = `<span class="xb">${ic('check')}${t('popular')}</span>`;
+  else if (rest ? x.verifiedAt : x.status === 'potvrdjeno') badge = `<span class="xb">${ic('check')}${t('confirmedB')}</span>`;
+  else if (!rest && STATUS[x.status]) badge = `<span class="xb w">${ic('alert')}${esc(STATUS[x.status])}</span>`;
+  let fi = 'clock', fb = '', fs = '', warn = false;
+  if (rest) { fi = 'fork'; fb = x.price ? '€ ' + esc(x.price.lo) + ' – ' + esc(x.price.hi) : t('priceSoon'); fs = x.price ? t('perPerson').trim() : ''; }
+  else if (x.kind === 'event') { fi = 'cal'; fb = esc(rangeShort(x)); if (x.offSeason) { fs = t('offSeason'); warn = true; } }
+  else if (x.offSeason) { fi = 'alert'; fb = t('offSeason'); warn = true; }
+  else { fb = t('openB'); fs = !x.months || !x.months.length || new Set(x.months).size === 12 ? t('allYearL') : monthsLabel(x.months); }
+  const img = x.cover ? `<img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async">` : `<span class="xph" aria-hidden="true">${ic(GLYPH[kind])}</span>`;
+  const rate = rest && x.rating ? `<span class="xr">${ic('star', 'f')}<b>${esc(x.rating)}</b>${x.reviews ? ` <span>(${kfmt(x.reviews)})</span>` : ''}</span>` : '';
+  return `<article class="xc${x.offSeason ? ' off' : ''}" data-c="${kind}"><div class="xi">${img}${badge}${heartBtn(key)}</div><div class="xbd"><h3 class="xt"><a class="lk" href="#d/${esc(key)}">${esc(title)}</a></h3><div class="xm"><span class="xp">${ic('pin')}<span>${esc(place)}${dist}</span></span>${rate}</div>${desc ? `<p class="xd">${esc(desc)}</p>` : ''}<div class="xf"><div class="xo${warn ? ' w' : ''}">${ic(fi)}<span><b>${fb}</b>${fs ? `<small>${esc(fs)}</small>` : ''}</span></div><span class="xdt" aria-hidden="true">${t('detailsB')}${ic('arrow')}</span></div></div></article>`;
+}
 function card(key, kind, title, place, desc, meta, pills, off, cover) {
   const inp = plan.includes(key);
   return `<article class="card${off ? ' off' : ''}${cover ? ' hascv' : ''}" data-c="${kind}">${cover ? `<div class="cv" aria-hidden="true"><img src="${esc(cover)}" alt="" loading="lazy" decoding="async"></div>` : ''}<div class="ch"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="kd">${KIND[kind]}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</div><h3 class="t"><a class="lk" href="#d/${esc(key)}">${esc(title)}</a>${ic('right')}</h3>${desc ? `<p class="d">${esc(desc)}</p>` : ''}<ul class="meta">${meta.join('')}</ul><button type="button" class="btn p add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button></article>`;
@@ -119,6 +139,7 @@ async function loadAll() {
 let timer;
 const later = () => { clearTimeout(timer); timer = setTimeout(search, 250); };
 async function search() {
+  if (typeof xDot === 'function') xDot();
   const place = $('p').value.trim(), { f, t: to } = D.x;
   const qs = new URLSearchParams();
   if (place) qs.set('place', place);
@@ -137,7 +158,7 @@ async function search() {
     pool.forEach((o) => { o.d = hasLoc(o.x) ? kmBetween(here, { lat: +o.x.lat, lng: +o.x.lng }) : null; });
     pool.sort((a, b) => (a.d === null) - (b.d === null) || a.d - b.d);
   }
-  const list = pool.map((o) => (o.r ? restCard(o.x) : itemCard(o.x)));
+  const list = pool.map((o) => xCard(o.x, o.r));
   $('count').textContent = list.length ? t('found') + list.length + (Q ? ' · „' + Q + '“' : '') + (near ? ' · ' + t('nNear') : '') : '';
   $('out').innerHTML = list.length ? list.join('') : emptyBox('search', t('nothingT'), t('nothingD'), `<button type="button" class="btn s" data-clear-search>${t('clearSearch')}</button>`);
 }
@@ -166,7 +187,7 @@ const askLoc = () => new Promise((res) => {
   if (!navigator.geolocation) { res(null); return; }
   navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res(null), { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
 });
-const resetFilters = () => { Q = ''; sortNear = false; D.x = { f: '', t: '' }; $('p').value = ''; showDates(); };
+const resetFilters = () => { Q = ''; sortNear = false; D.x = { f: '', t: '' }; $('p').value = ''; $('xq').value = ''; showDates(); };
 const syncCat = (k) => { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); };
 // brzi izbori sa početne: Danas, Vikend, U blizini -> Istraži sa tim filterom
 document.addEventListener('click', async (e) => {
@@ -611,7 +632,7 @@ function renderTiles() {
 }
 renderTiles();
 ['all', ...Object.keys(CATS)].forEach((k) => {
-  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = k === 'all' ? t('all') : CATS[k];
+  const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; if (k === 'all') b.innerHTML = t('all') + ic('down'); else b.textContent = CATS[k];
   b.setAttribute('data-cat', k); b.setAttribute('aria-pressed', k === 'all'); b.onclick = () => setCat(k); $('chips').appendChild(b);
 });
 $('tiles').onclick = (e) => { const b = e.target.closest('.tile'); if (!b) return; resetFilters(); setCat(b.getAttribute('data-cat')); location.hash = '#istrazi'; };
@@ -649,7 +670,7 @@ function route() {
   const back = saved.hash === '#' + h ? saved.y : null;
   if (back !== null) saved = { hash: '', y: 0 };
   let done = Promise.resolve();
-  if (h === 'istrazi') { $('p').closest('.fld').querySelector('.clr').hidden = !$('p').value; done = search(); }
+  if (h === 'istrazi') { $('xq').value = Q; $('xnear').setAttribute('aria-pressed', sortNear); if ($('p').value.trim() || D.x.f || sortNear) xFilOpen(true); $('p').closest('.fld').querySelector('.clr').hidden = !$('p').value; done = search(); }
   if (h === 'plan') { planView(); if (window.mpPushRender) window.mpPushRender(); }
   if (h === 'korisno') usefulView();
   if (h === 'detalj') showDetail(dkey);
@@ -667,5 +688,21 @@ if (lbtn && lmenu) {
   document.addEventListener('click', () => { if (!lmenu.hidden) lopen(false); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !lmenu.hidden) { lopen(false); lbtn.focus(); } });
 }
+/* ---- Istraži: zaglavlje, pretraga, Lista/Mapa ---- */
+const xFilOpen = (on) => { $('xfil').hidden = !on; $('xpin').setAttribute('aria-expanded', on); };
+function xDot() { $('xpin').querySelector('.xdot').hidden = !($('p').value.trim() || D.x.f || sortNear); }
+$('xback').onclick = () => { if (navs > 0) history.back(); else location.hash = '#pocetna'; };
+$('xpin').onclick = () => xFilOpen($('xfil').hidden);
+$('xq').addEventListener('input', () => { Q = $('xq').value.trim(); later(); });
+$('xq').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('xq').blur(); } });
+$('xmap').onclick = () => toast(t('mapSoon'));
+$('xnear').onclick = async () => {
+  const b = $('xnear');
+  if (!sortNear) {
+    if (!here) { b.disabled = true; here = await askLoc(); b.disabled = false; if (!here) { toast(t('locDenied')); return; } }
+    sortNear = true;
+  } else sortNear = false;
+  b.setAttribute('aria-pressed', sortNear); search();
+};
 showDates();
 loadAll().then(route);
