@@ -32,7 +32,7 @@ Isto kao prije: `npx wrangler deploy`, ili push u `main` (GitHub Actions radi te
 - **Demo restorani.** `0002_demo_seed.sql` i dalje sadrži izmišljene restorane (README stare aplikacije).
 - **Unos pravih događaja** za sada ide SQL-om (`INSERT INTO items ...`). Sljedeći korak je admin stranica ili obrazac za organizatore.
 - **Fotografije.** Hero fotografiju korisnik bira na uređaju. Za slike kartica dodaj polje `image` i R2 bucket.
-- **Mapa** nije uključena u ovoj verziji. Za nju dopuni `img-src` u `public/_headers`.
+- **Mapa** (`public/map.js`, ekran `#mapa`, dugme „Mapa” u Istraži) koristi besplatne OpenStreetMap pločice (`tile.openstreetmap.org`). To je u redu za testiranje i manji saobraćaj, ali OSM-ova pravila ne dozvoljavaju veliko opterećenje. Prije većeg lansiranja pređi na pružaoca pločica (MapTiler, Stadia, Thunderforest) tako što promijeniš URL u `loadTiles()`. `img-src https:` u `_headers` već dozvoljava pločice. Stavke bez koordinata (`lat`/`lng`) prikažu se okvirno na mjestu i označe isprekidanim rubom; za tačnu poziciju unesi koordinate u adminu.
 
 ## Obavještenja (push)
 Korisnik koji je instalirao aplikaciju uključi obavještenja u kartici **Moj put**. Šalju se dvije vrste:
