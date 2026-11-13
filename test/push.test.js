@@ -4,7 +4,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { createDecipheriv, createECDH, hkdfSync, generateKeyPairSync, createPublicKey, verify } from 'node:crypto';
 import worker from '../src/index.js';
-import { b64u, unb64u, encryptPayload, vapidHeader, pushConfigured, cleanCampaign, tick } from '../src/push.js';
+import { b64u, unb64u, encryptPayload, vapidHeader, pushConfigured, cleanCampaign, tick, OPSTINE_IDS } from '../src/push.js';
 
 // D1 shim nad SQLite-om
 function d1(db) {
@@ -62,7 +62,7 @@ const count = (sql, ...a) => db.prepare(sql).get(...a).n;
 before(() => {
   db = new DatabaseSync(':memory:');
   for (const f of readdirSync(new URL('../migrations/', import.meta.url)).sort()) {
-    if (!/^(0007|0008|0009|0011|0012|0013|0014)_/.test(f)) continue;
+    if (!/^(0007|0008|0009|0011|0012|0013|0014|0015)_/.test(f)) continue;
     db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8').replace(/^ALTER TABLE restaurants.*$/m, ''));
   }
   sent = [];
@@ -352,4 +352,55 @@ test('izvještaj za partnera: ukupno i po jezicima, 404 za nepostojeću promocij
   assert.ok(Number.isInteger(r.totals.h1) && Number.isInteger(r.totals.h24));
   assert.equal((await admin('/push/report/' + (id + 999), undefined, 'GET')).status, 404);
   assert.equal((await admin('/push/report/abc', undefined, 'GET')).status, 404);
+});
+
+test('ciljanje po opštini: izabrana opština, opciono i oni bez izbora; pogrešna šifra se odbija; doseg; probna ignoriše ciljanje', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  await sub('t-k', { lang: 'sr', saved: [], places: ['kotor', 'atlantida'] }); // nepoznata šifra se izbacuje
+  await sub('t-b', { lang: 'sr', saved: [], places: ['budva'] });
+  await sub('t-u', { lang: 'sr', saved: [] });
+  assert.deepEqual(JSON.parse(db.prepare('SELECT places FROM push_subs WHERE endpoint = ?').get(EP('t-k')).places), ['kotor']);
+  // izmjena izbora preko postavki; kad se ne pošalje, izbor ostaje
+  assert.equal((await post('/push/prefs', { endpoint: EP('t-b'), places: ['budva', 'tivat'] }, 'PUT')).status, 200);
+  assert.deepEqual(JSON.parse(db.prepare('SELECT places FROM push_subs WHERE endpoint = ?').get(EP('t-b')).places), ['budva', 'tivat']);
+  assert.equal((await post('/push/prefs', { endpoint: EP('t-b'), promo: true }, 'PUT')).status, 200);
+  assert.deepEqual(JSON.parse(db.prepare('SELECT places FROM push_subs WHERE endpoint = ?').get(EP('t-b')).places), ['budva', 'tivat']);
+  assert.equal((await post('/push/subscribe', { endpoint: EP('t-b'), keys: devs['t-b'].sub, lang: 'sr' })).status, 200); // ponovna prijava bez izbora ga ne briše
+  assert.deepEqual(JSON.parse(db.prepare('SELECT places FROM push_subs WHERE endpoint = ?').get(EP('t-b')).places), ['budva', 'tivat']);
+
+  env.NOW = '2027-08-01T10:00:00Z';
+  const run = async (body) => {
+    const r = await admin('/push/campaign', { title: 'Opština', body: 'x', send_at: '2027-08-01T10:00:00Z', ...body });
+    assert.equal(r.status, 201);
+    const id = (await r.json()).id;
+    sent.length = 0;
+    for (let i = 0; i < 30 && (i === 0 || count('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?', id) !== 0); i++) await tick(env);
+    return new Set(sent.map((x) => x.url.split('dev-')[1]).filter((n) => n.startsWith('t-')));
+  };
+  const only = await run({ places: ['kotor'], and_unset: false });
+  assert.deepEqual([...only], ['t-k']);
+  const withUnset = await run({ places: ['kotor'], and_unset: true });
+  assert.ok(withUnset.has('t-k') && withUnset.has('t-u') && !withUnset.has('t-b'));
+  const both = await run({ places: ['tivat', 'kotor'], and_unset: false });
+  assert.deepEqual([...both].sort(), ['t-b', 't-k']);
+  const everyone = await run({});
+  assert.ok(everyone.has('t-k') && everyone.has('t-b') && everyone.has('t-u'));
+  // probna promocija ide na posljednji uređaj bez obzira na ciljanje
+  const test = await run({ places: ['kotor'], audience: 'test' });
+  assert.equal(sent.length, 1); assert.ok(test.has('t-u'));
+
+  assert.equal((await admin('/push/campaign', { title: 'x', body: 'y', places: ['atlantida'] })).status, 400);
+  const n = async (q) => (await (await admin('/push/reach?' + q, undefined, 'GET')).json()).n;
+  assert.equal(await n('places=kotor&unset=0'), 1);
+  assert.equal(await n('places=kotor,budva&unset=0'), 2);
+  assert.ok((await n('places=kotor&unset=1')) > 1);
+  assert.equal((await admin('/push/reach?places=atlantida', undefined, 'GET')).status, 400);
+  const list = await (await admin('/push', undefined, 'GET')).json();
+  assert.equal(list.subs.places.by.kotor, 1); assert.equal(list.subs.places.by.budva, 1); assert.ok(list.subs.places.unset >= 1);
+});
+
+test('opštine: spisak u public/opstine.js isti je kao na serveru', () => {
+  const ids = [...readFileSync(new URL('../public/opstine.js', import.meta.url), 'utf8').matchAll(/\['([a-z-]+)', '/g)].map((m) => m[1]);
+  assert.deepEqual(ids, OPSTINE_IDS);
+  assert.equal(OPSTINE_IDS.length, 25);
 });
