@@ -109,6 +109,12 @@ function cleanKeys(k) {
 
 /* opštine za ciljanje; šifre moraju biti iste kao u public/opstine.js */
 export const OPSTINE_IDS = ['andrijevica', 'bar', 'berane', 'bijelo-polje', 'budva', 'cetinje', 'danilovgrad', 'gusinje', 'herceg-novi', 'kolasin', 'kotor', 'mojkovac', 'niksic', 'petnjica', 'plav', 'pljevlja', 'pluzine', 'podgorica', 'rozaje', 'savnik', 'tivat', 'tuzi', 'ulcinj', 'zabljak', 'zeta'];
+const cleanPartnerId = (v) => {
+  if (v === undefined || v === null || v === '') return null;
+  const n = Number(v);
+  if (!Number.isInteger(n) || n < 1 || n > 1e9) throw new HttpError(400, 'Neispravan partner');
+  return n;
+};
 const cleanPlaces = (v) => (Array.isArray(v) ? [...new Set(v.filter((x) => OPSTINE_IDS.includes(x)))] : null);
 /* uslov za primaoce ciljane promocije: izabrana opština, i (po izboru) oni koji nisu izabrali nijednu */
 function placeFilter(placesJson, andUnset) {
@@ -238,6 +244,7 @@ export function cleanCampaign(b, nowMs = Date.now()) {
   return {
     places: JSON.stringify([...new Set(rawPlaces)]),
     and_unset: b.and_unset === false || b.and_unset === 0 ? 0 : 1,
+    partner_id: cleanPartnerId(b.partner_id),
     title: text(b.title, 60, 'Naslov', true),
     body: text(b.body, 180, 'Tekst', true),
     title_en: text(b.title_en, 60, 'Naslov (EN)'),
@@ -309,14 +316,15 @@ export async function adminPush(request, env, seg, method) {
     const unset = await env.DB.prepare("SELECT COUNT(*) AS n FROM push_subs WHERE places = '[]'").first();
     c.places = { unset: unset.n, by: Object.fromEntries(plRows.map((r) => [r.place, r.n])) };
     const { results } = await env.DB
-      .prepare('SELECT c.id, c.title, c.body, c.url, c.audience, c.send_at, c.enqueued_at, c.recipients, c.places, c.and_unset, (SELECT COUNT(*) FROM push_queue q WHERE q.campaign_id = c.id) AS pending, (SELECT COUNT(*) FROM push_stats t WHERE t.campaign_id = c.id) AS tracked, (SELECT COUNT(t.shown_at) FROM push_stats t WHERE t.campaign_id = c.id) AS shown, (SELECT COUNT(t.clicked_at) FROM push_stats t WHERE t.campaign_id = c.id) AS clicked FROM push_campaigns c ORDER BY c.id DESC LIMIT 20')
+      .prepare('SELECT c.id, c.title, c.body, c.url, c.audience, c.send_at, c.enqueued_at, c.recipients, c.places, c.and_unset, c.partner_id, (SELECT name FROM partners WHERE id = c.partner_id) AS partner_name, (SELECT COUNT(*) FROM push_queue q WHERE q.campaign_id = c.id) AS pending, (SELECT COUNT(*) FROM push_stats t WHERE t.campaign_id = c.id) AS tracked, (SELECT COUNT(t.shown_at) FROM push_stats t WHERE t.campaign_id = c.id) AS shown, (SELECT COUNT(t.clicked_at) FROM push_stats t WHERE t.campaign_id = c.id) AS clicked FROM push_campaigns c ORDER BY c.id DESC LIMIT 20')
       .all();
-    return json({ configured: pushConfigured(env), subs: c, campaigns: results });
+    const { results: partners } = await env.DB.prepare('SELECT id, name FROM partners ORDER BY name COLLATE NOCASE').all();
+    return json({ configured: pushConfigured(env), subs: c, campaigns: results, partners });
   }
   // izvještaj za jednu promociju (za partnera): ukupno, po jezicima i koliko ih je otvorilo u prvom satu / prva 24 sata
   if (seg[3] === 'report' && seg.length === 5 && method === 'GET' && /^\d{1,9}$/.test(seg[4])) {
     const id = Number(seg[4]);
-    const c = await env.DB.prepare('SELECT id, title, body, url, audience, send_at, enqueued_at, recipients, places FROM push_campaigns WHERE id = ?').bind(id).first();
+    const c = await env.DB.prepare('SELECT id, title, body, url, audience, send_at, enqueued_at, recipients, places, (SELECT name FROM partners WHERE id = push_campaigns.partner_id) AS partner_name FROM push_campaigns WHERE id = ?').bind(id).first();
     if (!c) throw new HttpError(404, 'Promocija nije pronađena');
     const totals = await env.DB
       .prepare("SELECT COUNT(*) AS sent, COUNT(shown_at) AS shown, COUNT(clicked_at) AS clicked, COALESCE(SUM(clicked_at IS NOT NULL AND julianday(clicked_at) - julianday(?) <= 1.0 / 24), 0) AS h1, COALESCE(SUM(clicked_at IS NOT NULL AND julianday(clicked_at) - julianday(?) <= 1.0), 0) AS h24 FROM push_stats WHERE campaign_id = ?")
@@ -340,9 +348,10 @@ export async function adminPush(request, env, seg, method) {
   if (seg[3] === 'campaign' && seg.length === 4 && method === 'POST') {
     if (!pushConfigured(env)) throw new HttpError(503, 'Podesi VAPID_PUBLIC, VAPID_PRIVATE i VAPID_SUBJECT (vidi README)');
     const o = cleanCampaign(await readJson(request, 4000), nowMs);
+    if (o.partner_id && !(await env.DB.prepare('SELECT 1 AS x FROM partners WHERE id = ?').bind(o.partner_id).first())) throw new HttpError(400, 'Partner ne postoji');
     const r = await env.DB
-      .prepare('INSERT INTO push_campaigns (title, body, title_en, body_en, title_de, body_de, title_ru, body_ru, title_it, body_it, url, audience, send_at, places, and_unset) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id')
-      .bind(o.title, o.body, o.title_en, o.body_en, o.title_de, o.body_de, o.title_ru, o.body_ru, o.title_it, o.body_it, o.url, o.audience, o.send_at, o.places, o.and_unset)
+      .prepare('INSERT INTO push_campaigns (title, body, title_en, body_en, title_de, body_de, title_ru, body_ru, title_it, body_it, url, audience, send_at, places, and_unset, partner_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id')
+      .bind(o.title, o.body, o.title_en, o.body_en, o.title_de, o.body_de, o.title_ru, o.body_ru, o.title_it, o.body_it, o.url, o.audience, o.send_at, o.places, o.and_unset, o.partner_id)
       .first();
     return json({ id: r.id, send_at: o.send_at }, 201);
   }
