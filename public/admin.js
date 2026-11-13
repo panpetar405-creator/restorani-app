@@ -258,6 +258,11 @@ function bindMedia() {
 /* ---------- obavještenja (push) ---------- */
 const fmtT = (iso) => { try { return new Date(iso).toLocaleString('sr-Latn-ME', { dateStyle: 'medium', timeStyle: 'short' }); } catch { return iso; } };
 const LANG_LBL = { sr: 'crnogorski', en: 'engleski', de: 'njemački', ru: 'ruski', it: 'italijanski' };
+const placeLine = (m) => {
+  const name = (id) => ((typeof OPSTINE !== 'undefined' ? OPSTINE : []).find((o) => o[0] === id) || [id, id])[1];
+  const e = Object.entries((m && m.by) || {});
+  return (e.length ? e.map(([k, n]) => `${name(k)}: <b>${n}</b>`).join(', ') + ' · ' : '') + `bez izbora (primaju sve): <b>${(m && m.unset) || 0}</b>`;
+};
 const langLine = (m) => { const e = Object.entries(m || {}).sort((a, b) => b[1].total - a[1].total); return e.length ? e.map(([l, x]) => `${LANG_LBL[l] || l}: <b>${x.total}</b> (${x.promo})`).join(', ') : 'još nema uređaja'; };
 /* izvještaj o promociji za partnera: pregled na ekranu, dijeljenje kao tekst, kopiranje ili „Sačuvaj kao PDF” (štampa) */
 async function showReport(id) {
@@ -267,11 +272,12 @@ async function showReport(id) {
   const c = r.campaign, t = r.totals;
   const pct = (n, d) => (d ? (Math.round((n * 1000) / d) / 10).toString().replace('.', ',') + '%' : '–');
   const date = fmtT(c.enqueued_at || c.send_at);
+  const tgR = (() => { try { return JSON.parse(c.places || '[]').map((id) => ((typeof OPSTINE !== 'undefined' ? OPSTINE : []).find((o) => o[0] === id) || [id, id])[1]).join(', '); } catch { return ''; } })();
   const langs = r.langs.map((x) => ({ l: LANG_LBL[x.lang] || 'ostalo', sent: x.sent, shown: x.shown, clicked: x.clicked }));
   const note = 'Brojke su donja granica: telefon bez interneta u tom trenutku ne javlja prikaz ni otvaranje.';
   const mk = () => {
     const who = document.getElementById('rpn').value.trim();
-    return ['IZVJEŠTAJ O PROMOCIJI · Montepalm', who ? 'Za: ' + who : '', `Promocija: „${c.title}”`, `Poslato: ${date}`, '',
+    return ['IZVJEŠTAJ O PROMOCIJI · Montepalm', who ? 'Za: ' + who : '', `Promocija: „${c.title}”`, `Poslato: ${date}`, ...(tgR ? [`Ciljano: ${tgR}`] : []), '',
       `Poslato na uređaja: ${t.sent}`, `Stiglo na telefon: ${t.shown} (${pct(t.shown, t.sent)})`, `Otvoreno: ${t.clicked} (${pct(t.clicked, t.sent)} od poslatih)`,
       `Otvorilo u prvom satu: ${t.h1} · u prva 24 sata: ${t.h24}`, '', 'Po jezicima:',
       ...langs.map((x) => `- ${x.l}: poslato ${x.sent}, stiglo ${x.shown}, otvoreno ${x.clicked}`), '', note].filter((x, i, a) => x !== '' || a[i - 1] !== '').join('\n');
@@ -283,7 +289,7 @@ async function showReport(id) {
     <h2 style="margin:0 0 4px;font-size:1.15rem">Izvještaj o promociji · Montepalm</h2>
     <div class="afld noprint"><label for="rpn">Za koga je izvještaj (nije obavezno, ne čuva se)</label><input type="text" id="rpn" maxlength="80" placeholder="npr. Restoran Maslina"></div>
     <p id="rwho" style="margin:6px 0"></p>
-    <p style="margin:6px 0"><b>${esc(c.title)}</b><br>${esc(c.body)}<br><small>Poslato: ${esc(date)}${c.audience === 'test' ? ' · test' : ''}</small></p>
+    <p style="margin:6px 0"><b>${esc(c.title)}</b><br>${esc(c.body)}<br><small>Poslato: ${esc(date)}${c.audience === 'test' ? ' · test' : ''}${tgR ? ' · ciljano: ' + esc(tgR) : ''}</small></p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0">
       ${card(t.sent, 'Poslato', 'uređaja')}${card(t.shown, 'Stiglo', pct(t.shown, t.sent))}${card(t.clicked, 'Otvoreno', pct(t.clicked, t.sent))}
     </div>
@@ -312,14 +318,17 @@ async function viewPush() {
   const rows = d.campaigns.map((c) => {
     const st = !c.enqueued_at ? `zakazano za ${fmtT(c.send_at)}` : c.pending ? `šalje se (čeka još ${c.pending})` : `poslato ${c.recipients}`;
     const pc = (n) => (c.recipients ? Math.round((n * 100) / c.recipients) + '%' : '–');
+    const tg = (() => { try { return JSON.parse(c.places || '[]'); } catch { return []; } })();
+    const tgTxt = tg.length ? `<br>ciljano: ${tg.map((id) => ((typeof OPSTINE !== 'undefined' ? OPSTINE : []).find((o) => o[0] === id) || [id, id])[1]).map(esc).join(', ')}${c.and_unset ? ' (i bez izbora)' : ''}` : '';
     const rep = c.enqueued_at && c.tracked && !c.pending ? `<button class="ghost" data-rep="${c.id}">Izvještaj</button>` : '';
     const stats = c.enqueued_at && c.tracked ? `<br>stiglo <b>${c.shown}</b> (${pc(c.shown)}) · otvoreno <b>${c.clicked}</b> (${pc(c.clicked)})` : '';
-    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}${stats}</small></span><span style="display:grid;gap:6px">${rep}<button class="ghost" data-del="${c.id}" data-st="${!c.enqueued_at ? 'plan' : c.pending ? 'busy' : 'done'}">${!c.enqueued_at ? 'Otkaži' : c.pending ? 'Zaustavi' : 'Obriši'}</button></span></div>`;
+    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}${tgTxt}${stats}</small></span><span style="display:grid;gap:6px">${rep}<button class="ghost" data-del="${c.id}" data-st="${!c.enqueued_at ? 'plan' : c.pending ? 'busy' : 'done'}">${!c.enqueued_at ? 'Otkaži' : c.pending ? 'Zaustavi' : 'Obriši'}</button></span></div>`;
   }).join('');
   $app.innerHTML = `<div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>Obavještenja</h1></div></div>
   <div class="wrap" style="padding-top:14px">
     ${d.configured ? '' : '<p class="afld"><b>Slanje nije podešeno.</b> <small>Dodaj tajne VAPID_PUBLIC, VAPID_PRIVATE i VAPID_SUBJECT (vidi README, dio „Obavještenja”).</small></p>'}
     <p class="afld"><small>Uređaja sa uključenim obavještenjima: <b>${d.subs.total}</b> (promocije: ${d.subs.promo}, podsjetnici: ${d.subs.remind}). Podsjetnik dan prije događaja šalje se automatski u 10:00 svima kojima je događaj u „Moj put”.</small></p>
+    <p class="afld"><small>Opštine koje su korisnici izabrali (uređaja): ${placeLine(d.subs.places)}.</small></p>
     <p class="afld"><small>Po jezicima (uređaja, od toga primaju promocije): ${langLine(d.subs.langs)}. Broji se uređaj, ne osoba: ista osoba sa dva telefona ili preglednika je dva uređaja. Imena i nalozi se ne čuvaju.</small></p>
     <div class="afld"><label for="pt">Naslov <span class="cnt2" id="ptc"></span></label><input type="text" id="pt" maxlength="60" placeholder="Vikend akcija na primorju"></div>
     <div class="afld"><label for="pb">Tekst <span class="cnt2" id="pbc"></span></label><textarea id="pb" maxlength="180" style="min-height:80px" placeholder="20% popusta u restoranima do nedjelje"></textarea></div>
@@ -327,6 +336,11 @@ async function viewPush() {
     <div class="afld"><label for="pbe">Tekst na engleskom (nije obavezno)</label><textarea id="pbe" maxlength="180" style="min-height:80px"></textarea></div>
     ${[['de', 'njemačkom'], ['ru', 'ruskom'], ['it', 'italijanskom']].map(([l, n]) => `<details class="afld"><summary>Na ${n} (nije obavezno)</summary><div class="afld"><label for="pt${l}">Naslov na ${n}</label><input type="text" id="pt${l}" maxlength="60"></div><div class="afld"><label for="pb${l}">Tekst na ${n}</label><textarea id="pb${l}" maxlength="180" style="min-height:80px"></textarea></div></details>`).join('')}
     <div class="afld"><button class="btn s full" type="button" id="ptr">Prevedi sa crnogorskog (EN, DE, RU, IT)</button><small>Popuni sva jezička polja iz naslova i teksta gore. Pregledaj prevod prije slanja; ručne izmjene se prepisuju pri novom prevođenju.</small></div>
+    <details class="afld"><summary>Ciljaj opštine (nije obavezno)</summary>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin:8px 0">${(typeof OPSTINE !== 'undefined' ? OPSTINE : []).map(([id, n]) => `<label class="chk"><input type="checkbox" data-tp="${id}"> ${n}</label>`).join('')}</div>
+      <label class="chk"><input type="checkbox" id="pun" checked> Pošalji i onima koji nisu izabrali nijednu opštinu</label>
+    </details>
+    <p class="afld"><small id="preach"></small></p>
     <p class="afld"><small>Gost dobija tekst na svom jeziku. Ako ga nema, dobija engleski, a ako nema ni njega, crnogorski.</small></p>
     <div class="afld"><label for="pu2">Šta se otvara dodirom</label><input type="text" id="pu2" value="/" maxlength="200"><small>Početna: <code>/</code> · pretraga: <code>/#istrazi</code> · događaj: <code>/#d/i%3Afasinada</code> (slug iz adrese u adminu)</small></div>
     <div class="afld"><label for="pw">Kada</label><select id="pw"><option value="now">Pošalji odmah</option><option value="later">Zakaži</option></select></div>
@@ -355,6 +369,17 @@ async function viewPush() {
     if (!confirm('Obrisati sve poslate promocije iz istorije? Zakazane i one koje se još šalju ostaju. Obavještenja koja su već stigla ostaju na telefonima.')) return;
     try { const r = await api('DELETE', '/push/campaign/sent'); toast('Obrisano: ' + r.deleted); viewPush(); } catch (er) { toast(er.message, true); }
   };
+  const tp = () => [...document.querySelectorAll('[data-tp]:checked')].map((x) => x.getAttribute('data-tp'));
+  const reach = async () => {
+    const el = document.getElementById('preach'); if (!el) return;
+    const pl = tp();
+    try {
+      const r = await api('GET', '/push/reach?places=' + encodeURIComponent(pl.join(',')) + '&unset=' + (document.getElementById('pun').checked ? 1 : 0));
+      el.textContent = pl.length ? `Doseg: ${r.n} uređaja koji primaju promocije (samo izabrane opštine${document.getElementById('pun').checked ? ' i oni bez izbora' : ''}).` : `Doseg: ${r.n} uređaja (svi koji primaju promocije).`;
+    } catch { el.textContent = ''; }
+  };
+  document.querySelectorAll('[data-tp], #pun').forEach((x) => { x.onchange = reach; });
+  reach();
   document.getElementById('ptr').onclick = async () => {
     if (busy) return;
     if (!v('pt') || !v('pb')) { toast('Prvo upiši naslov i tekst', true); return; }
@@ -370,7 +395,7 @@ async function viewPush() {
   document.getElementById('psend').onclick = async () => {
     if (busy) return;
     const later = v('pw') === 'later';
-    const body = { title: v('pt'), body: v('pb'), title_en: v('pte'), body_en: v('pbe'), title_de: v('ptde'), body_de: v('pbde'), title_ru: v('ptru'), body_ru: v('pbru'), title_it: v('ptit'), body_it: v('pbit'), url: v('pu2') || '/', audience: document.getElementById('ptest').checked ? 'test' : 'all' };
+    const body = { title: v('pt'), body: v('pb'), title_en: v('pte'), body_en: v('pbe'), title_de: v('ptde'), body_de: v('pbde'), title_ru: v('ptru'), body_ru: v('pbru'), title_it: v('ptit'), body_it: v('pbit'), places: tp(), and_unset: document.getElementById('pun').checked, url: v('pu2') || '/', audience: document.getElementById('ptest').checked ? 'test' : 'all' };
     if (later) { if (!v('pd')) { toast('Izaberi datum i sat', true); return; } body.send_at = new Date(v('pd')).toISOString(); }
     if (body.audience === 'all' && !confirm(later ? 'Zakazati obavještenje za sve korisnike?' : `Poslati obavještenje na ${d.subs.promo} uređaja?`)) return;
     busy = true;
