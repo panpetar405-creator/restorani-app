@@ -213,7 +213,7 @@ const icsNext = (s) => { const d = new Date(s + 'T00:00:00Z'); d.setUTCDate(d.ge
 function icsFor(list) {
   const now = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
   const ev = list.filter((x) => x && x.kind === 'event' && x.from).map((x) => {
-    const link = `${location.origin}/s/i/${x.slug}`;
+    const link = `${location.origin}/s/${x.pr || 'i'}/${x.slug}`;
     return ['BEGIN:VEVENT', `UID:${x.slug}@montepalm`, `DTSTAMP:${now}`, `DTSTART;VALUE=DATE:${icsDay(x.from)}`, `DTEND;VALUE=DATE:${icsNext(x.to || x.from)}`,
       `SUMMARY:${icsEsc(x.title)}`, `LOCATION:${icsEsc(x.place)}`, `DESCRIPTION:${icsEsc((x.description ? x.description + '\n' : '') + link)}`, `URL:${link}`, 'END:VEVENT'].map(icsFold).join('\r\n');
   });
@@ -226,13 +226,48 @@ async function saveIcs(list, name) {
   el.href = u; el.download = name; document.body.appendChild(el); el.click(); el.remove();
   setTimeout(() => URL.revokeObjectURL(u), 4000);
 }
-$('ics').onclick = () => saveIcs(plan.map((k) => known[k]), 'montepalm-plan.ics');
-function planView() {
+/* ---- Moj put (sekcija 4): dani, uređivanje, mapa, kalendar, PDF ---- */
+let planDays = {}, planMeta = { name: '', start: '' };
+try { planDays = JSON.parse(localStorage.getItem('mp.planDays') || '{}') || {}; } catch { planDays = {}; }
+try { planMeta = Object.assign({ name: '', start: '' }, JSON.parse(localStorage.getItem('mp.planMeta') || '{}')); } catch { /* ignore */ }
+const saveDays = () => { try { localStorage.setItem('mp.planDays', JSON.stringify(planDays)); localStorage.setItem('mp.planMeta', JSON.stringify(planMeta)); } catch { /* ignore */ } };
+const plur = (n, f) => { const k = (LANG === 'sr' || LANG === 'ru') ? ((n % 10 === 1 && n % 100 !== 11) ? 0 : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 1 : 2) : (n === 1 ? 0 : 1); return n + ' ' + f[k]; };
+const validDay = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || '');
+const tripTitle = () => planMeta.name || t('tripDef');
+const itemTitle = (x) => x.title || x.name, itemPlace = (x) => x.place || x.city || '';
+function dayDate(d) { return validDay(planMeta.start) ? nice(iso(addDays(parse(planMeta.start), d - 1))) : ''; }
+function planModel() {
   plan.forEach((k) => { if (!known[k] && snap[k]) known[k] = snap[k]; });
-  const l = plan.filter((k) => known[k]);
-  $('pout').innerHTML = l.length ? l.map((k) => (k[0] === 'i' ? itemCard(known[k]) : restCard(known[k]))).join('') : emptyBox('route', t('emptyPlanT'), t('emptyPlanD'), `<a class="btn p" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
-  $('share').style.display = l.length ? 'inline-flex' : 'none';
-  $('ics').hidden = !l.some((k) => known[k].kind === 'event' && known[k].from);
+  const l = plan.filter((k) => known[k]), live = new Set(plan);
+  Object.keys(planDays).forEach((k) => { if (!live.has(k)) delete planDays[k]; });
+  let cur = Math.max(1, ...l.map((k) => planDays[k] || 0));
+  l.forEach((k) => {
+    if (planDays[k] > 0) return;
+    const x = known[k]; let d = cur;
+    if (x.kind === 'event' && x.from && validDay(planMeta.start)) d = Math.max(1, Math.round((parse(x.from) - parse(planMeta.start)) / 864e5) + 1);
+    planDays[k] = d;
+  });
+  saveDays();
+  const byDay = {}; l.forEach((k) => (byDay[planDays[k]] = byDay[planDays[k]] || []).push(k));
+  const days = Object.keys(byDay).map(Number).sort((a, b) => a - b);
+  return { l, byDay, days, span: days.length ? days[days.length - 1] : 0 };
+}
+function planRow(k) {
+  const x = known[k], kind = k[0] === 'i' ? x.kind : 'food', cover = x.cover;
+  const sub = [itemPlace(x), kind === 'event' && x.from ? rangeShort(x) : ''].filter(Boolean).join(' • ');
+  const th = cover ? `<img src="${esc(cover)}" alt="" loading="lazy" decoding="async">` : `<span class="tph" aria-hidden="true">${ic(GLYPH[kind])}</span>`;
+  return `<li class="tr" data-c="${kind}"><a class="trl" href="#d/${esc(k)}"><span class="tth">${th}</span><span class="ttx"><b>${esc(itemTitle(x))}</b><small>${esc(sub)}</small></span></a><button type="button" class="tmore" data-pm="${esc(k)}" aria-label="${t('optsB')}">${ic('more')}</button></li>`;
+}
+function planView() {
+  const { l, byDay, days, span } = planModel();
+  $('ptitle').textContent = tripTitle();
+  $('psub').textContent = l.length ? plur(span, t('dayF')) + ' • ' + plur(l.length, t('locF')) : '';
+  const cov = (l.map((k) => known[k].cover).find(Boolean)) || '';
+  $('phero').style.backgroundImage = cov ? 'url(' + JSON.stringify(cov) + ')' : '';
+  $('pout').innerHTML = l.length
+    ? `<ol class="tl">${days.map((d) => `<li class="td"><div class="tdh"><span class="tnode" aria-hidden="true"></span><b>${t('dayW')} ${d}</b>${dayDate(d) ? `<span>• ${esc(dayDate(d))}</span>` : ''}</div><ul class="tli">${byDay[d].map(planRow).join('')}</ul></li>`).join('')}</ol>`
+    : emptyBox('route', t('emptyPlanT'), t('emptyPlanD'), `<a class="btn p" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
+  $('pacts').hidden = !l.length; $('pmap').hidden = !l.length;
   $('pb').textContent = plan.length; $('pb').hidden = !plan.length;
 }
 const setAdd = (a, on) => { a.setAttribute('aria-pressed', on); const g = on ? ic('check') : ic('plus'), l = on ? t('inPlan') : t('addPlan'); a.innerHTML = a.classList.contains('dact') ? `<span class="dci">${g}</span><span class="dl">${l}</span>` : g + l; };
@@ -247,13 +282,80 @@ document.addEventListener('click', (e) => {
   $('pb').textContent = plan.length; $('pb').hidden = !plan.length;
   if (location.hash === '#plan') planView();
 });
+
+function planDayLines() {
+  const { byDay, days } = planModel();
+  return days.map((d) => ({ d, keys: byDay[d] }));
+}
+function mapsRoute() {
+  const pts = planDayLines().flatMap((g) => g.keys).map((k) => known[k]).filter(hasLoc).map((x) => `${x.lat},${x.lng}`);
+  if (!pts.length) { toast(t('noMapPts')); return; }
+  const u = pts.length === 1 ? 'https://www.google.com/maps/search/?api=1&query=' + pts[0]
+    : 'https://www.google.com/maps/dir/?api=1&origin=' + pts[0] + '&destination=' + pts[pts.length - 1] + (pts.length > 2 ? '&waypoints=' + pts.slice(1, -1).slice(0, 9).join('|') : '');
+  window.open(u, '_blank', 'noopener');
+}
+function icsPlanList() {
+  const out = [];
+  planDayLines().forEach((g) => g.keys.forEach((k) => {
+    const x = known[k], rest = k[0] === 'r';
+    if (x.kind === 'event' && x.from) out.push(x);
+    else if (validDay(planMeta.start)) { const d = iso(addDays(parse(planMeta.start), g.d - 1)); out.push({ slug: k.slice(2), pr: rest ? 'r' : 'i', kind: 'event', from: d, to: d, title: itemTitle(x), place: itemPlace(x), description: (rest ? (x.tags || []).join(', ') : x.description) || '' }); }
+  }));
+  return out;
+}
+function printPlan() {
+  const g = planDayLines(); if (!g.length) return;
+  let el = $('pprint'); if (!el) { el = document.createElement('div'); el.id = 'pprint'; document.body.appendChild(el); }
+  const { l, span } = planModel();
+  el.innerHTML = `<h1>${esc(tripTitle())}</h1><p class="pps">${esc(plur(span, t('dayF')) + ' • ' + plur(l.length, t('locF')))}</p>` + g.map((x) => `<h2>${esc(t('dayW') + ' ' + x.d + (dayDate(x.d) ? ' • ' + dayDate(x.d) : ''))}</h2><ul>${x.keys.map((k) => { const o = known[k]; return `<li><b>${esc(itemTitle(o))}</b> — ${esc([itemPlace(o), o.kind === 'event' && o.from ? rangeShort(o) : ''].filter(Boolean).join(' • '))}</li>`; }).join('')}</ul>`).join('') + `<p class="ppf">Montepalm · ${esc(location.origin)}</p>`;
+  document.body.classList.add('printing'); window.print();
+}
+window.addEventListener('afterprint', () => document.body.classList.remove('printing'));
 $('share').onclick = async () => {
-  const txt = t('shareHead') + plan.filter((k) => known[k]).map((k) => { const x = known[k]; return '- ' + (x.title || x.name) + ' (' + (x.place || x.city) + ')'; }).join('\n');
+  const txt = t('shareHead') + planDayLines().map((g) => `${t('dayW')} ${g.d}${dayDate(g.d) ? ' • ' + dayDate(g.d) : ''}:\n` + g.keys.map((k) => { const x = known[k]; return '- ' + itemTitle(x) + ' (' + itemPlace(x) + ')'; }).join('\n')).join('\n\n');
   try {
     if (navigator.share) { await navigator.share({ text: txt }); return; }
     await navigator.clipboard.writeText(txt); $('sh').textContent = t('planCopied');
   } catch { $('sh').textContent = t('copyFail'); }
 };
+$('ics').onclick = () => { const l = icsPlanList(); if (!l.length) { toast(t('icsNone')); return; } saveIcs(l, 'montepalm-plan.ics'); };
+$('ppdf').onclick = printPlan;
+$('pmap').onclick = mapsRoute;
+$('pclr').onclick = () => {
+  if (!plan.length || !window.confirm(t('clearPlanQ'))) return;
+  plan.length = 0; planDays = {}; savePlan(); saveDays(); planView();
+};
+$('pback').onclick = () => { if (navs > 0) history.back(); else location.hash = '#pocetna'; };
+const psClose = () => { $('psheet').hidden = true; };
+function openPSheet(mode, key) {
+  const body = $('psb'), ttl = $('ps-t');
+  if (mode === 'edit') {
+    ttl.textContent = t('editTrip');
+    body.innerHTML = `<label class="plb">${t('tripName')}<input id="pn" maxlength="60" value="${esc(planMeta.name)}" placeholder="${esc(t('tripDef'))}" autocomplete="off"></label><label class="plb">${t('tripStart')}<input id="pst" type="date" value="${esc(validDay(planMeta.start) ? planMeta.start : '')}"></label><div class="pfa"><button type="button" class="btn g" data-pcd>${t('clear')}</button><button type="button" class="btn p" data-psave>${t('pSave')}</button></div>`;
+  } else if (mode === 'item') {
+    const x = known[key]; if (!x) return;
+    const { span } = planModel(), cur = planDays[key] || 1, top = Math.min(span + 1, 30);
+    ttl.textContent = itemTitle(x);
+    body.innerHTML = `<div class="plb">${t('moveDay')}</div><div class="pdays">${Array.from({ length: top }, (_, i) => `<button type="button" class="chip" data-day="${i + 1}" data-k="${esc(key)}" aria-pressed="${i + 1 === cur}">${i + 1}</button>`).join('')}</div><a class="btn s full" href="#d/${esc(key)}" data-x style="text-decoration:none;margin-top:14px">${ic('arrow')}${t('openItem')}</a><button type="button" class="btn s full pdanger" data-rm="${esc(key)}" style="margin-top:10px">${ic('trash')}${t('removePlan')}</button>`;
+  } else {
+    ttl.textContent = t('myTrip');
+    const row = (id, g, l) => `<button type="button" class="btn s full prow" data-act="${id}">${ic(g)}${t(l)}</button>`;
+    body.innerHTML = row('pmap', 'map', 'planMapB') + row('share', 'share', 'shareB') + row('ics', 'cal', 'pCal') + row('ppdf', 'file', 'pPdf') + row('pclr', 'trash', 'pClear');
+  }
+  $('psheet').hidden = false;
+}
+$('pedit').onclick = () => openPSheet('edit');
+$('pmenu').onclick = () => { if (plan.length) openPSheet('trip'); else openPSheet('edit'); };
+$('pout').addEventListener('click', (e) => { const b = e.target.closest('[data-pm]'); if (b) { e.preventDefault(); openPSheet('item', b.getAttribute('data-pm')); } });
+$('psheet').addEventListener('click', (e) => {
+  const a = e.target.closest('[data-act]'); if (a) { psClose(); $(a.getAttribute('data-act')).click(); return; }
+  const dy = e.target.closest('[data-day]'); if (dy) { planDays[dy.getAttribute('data-k')] = +dy.getAttribute('data-day'); saveDays(); psClose(); planView(); return; }
+  const rm = e.target.closest('[data-rm]'); if (rm) { const k = rm.getAttribute('data-rm'), i = plan.indexOf(k); if (i >= 0) plan.splice(i, 1); delete planDays[k]; savePlan(); saveDays(); psClose(); planView(); return; }
+  if (e.target.closest('[data-pcd]')) { $('pst').value = ''; return; }
+  if (e.target.closest('[data-psave]')) { planMeta.name = $('pn').value.trim().slice(0, 60); planMeta.start = validDay($('pst').value) ? $('pst').value : ''; saveDays(); psClose(); planView(); return; }
+  if (e.target.closest('[data-x]')) psClose();
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('psheet').hidden) psClose(); });
 
 /* ---- polje „Gdje“ sa prijedlozima ---- */
 function bindPlace(id, sid, onChange) {
