@@ -58,7 +58,7 @@ const DICT = {
     placeLbl: 'Mjesto', phone: 'Telefon', rating: 'Ocjena', reviews: ' recenzija', billPer: 'Račun po osobi', pricesChecked: 'Cijene provjerene', allYear: 'Cijele godine',
     wxFail: 'Prognoza trenutno nije dostupna.', retry: 'Pokušaj ponovo', next7: 'Narednih 7 dana, ', next7b: '. Izaberi period da vidiš prognozu za svoj termin.',
     estNote: 'Dani sa isprekidanom ivicom su procjena na osnovu prethodnih godina. Stvarna prognoza je dostupna 16 dana unaprijed.', estAria: 'procjena, ', degrees: ' stepeni, ', data: 'Podaci: ',
-    useful: 'Korisno', usefulSub: 'Sve što ti treba na jednom mjestu.', needHelp: 'Treba mi pomoć',
+    useful: 'Korisno', usefulSub: 'Sve što ti treba na jednom mjestu.', needHelp: 'Treba mi pomoć', wxT: 'Vremenska prognoza', wxTabF: 'Prognoza', wxTabA: 'Prosjek', wxTabW: 'Upozorenja', wxFeels: 'Osjećaj', wxHum: 'Vlažnost', wxWind: 'Vjetar', wxNext: 'Prognoza za narednih 7 dana', wxToday: 'Danas', wxAvgNote: 'Prosjek istih datuma u posljednje tri godine. Služi za poređenje, nije prognoza.', wxAvgTyp: 'Uobičajeno', wxNone: 'Nema upozorenja za narednih 7 dana.', wxAlertNote: 'Automatska upozorenja iz prognoze, nisu službena. Službena upozorenja izdaje Zavod za hidrometeorologiju i seizmologiju Crne Gore.', aHeat: 'Visoka temperatura', aWind: 'Jak vjetar', aRain: 'Obilna kiša', aStorm: 'Moguća grmljavina', aSnow: 'Moguć snijeg', aFrost: 'Mraz', aUv: 'Jak UV indeks, koristi zaštitu', wxDetail: 'Detaljna prognoza', wxChip: 'Vrijeme',
     euroDec: ',',
   },
   en: {
@@ -101,7 +101,7 @@ const DICT = {
     placeLbl: 'Place', phone: 'Phone', rating: 'Rating', reviews: ' reviews', billPer: 'Bill per person', pricesChecked: 'Prices verified', allYear: 'All year',
     wxFail: 'The forecast is not available right now.', retry: 'Try again', next7: 'Next 7 days, ', next7b: '. Pick dates to see the forecast for your trip.',
     estNote: 'Days with a dashed border are estimates based on previous years. The actual forecast is available 16 days ahead.', estAria: 'estimate, ', degrees: ' degrees, ', data: 'Data: ',
-    useful: 'Useful', usefulSub: 'Everything you need in one place.', needHelp: 'I need help',
+    useful: 'Useful', usefulSub: 'Everything you need in one place.', needHelp: 'I need help', wxT: 'Weather forecast', wxTabF: 'Forecast', wxTabA: 'Average', wxTabW: 'Alerts', wxFeels: 'Feels like', wxHum: 'Humidity', wxWind: 'Wind', wxNext: 'Next 7 days', wxToday: 'Today', wxAvgNote: 'Average for the same dates over the last three years. For comparison only, not a forecast.', wxAvgTyp: 'Typical', wxNone: 'No alerts for the next 7 days.', wxAlertNote: 'Automatic alerts based on the forecast, not official. Official warnings are issued by the Hydrometeorological and Seismological Service of Montenegro.', aHeat: 'High temperature', aWind: 'Strong wind', aRain: 'Heavy rain', aStorm: 'Possible thunderstorm', aSnow: 'Possible snow', aFrost: 'Frost', aUv: 'Strong UV, use sun protection', wxDetail: 'Detailed forecast', wxChip: 'Weather',
     euroDec: '.',
   },
   de: {
@@ -144,7 +144,7 @@ const DICT = {
     placeLbl: 'Ort', phone: 'Telefon', rating: 'Bewertung', reviews: ' Bewertungen', billPer: 'Rechnung pro Person', pricesChecked: 'Preise geprüft', allYear: 'Ganzjährig',
     wxFail: 'Die Vorhersage ist derzeit nicht verfügbar.', next7: 'Nächste 7 Tage, ', next7b: '. Wähle einen Zeitraum, um die Vorhersage für deine Reise zu sehen.',
     estNote: 'Tage mit gestricheltem Rand sind Schätzungen auf Grundlage früherer Jahre. Die tatsächliche Vorhersage gibt es 16 Tage im Voraus.', estAria: 'Schätzung, ', degrees: ' Grad, ', data: 'Daten: ',
-    useful: 'Wissenswert', usefulSub: 'Alles, was du brauchst, an einem Ort.', needHelp: 'Ich brauche Hilfe',
+    useful: 'Wissenswert', usefulSub: 'Alles, was du brauchst, an einem Ort.', needHelp: 'Ich brauche Hilfe', wxT: 'Wettervorhersage', wxTabF: 'Vorhersage', wxTabA: 'Durchschnitt', wxTabW: 'Warnungen', wxFeels: 'Gefühlt', wxHum: 'Luftfeuchte', wxWind: 'Wind', wxNext: 'Nächste 7 Tage', wxToday: 'Heute', wxAvgNote: 'Durchschnitt derselben Daten der letzten drei Jahre. Nur zum Vergleich, keine Vorhersage.', wxAvgTyp: 'Üblich', wxNone: 'Keine Warnungen für die nächsten 7 Tage.', wxAlertNote: 'Automatische Hinweise aus der Vorhersage, nicht amtlich. Amtliche Warnungen gibt der Hydrometeorologische und Seismologische Dienst Montenegros heraus.', aHeat: 'Hohe Temperatur', aWind: 'Starker Wind', aRain: 'Starker Regen', aStorm: 'Mögliches Gewitter', aSnow: 'Möglicher Schnee', aFrost: 'Frost', aUv: 'Starker UV-Index, Sonnenschutz nutzen', wxDetail: 'Detaillierte Vorhersage', wxChip: 'Wetter',
     euroDec: ',',
   },
   ru: {
@@ -188,7 +188,7 @@ const DICT = {
     placeLbl: 'Место', phone: 'Телефон', rating: 'Рейтинг', reviews: ' отзывов', billPer: 'Счёт на человека', pricesChecked: 'Цены проверены', allYear: 'Круглый год',
     wxFail: 'Прогноз сейчас недоступен.', next7: 'Ближайшие 7 дней, ', next7b: '. Выберите даты, чтобы увидеть прогноз на время поездки.',
     estNote: 'Дни с пунктирной рамкой — оценка по данным прошлых лет. Фактический прогноз доступен за 16 дней.', estAria: 'оценка, ', degrees: ' градусов, ', data: 'Данные: ',
-    useful: 'Полезное', usefulSub: 'Всё нужное в одном месте.', needHelp: 'Мне нужна помощь',
+    useful: 'Полезное', usefulSub: 'Всё нужное в одном месте.', needHelp: 'Мне нужна помощь', wxT: 'Прогноз погоды', wxTabF: 'Прогноз', wxTabA: 'Среднее', wxTabW: 'Предупреждения', wxFeels: 'Ощущается', wxHum: 'Влажность', wxWind: 'Ветер', wxNext: 'Ближайшие 7 дней', wxToday: 'Сегодня', wxAvgNote: 'Среднее за те же даты за последние три года. Только для сравнения, не прогноз.', wxAvgTyp: 'Обычно', wxNone: 'Предупреждений на ближайшие 7 дней нет.', wxAlertNote: 'Автоматические предупреждения по прогнозу, не официальные. Официальные предупреждения выпускает Гидрометеорологическая и сейсмологическая служба Черногории.', aHeat: 'Высокая температура', aWind: 'Сильный ветер', aRain: 'Сильный дождь', aStorm: 'Возможна гроза', aSnow: 'Возможен снег', aFrost: 'Заморозки', aUv: 'Сильный УФ-индекс, используйте защиту', wxDetail: 'Подробный прогноз', wxChip: 'Погода',
     euroDec: ',',
   },
   it: {
@@ -231,7 +231,7 @@ const DICT = {
     placeLbl: 'Luogo', phone: 'Telefono', rating: 'Valutazione', reviews: ' recensioni', billPer: 'Conto a persona', pricesChecked: 'Prezzi verificati', allYear: 'Tutto l’anno',
     wxFail: 'Le previsioni non sono al momento disponibili.', next7: 'Prossimi 7 giorni, ', next7b: '. Scegli le date per vedere le previsioni del tuo viaggio.',
     estNote: 'I giorni con bordo tratteggiato sono stime basate sugli anni precedenti. Le previsioni effettive sono disponibili 16 giorni prima.', estAria: 'stima, ', degrees: ' gradi, ', data: 'Dati: ',
-    useful: 'Utile', usefulSub: 'Tutto ciò che ti serve in un unico posto.', needHelp: 'Ho bisogno di aiuto',
+    useful: 'Utile', usefulSub: 'Tutto ciò che ti serve in un unico posto.', needHelp: 'Ho bisogno di aiuto', wxT: 'Previsioni meteo', wxTabF: 'Previsioni', wxTabA: 'Media', wxTabW: 'Allerte', wxFeels: 'Percepita', wxHum: 'Umidità', wxWind: 'Vento', wxNext: 'Prossimi 7 giorni', wxToday: 'Oggi', wxAvgNote: 'Media delle stesse date negli ultimi tre anni. Solo per confronto, non è una previsione.', wxAvgTyp: 'Tipico', wxNone: 'Nessuna allerta per i prossimi 7 giorni.', wxAlertNote: 'Avvisi automatici basati sulla previsione, non ufficiali. Le allerte ufficiali sono emesse dal Servizio idrometeorologico e sismologico del Montenegro.', aHeat: 'Temperatura alta', aWind: 'Vento forte', aRain: 'Pioggia intensa', aStorm: 'Possibile temporale', aSnow: 'Possibile neve', aFrost: 'Gelo', aUv: 'Indice UV alto, usa protezione', wxDetail: 'Previsioni dettagliate', wxChip: 'Meteo',
     euroDec: ',',
   },
 };

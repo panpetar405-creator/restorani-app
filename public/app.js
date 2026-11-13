@@ -459,6 +459,7 @@ $('cal').addEventListener('click', (e) => { if (e.target.closest('[data-x]')) cl
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('cal').hidden) closeCal(); });
 
 /* ---- detalj stavke ---- */
+const wxLink = (x) => { const s = window.wxSlug && window.wxSlug(x.place || x.city); return s ? `<a class="wxlnk" href="#vrijeme/${s}">${t('wxDetail')}${ic('right')}</a>` : ''; };
 const DAYN = DICT[LANG].dayn;
 const wxIcon = (c) => (c == null ? 'cloudsun' : c === 0 ? 'sun' : c <= 2 ? 'cloudsun' : c === 3 ? 'cloud' : c === 45 || c === 48 ? 'fog' : (c >= 71 && c <= 77) || c === 85 || c === 86 ? 'snow' : c >= 95 ? 'storm' : (c >= 51 && c <= 67) || (c >= 80 && c <= 82) ? 'rain' : 'cloud');
 const wxText = DICT[LANG].wx;
@@ -596,7 +597,7 @@ async function showDetail(key) {
         ${isI && x.kind === 'event' && x.from ? `<button type="button" class="dact" data-ics><span class="dci">${ic('cal')}</span><span class="dl">${t('calB')}</span></button>` : ''}
         <button type="button" class="dact" data-share><span class="dci">${ic('share')}</span><span class="dl">${t('shareB')}</span></button>
       </div>
-      <section class="wcard" id="wsec"><button type="button" class="wmain" id="wmain" data-wx aria-expanded="false"><span class="skb" style="height:44px;width:100%"></span></button><div class="wmore" id="wmore" hidden><p class="sub" id="wsub"></p><div id="wbody"></div></div></section>
+      <section class="wcard" id="wsec"><button type="button" class="wmain" id="wmain" data-wx aria-expanded="false"><span class="skb" style="height:44px;width:100%"></span></button><div class="wmore" id="wmore" hidden><p class="sub" id="wsub"></p><div id="wbody"></div>${wxLink(x)}</div></section>
       ${more ? `<section class="sec dabout"><h2>${kind === 'event' ? t('about').event : t('about').loc}</h2><p class="prose dclamp" id="dprose">${esc(more)}</p><button type="button" class="dmore" id="dmorebtn" data-more aria-expanded="false" hidden>${t('readMore')}${ic('down')}</button></section>` : ''}
       ${cap}
       ${gridHtml(media)}
@@ -794,16 +795,17 @@ $('kout').addEventListener('click', (e) => { const b = e.target.closest('[data-k
 $('ksheet').addEventListener('click', (e) => { if (e.target.closest('[data-x]')) $('ksheet').hidden = true; });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('ksheet').hidden) $('ksheet').hidden = true; });
 
-const VIEWS = ['pocetna', 'istrazi', 'plan', 'korisno', 'mapa', 'detalj'];
+const VIEWS = ['pocetna', 'istrazi', 'plan', 'korisno', 'mapa', 'vrijeme', 'detalj'];
 function route() {
   const raw = (location.hash || '#pocetna').slice(1);
-  let h = raw, dkey = '';
+  let h = raw, dkey = '', wkey = '';
   if (raw.startsWith('d/')) { h = 'detalj'; dkey = decodeURIComponent(raw.slice(2)); }
+  else if (raw === 'vrijeme' || raw.startsWith('vrijeme/')) { h = 'vrijeme'; wkey = raw.slice(8); }
   else if (!VIEWS.includes(h) || h === 'detalj') h = 'pocetna';
   if (!$('lb').hidden) lbClose();
   $('ksheet').hidden = true;
   VIEWS.forEach((v) => { $('v-' + v).className = 'view' + (v === h ? ' on' : ''); });
-  const tab = h === 'detalj' || h === 'mapa' ? 'istrazi' : h;
+  const tab = h === 'detalj' || h === 'mapa' ? 'istrazi' : h === 'vrijeme' ? 'pocetna' : h;
   document.querySelectorAll('.tabs a').forEach((a) => (a.getAttribute('href') === '#' + tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   document.body.classList.toggle('isdet', h === 'detalj');
   document.body.classList.toggle('ismap', h === 'mapa');
@@ -815,6 +817,7 @@ function route() {
   if (h === 'plan') { planView(); if (window.mpPushRender) window.mpPushRender(); }
   if (h === 'korisno') usefulView();
   if (h === 'mapa' && window.mapView) window.mapView();
+  if (h === 'vrijeme' && window.weatherView) window.weatherView(wkey);
   if (h === 'detalj') showDetail(dkey);
   window.scrollTo(0, 0);
   if (back !== null) done.then(() => window.scrollTo(0, back));

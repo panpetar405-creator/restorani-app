@@ -876,3 +876,49 @@ body.ismap{overflow:hidden;overscroll-behavior:none}
 @media (max-width:340px){.kgrid{grid-template-columns:1fr}}
 .khelp{position:sticky;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;margin-top:18px;border-radius:999px;background:linear-gradient(180deg,#f04848,#d62828);color:#fff;font-size:1.05rem;font-weight:800;text-decoration:none;box-shadow:0 10px 24px rgba(214,40,40,.4)}
 .khelp .ic{width:22px;height:22px}
+
+/* ---- Vremenska prognoza (sekcija 7) ---- */
+.hchips .hchip{padding:0 8px;gap:6px;font-size:.85rem;text-decoration:none;color:var(--ink)}
+.wxw{padding-bottom:24px}
+.wxpl{position:relative;display:flex;align-items:center;justify-content:center;gap:6px;width:max-content;max-width:100%;margin:0 auto 12px;color:var(--ink)}
+.wxpl .ic{width:20px;height:20px;flex:none;color:var(--sea);pointer-events:none}
+.wxpl select{appearance:none;-webkit-appearance:none;border:0;background:transparent;font-size:1.05rem;font-weight:800;padding:6px 4px;color:var(--ink);text-align:center;text-align-last:center}
+.wxtabs{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;box-shadow:0 2px 8px rgba(12,60,120,.06)}
+.wxtabs button{min-height:40px;border:0;border-radius:999px;background:transparent;color:var(--ink);font-size:.9rem;font-weight:700}
+.wxtabs button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);box-shadow:0 4px 12px rgba(15,34,54,.25)}
+#wx-out{margin-top:14px}
+.wxh{--g1:#2f8fe0;--g2:#0b5aa8;position:relative;padding:18px 16px 16px;border-radius:24px;color:#fff;background:linear-gradient(160deg,var(--g1),var(--g2));box-shadow:0 10px 26px rgba(12,60,120,.28)}
+.wxh[data-sk="cloud"],.wxh[data-sk="cloudsun"]{--g1:#6f94bd;--g2:#3c648f}
+.wxh[data-sk="rain"],.wxh[data-sk="fog"]{--g1:#587792;--g2:#2d4a63}
+.wxh[data-sk="storm"]{--g1:#4b5675;--g2:#222a47}
+.wxh[data-sk="snow"]{--g1:#86a9c8;--g2:#4a7094}
+.wxh[data-sk="night"]{--g1:#1c3a78;--g2:#0a1640}
+.wxh1{display:flex;align-items:center;justify-content:center;gap:14px}
+.wxhi .ic{width:72px;height:72px;stroke-width:1.6;color:#ffd24a}
+.wxh[data-sk="night"] .wxhi .ic{color:#dbe6ff}
+.wxh[data-sk="cloud"] .wxhi .ic,.wxh[data-sk="rain"] .wxhi .ic,.wxh[data-sk="fog"] .wxhi .ic,.wxh[data-sk="storm"] .wxhi .ic,.wxh[data-sk="snow"] .wxhi .ic{color:#fff}
+.wxht{display:grid}
+.wxht b{font-size:3rem;line-height:1;font-weight:800;letter-spacing:-.03em}
+.wxht span{font-size:1.15rem;font-weight:700}
+.wxhs{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 14px;margin:12px 0 0;font-size:.9rem;font-weight:600}
+.wxhr{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px;padding:12px 6px;border-radius:16px;background:rgba(255,255,255,.16)}
+.wxhr div{display:grid;justify-items:center;gap:4px;font-size:.82rem;font-weight:600}
+.wxhr .ic{width:26px;height:26px;color:#ffd24a}
+.wxhr b{font-size:1.1rem}
+.wxdl{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.wxd{display:grid;grid-template-columns:1fr auto 64px 78px;align-items:center;gap:10px;padding:10px 14px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 2px 8px rgba(12,60,120,.06)}
+.wxdn{display:grid}
+.wxdn small{color:var(--mute);font-size:.78rem}
+.wxdi .ic{width:26px;height:26px;color:var(--sea)}
+.wxdp{display:flex;align-items:center;justify-content:flex-end;gap:2px;color:var(--sea);font-size:.82rem;font-weight:700}
+.wxdp .ic{width:14px;height:14px}
+.wxdt{text-align:right;color:var(--mute);font-weight:600;white-space:nowrap}
+.wxdt b{color:var(--ink);font-size:1.05rem}
+.wxdt.a{color:var(--sea)}
+.wxavg .wxd{grid-template-columns:1fr 88px 88px}
+.wxavg .wxdh{background:transparent;border:0;box-shadow:none;padding-block:0;color:var(--mute);font-size:.78rem;font-weight:700;text-align:right}
+.wxa{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--warn-t);border:1px solid var(--line);border-radius:14px}
+.wxai{flex:none;width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:var(--card);color:var(--warn)}
+.wxat{display:grid}.wxat small{color:var(--mute)}
+.wxlnk{display:flex;align-items:center;justify-content:center;gap:6px;margin:8px 0 10px;min-height:44px;font-weight:700;color:var(--sea);text-decoration:none}
+.wxlnk .ic{width:16px;height:16px}

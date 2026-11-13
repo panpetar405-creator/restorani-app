@@ -42,6 +42,7 @@
   <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/></symbol>
@@ -118,6 +119,7 @@
       <button class="hchip" type="button" data-n="today"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span data-i18n="nToday">Danas</span></button>
       <button class="hchip" type="button" data-n="weekend"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span data-i18n="nWeekend">Vikend</span></button>
       <button class="hchip" type="button" data-n="near"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg><span data-i18n="nNear">U blizini</span></button>
+    <a class="hchip" href="#vrijeme"><svg class="ic" aria-hidden="true"><use href="#i-sun"/></svg><span data-i18n="wxChip">Vrijeme</span></a>
     </div>
 
     <div class="hd"><h2 data-i18n="whatToday">Šta želiš danas?</h2><button class="lnk" id="allcat" type="button"><span data-i18n="seeAll">Sve</span><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
@@ -197,6 +199,23 @@
   <div class="wrap kw">
     <p class="sub" data-i18n="usefulSub">Sve što ti treba na jednom mjestu.</p>
     <div id="kout"></div>
+  </div>
+</section>
+
+<section class="view" id="v-vrijeme">
+  <div class="wrap wxw">
+    <div class="xbar">
+      <button class="xib" type="button" id="wx-back" aria-label="Nazad" data-i18n-aria="back"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+      <h1 data-i18n="wxT">Vremenska prognoza</h1>
+      <span aria-hidden="true"></span>
+    </div>
+    <label class="wxpl"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg><select id="wx-place" aria-label="Mjesto" data-i18n-aria="place"></select><svg class="ic dn" aria-hidden="true"><use href="#i-down"/></svg></label>
+    <div class="wxtabs" id="wx-tabs" role="group">
+      <button type="button" data-t="f" aria-pressed="true" data-i18n="wxTabF">Prognoza</button>
+      <button type="button" data-t="p" aria-pressed="false" data-i18n="wxTabA">Prosjek</button>
+      <button type="button" data-t="w" aria-pressed="false" data-i18n="wxTabW">Upozorenja</button>
+    </div>
+    <div id="wx-out" aria-live="polite"></div>
   </div>
 </section>
 
@@ -303,6 +322,7 @@
 <script src="/korisno.js" defer></script>
 <script src="/app.js" defer></script>
 <script src="/map.js" defer></script>
+<script src="/weather.js" defer></script>
 <script src="/opstine.js" defer></script>
 <script src="/push.js" defer></script>
 <script src="/inbox.js" defer></script>
