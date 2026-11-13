@@ -235,7 +235,7 @@ function planView() {
   $('ics').hidden = !l.some((k) => known[k].kind === 'event' && known[k].from);
   $('pb').textContent = plan.length; $('pb').hidden = !plan.length;
 }
-const setAdd = (a, on) => { a.setAttribute('aria-pressed', on); a.innerHTML = on ? ic('check') + t('inPlan') : ic('plus') + t('addPlan'); };
+const setAdd = (a, on) => { a.setAttribute('aria-pressed', on); const g = on ? ic('check') : ic('plus'), l = on ? t('inPlan') : t('addPlan'); a.innerHTML = a.classList.contains('dact') ? `<span class="dci">${g}</span><span class="dl">${l}</span>` : g + l; };
 document.addEventListener('click', (e) => {
   const b = e.target.closest('.add'); if (!b) return;
   const k = b.getAttribute('data-k'), i = plan.indexOf(k);
@@ -467,20 +467,45 @@ async function showDetail(key) {
   const dest = x.lat != null && x.lng != null ? `${x.lat},${x.lng}` : '';
   const maps = 'https://www.google.com/maps/' + (dest ? 'dir/?api=1&destination=' + dest : 'search/?api=1&query=' + encodeURIComponent(title + ' ' + place));
   const inp = plan.includes(key), media = d.media || [];
-  box.innerHTML = `<div data-c="${kind}">
-    <div class="dbar"><button type="button" class="ib" data-back aria-label="${t('back')}">${ic('left')}</button><span class="dk">${KIND[kind]}</span><button type="button" class="ib" data-share aria-label="${t('share')}">${ic('share')}</button></div>
-    ${postHtml(x, key, kind, title, place, pills, media)}
-    <div class="wrap">
-      <div class="dh"><h1>${esc(title)}</h1></div>
-      <div class="acts2"><button type="button" class="btn p add" aria-pressed="${inp}" data-k="${esc(key)}">${inp ? ic('check') + t('inPlan') : ic('plus') + t('addPlan')}</button><a class="btn s" href="${esc(maps)}" target="_blank" rel="noopener">${ic('nav')}${t('map')}</a>${isI && x.kind === 'event' && x.from ? `<button type="button" class="btn s" data-ics style="grid-column:1/-1">${ic('cal')}${t('addCal')}</button>` : ''}</div>
+  const n = media.length; lbList = media;
+  const liked = likes.includes(key), conf = isI ? x.status === 'potvrdjeno' : !!x.verifiedAt;
+  const pill = conf ? `<span class="dpill">${ic('check')}${t('confirmedB')}</span>` : isI && STATUS[x.status] ? `<span class="dpill w">${ic('alert')}${esc(STATUS[x.status])}</span>` : '';
+  const rows = [['pin', esc(place)]];
+  if (isI) rows.push(['cal', esc(kind === 'event' && x.from ? rangeShort(x) : monthsLabel(x.months))]);
+  else { if (x.rating) rows.push(['star', `${esc(x.rating)} (${esc(x.reviews)}${t('reviews')})`]); rows.push(['fork', x.price ? euro(x.price.lo) + ' – ' + euro(x.price.hi) + t('perPerson') : t('priceSoon')]); }
+  const rowsH = rows.map((r, i) => `<li>${ic(r[0])}<span>${r[1]}</span>${i === rows.length - 1 ? pill : ''}</li>`).join('');
+  const lead = isI ? x.description : x.ambience, more = isI ? x.details : '';
+  const hero = n
+    ? `<div class="gtrack" id="gtrack">${media.map((m, i) => slideHtml(m, i, title)).join('')}</div>${n > 1 ? `<div class="gcount" id="gcount">1 / ${n}</div><div class="dots" id="dots" aria-hidden="true">${media.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}<span class="burst" id="burst" aria-hidden="true">${ic('heart', 'f')}</span>`
+    : `<div class="gempty">${ic(GLYPH[kind])}<span>${t('photosSoon')}</span></div>`;
+  const cur = media[0], cap = cur && (cur.caption || cur.credit) ? `<p class="pcr" id="pcr">${esc(cur.caption)}${cur.credit ? `<i>${esc(cur.credit)}</i>` : ''}</p>` : '';
+  const tickets = isI && x.kind === 'event' && /^https?:\/\//.test(x.website || '') ? x.website : '';
+  box.innerHTML = `<div class="xd3" data-c="${kind}">
+    <div class="dtop"><button type="button" class="dib dl2" data-back aria-label="${t('back')}">${ic('left')}</button><div class="dr"><button type="button" class="dib" data-share aria-label="${t('share')}">${ic('share')}</button>${heartBtn(key).replace('class="sch"', 'class="sch dib"')}</div></div>
+    <div class="dhero pm">${hero}</div>
+    <div class="dsheet">
+      <span class="dkind">${KIND[kind]}</span>
+      <h1 class="dtt">${esc(title)}</h1>
+      <ul class="drows">${rowsH}</ul>
+      ${lead ? `<p class="dlead">${esc(lead)}</p>` : ''}
+      <div class="dacts">
+        <button type="button" class="dact add" aria-pressed="${inp}" data-k="${esc(key)}"><span class="dci">${inp ? ic('check') : ic('plus')}</span><span class="dl">${inp ? t('inPlan') : t('addPlan')}</span></button>
+        <a class="dact" href="${esc(maps)}" target="_blank" rel="noopener"><span class="dci">${ic('nav')}</span><span class="dl">${t('navB')}</span></a>
+        ${isI && x.kind === 'event' && x.from ? `<button type="button" class="dact" data-ics><span class="dci">${ic('cal')}</span><span class="dl">${t('calB')}</span></button>` : ''}
+        <button type="button" class="dact" data-share><span class="dci">${ic('share')}</span><span class="dl">${t('shareB')}</span></button>
+      </div>
+      <section class="wcard" id="wsec"><button type="button" class="wmain" id="wmain" data-wx aria-expanded="false"><span class="skb" style="height:44px;width:100%"></span></button><div class="wmore" id="wmore" hidden><p class="sub" id="wsub"></p><div id="wbody"></div></div></section>
+      ${more ? `<section class="sec dabout"><h2>${kind === 'event' ? t('about').event : t('about').loc}</h2><p class="prose dclamp" id="dprose">${esc(more)}</p><button type="button" class="dmore" id="dmorebtn" data-more aria-expanded="false" hidden>${t('readMore')}${ic('down')}</button></section>` : ''}
+      ${cap}
       ${gridHtml(media)}
-      <section class="sec"><h2>${t('forecast')}</h2><p class="sub" id="wsub"></p><div id="wbody"><div class="skb" style="height:132px"></div></div></section>
-      ${text ? `<section class="sec"><h2>${isI ? (kind === 'event' ? t('about').event : t('about').loc) : t('about').rest}</h2><div class="box"><p class="prose">${esc(text)}</p></div></section>` : ''}
       ${!isI && x.why && x.why.length ? `<section class="sec"><h2>${t('whyHere')}</h2><div class="box"><ul class="why">${x.why.map((w) => `<li>${esc(w)}</li>`).join('')}</ul></div></section>` : ''}
       ${tags.length ? `<section class="sec"><div class="tags">${tags.map((t) => `<span class="tag">${esc(t)}</span>`).join('')}</div></section>` : ''}
       ${isI ? '' : menuHtml(x.menu)}
       <section class="sec"><h2>${t('info')}</h2><div class="box">${infoRows(x, isI)}</div></section>
-    </div></div>`;
+    </div>
+    ${tickets ? `<div class="dcta"><a class="btn p" href="${esc(tickets)}" target="_blank" rel="noopener noreferrer">${t('tickets')}${ic('ext')}</a></div>` : ''}
+  </div>`;
+  const pr = $('dprose'), mb = $('dmorebtn'); if (pr && mb) mb.hidden = pr.scrollHeight <= pr.clientHeight + 1;
   initGallery();
   loadWeather(key, x, tok);
 }
@@ -490,12 +515,13 @@ async function loadWeather(key, x, tok) {
   if (per) { qs.set('from', per.f); qs.set('to', per.t); }
   let w;
   try { w = await api('/weather?' + qs); }
-  catch { if (tok === detailTok && $('wbody')) { $('wsub').textContent = ''; $('wbody').innerHTML = `<p class="m" style="margin:0 0 8px">${t('wxFail')}</p><button type="button" class="btn s" data-retry>${t('retry')}</button>`; } return; }
+  catch { if (tok === detailTok && $('wbody')) { $('wsub').textContent = ''; $('wmain').hidden = true; $('wmore').hidden = false; $('wbody').innerHTML = `<p class="m" style="margin:0 0 8px">${t('wxFail')}</p><button type="button" class="btn s" data-retry>${t('retry')}</button>`; } return; }
   if (tok !== detailTok || !$('wbody')) return;
-  if (!w.available) { $('wbody').closest('.sec').remove(); return; }
+  if (!w.available) { $('wsec').remove(); return; }
   const attr = `<p class="note">${t('data')}<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a></p>`;
   $('wsub').textContent = per ? `${w.place}, ${rangeText(w.from, w.to)}` : `${t('next7')}${w.place}${t('next7b')}`;
   const est = w.days.some((d) => d.src === 'climate');
+  { const d0 = w.days[0], cl0 = d0 && d0.src === 'climate', g0 = d0 ? (cl0 ? climIcon(d0.wet) : wxIcon(d0.code)) : 'cloudsun'; $('wmain').innerHTML = d0 ? `<span class="wi" data-w="${g0}">${ic(g0)}</span><span class="wt"><b>${d0.tmax}°C</b><span>${wxText[g0]}</span></span><span class="wsrc">${cl0 ? t('wxEst') : t('wxBased')}${ic('down')}</span>` : ''; }
   let lastM = -1;
   $('wbody').innerHTML = `<div class="wxr">${w.days.map((dd) => {
     const dt = parse(dd.date), cl = dd.src === 'climate', g = cl ? climIcon(dd.wet) : wxIcon(dd.code), pr = cl ? dd.wet : dd.prob;
@@ -603,20 +629,22 @@ window.addEventListener('online', () => {
 syncOnline();
 
 $('dt').addEventListener('click', async (e) => {
-  const t = e.target;
-  if (t.closest('[data-back]')) { if (navs > 0) history.back(); else location.hash = '#istrazi'; return; }
-  const lk = t.closest('[data-like]'); if (lk) { toggleLike(lk.getAttribute('data-like')); return; }
-  if (t.closest('[data-ics]')) { const x = known[decodeURIComponent(location.hash.slice(3))]; if (x) saveIcs([x], (x.slug || 'dogadjaj') + '.ics'); return; }
-  const bm = t.closest('[data-bm]'); if (bm) { const a = document.querySelector('.acts2 .add'); if (a) a.click(); return; }
-  const vt = t.closest('[data-vt]');
+  const el = e.target;
+  if (el.closest('[data-back]')) { if (navs > 0) history.back(); else location.hash = '#istrazi'; return; }
+  const wx = el.closest('[data-wx]'); if (wx) { const on = wx.getAttribute('aria-expanded') !== 'true'; wx.setAttribute('aria-expanded', on); $('wmore').hidden = !on; return; }
+  const mo = el.closest('[data-more]'); if (mo) { const pe = $('dprose'), on = !pe.classList.contains('open'); pe.classList.toggle('open', on); mo.setAttribute('aria-expanded', on); mo.innerHTML = (on ? t('readLess') : t('readMore')) + ic('down'); return; }
+  const lk = el.closest('[data-like]'); if (lk) { toggleLike(lk.getAttribute('data-like')); return; }
+  if (el.closest('[data-ics]')) { const x = known[decodeURIComponent(location.hash.slice(3))]; if (x) saveIcs([x], (x.slug || 'dogadjaj') + '.ics'); return; }
+  const bm = el.closest('[data-bm]'); if (bm) { const a = document.querySelector('.acts2 .add'); if (a) a.click(); return; }
+  const vt = el.closest('[data-vt]');
   if (vt) { const v = vt.parentNode.querySelector('video'); if (v.paused) v.play().catch(() => {}); else v.pause(); return; }
-  const mu = t.closest('[data-mute]');
+  const mu = el.closest('[data-mute]');
   if (mu) { const v = mu.parentNode.querySelector('video'); v.muted = !v.muted; mu.innerHTML = ic(v.muted ? 'mute' : 'vol'); mu.setAttribute('aria-label', v.muted ? t('soundOn') : t('soundOff')); return; }
-  const z = t.closest('[data-z]'); if (z) { lbOpen(+z.getAttribute('data-z')); return; }
-  const yt = t.closest('[data-yt]');
+  const z = el.closest('[data-z]'); if (z) { lbOpen(+z.getAttribute('data-z')); return; }
+  const yt = el.closest('[data-yt]');
   if (yt) { yt.parentNode.innerHTML = `<iframe src="https://www.youtube-nocookie.com/embed/${esc(yt.getAttribute('data-yt'))}?autoplay=1&rel=0&playsinline=1" title="Video" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>`; return; }
-  if (t.closest('[data-retry]')) { const k = decodeURIComponent(location.hash.slice(3)); $('wbody').innerHTML = '<div class="skb" style="height:132px"></div>'; if (known[k]) loadWeather(k, known[k], detailTok); return; }
-  if (t.closest('[data-share]')) {
+  if (el.closest('[data-retry]')) { const k = decodeURIComponent(location.hash.slice(3)); $('wbody').innerHTML = '<div class="skb" style="height:132px"></div>'; if (known[k]) loadWeather(k, known[k], detailTok); return; }
+  if (el.closest('[data-share]')) {
     const k = decodeURIComponent(location.hash.slice(3)), x = known[k] || {}, link = /^[ir]:[a-z0-9-]+$/.test(k) ? `${location.origin}/s/${k[0]}/${k.slice(2)}${LANG === 'sr' ? '' : '?lang=' + LANG}` : location.href, data = { title: x.title || x.name || 'Montepalm', url: link };
     try { if (navigator.share) await navigator.share(data); else { await navigator.clipboard.writeText(link); toast(t('linkCopied')); } } catch { /* otkazano */ }
   }
@@ -666,6 +694,7 @@ function route() {
   VIEWS.forEach((v) => { $('v-' + v).className = 'view' + (v === h ? ' on' : ''); });
   const tab = h === 'detalj' ? 'istrazi' : h;
   document.querySelectorAll('.tabs a').forEach((a) => (a.getAttribute('href') === '#' + tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
+  document.body.classList.toggle('isdet', h === 'detalj');
   if (h !== 'detalj') document.title = t('pageTitle');
   const back = saved.hash === '#' + h ? saved.y : null;
   if (back !== null) saved = { hash: '', y: 0 };
