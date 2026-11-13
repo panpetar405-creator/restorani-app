@@ -187,6 +187,42 @@ async function getWeather(env, url) {
   return json(out);
 }
 
+/* ---- Vremenska prognoza za mjesto (ekran #vrijeme): trenutno stanje, sati, 7 dana i prosjek istih datuma iz 3 prethodne godine ---- */
+async function getForecast(env, url) {
+  const p = url.searchParams;
+  let lat = Number(p.get('lat')), lng = Number(p.get('lng'));
+  if (!p.get('lat') || !p.get('lng') || !Number.isFinite(lat) || !Number.isFinite(lng) || lat < 41.8 || lat > 43.6 || lng < 18.3 || lng > 20.5) throw new HttpError(400, 'Neispravna lokacija');
+  lat = Math.round(lat * 100) / 100; lng = Math.round(lng * 100) / 100;
+  const today = todayLocal(env);
+  const key = `https://weather.montepalm.internal/v3/${lat}/${lng}/${today}`;
+  const cache = typeof caches !== 'undefined' ? caches.default : null;
+  if (cache) { const hit = await cache.match(key); if (hit) return json(await hit.json()); }
+  const loc = `latitude=${lat}&longitude=${lng}&timezone=${encodeURIComponent(TZ)}`;
+  const fc = await omJson(env, `https://api.open-meteo.com/v1/forecast?${loc}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,is_day&hourly=temperature_2m,weather_code,is_day&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,precipitation_probability_max,wind_gusts_10m_max,uv_index_max&forecast_days=7&wind_speed_unit=kmh`);
+  const c = fc.current || {}, hr = fc.hourly || { time: [] };
+  const cur = String(c.time || '').slice(0, 13);
+  const i0 = Math.max(0, hr.time.findIndex((t) => t.slice(0, 13) >= cur));
+  const hours = hr.time.slice(i0, i0 + 24).map((t, k) => ({ h: Number(t.slice(11, 13)), temp: Math.round(hr.temperature_2m[i0 + k]), code: hr.weather_code[i0 + k], day: hr.is_day ? hr.is_day[i0 + k] === 1 : true }));
+  const days = dailyRows(fc.daily, 'forecast');
+  days.forEach((d, i) => { d.gust = Math.round((fc.daily.wind_gusts_10m_max || [])[i] || 0); d.uv = Math.round(((fc.daily.uv_index_max || [])[i] || 0) * 10) / 10; });
+  let avg = [];
+  if (days.length) {
+    const dates = days.map((d) => d.date);
+    const got = await Promise.allSettled([1, 2, 3].map(async (k) => {
+      const d = await omJson(env, `https://archive-api.open-meteo.com/v1/archive?${loc}&daily=temperature_2m_max,temperature_2m_min,precipitation_sum&start_date=${shiftYears(dates[0], k)}&end_date=${shiftYears(dates.at(-1), k)}`);
+      return new Map(dailyRows(d.daily, 'archive').map((r) => [r.date, r]));
+    }));
+    avg = climateDays(dates, got.map((g) => (g.status === 'fulfilled' ? g.value : new Map())));
+  }
+  const out = {
+    available: true, lat, lng,
+    now: { temp: Math.round(c.temperature_2m), feels: Math.round(c.apparent_temperature), hum: Math.round(c.relative_humidity_2m), wind: Math.round(c.wind_speed_10m), code: c.weather_code, day: c.is_day !== 0, time: c.time },
+    hours, days, avg,
+  };
+  if (cache) await cache.put(key, new Response(JSON.stringify(out), { headers: { 'content-type': 'application/json', 'cache-control': 'max-age=900' } }));
+  return json(out);
+}
+
 async function getRestaurant(env, slug, lang = 'sr') {
   if (!SLUG.test(slug)) throw new HttpError(404, 'Restoran nije pronađen');
   const row = await env.DB.prepare('SELECT * FROM restaurants WHERE active = 1 AND slug = ?').bind(slug).first();
@@ -270,6 +306,7 @@ async function route(request, env, url) {
   if (pathname === '/api/items' && method === 'GET') return listItems(env, url);
   if (seg[1] === 'items' && seg.length === 3 && method === 'GET') return json(await getItem(env, seg[2], pickLang(url)));
   if (pathname === '/api/weather' && method === 'GET') return getWeather(env, url);
+  if (pathname === '/api/forecast' && method === 'GET') return getForecast(env, url);
   if (seg[1] === 'push') return pushRoute(request, env, seg, method);
 
   if (seg[1] === 'restaurants') {
