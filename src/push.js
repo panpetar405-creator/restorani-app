@@ -107,6 +107,15 @@ function cleanKeys(k) {
   throw new HttpError(400, 'Neispravni ključevi pretplate');
 }
 
+/* opštine za ciljanje; šifre moraju biti iste kao u public/opstine.js */
+export const OPSTINE_IDS = ['andrijevica', 'bar', 'berane', 'bijelo-polje', 'budva', 'cetinje', 'danilovgrad', 'gusinje', 'herceg-novi', 'kolasin', 'kotor', 'mojkovac', 'niksic', 'petnjica', 'plav', 'pljevlja', 'pluzine', 'podgorica', 'rozaje', 'savnik', 'tivat', 'tuzi', 'ulcinj', 'zabljak', 'zeta'];
+const cleanPlaces = (v) => (Array.isArray(v) ? [...new Set(v.filter((x) => OPSTINE_IDS.includes(x)))] : null);
+/* uslov za primaoce ciljane promocije: izabrana opština, i (po izboru) oni koji nisu izabrali nijednu */
+function placeFilter(placesJson, andUnset) {
+  const list = JSON.parse(placesJson || '[]');
+  if (!list.length) return { sql: '', args: [] };
+  return { sql: ` AND (EXISTS (SELECT 1 FROM json_each(push_subs.places) j WHERE j.value IN (SELECT value FROM json_each(?)))${andUnset ? " OR push_subs.places = '[]'" : ''})`, args: [placesJson] };
+}
 const cleanSaved = (v) => (Array.isArray(v) ? [...new Set(v.filter((s) => typeof s === 'string' && SLUG.test(s)))].slice(0, 200) : null);
 const flag = (v, d) => (v === undefined ? d : v ? 1 : 0);
 
@@ -118,14 +127,15 @@ async function subscribe(env, request) {
   // pretplata je istekla/zamijenjena: nova preuzima izbor stare
   const old = b.replaces ? await env.DB.prepare('SELECT * FROM push_subs WHERE endpoint = ?').bind(cleanEndpoint(b.replaces)).first() : null;
   const lang = LANGS.includes(b.lang) ? b.lang : old ? old.lang : 'sr';
-  const saved = cleanSaved(b.saved);
+  const saved = cleanSaved(b.saved), pl = cleanPlaces(b.places);
   await env.DB
     .prepare(
-      `INSERT INTO push_subs (endpoint, p256dh, auth, lang, promo, remind, saved) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `INSERT INTO push_subs (endpoint, p256dh, auth, lang, promo, remind, saved, places) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, lang = excluded.lang,
-         promo = excluded.promo, remind = excluded.remind, saved = excluded.saved, seen_at = datetime('now')`,
+         promo = excluded.promo, remind = excluded.remind, saved = excluded.saved, seen_at = datetime('now'),
+         places = CASE WHEN ? = 1 THEN excluded.places ELSE push_subs.places END`,
     )
-    .bind(endpoint, keys.p256dh, keys.auth, lang, flag(b.promo, old ? old.promo : 1), flag(b.remind, old ? old.remind : 1), JSON.stringify(saved || (old ? JSON.parse(old.saved || '[]') : [])))
+    .bind(endpoint, keys.p256dh, keys.auth, lang, flag(b.promo, old ? old.promo : 1), flag(b.remind, old ? old.remind : 1), JSON.stringify(saved || (old ? JSON.parse(old.saved || '[]') : [])), JSON.stringify(pl || (old ? JSON.parse(old.places || '[]') : [])), pl ? 1 : 0)
     .run();
   if (old && old.endpoint !== endpoint) await env.DB.prepare('DELETE FROM push_subs WHERE id = ?').bind(old.id).run();
   return json({ ok: true });
@@ -136,10 +146,10 @@ async function updatePrefs(env, request) {
   const endpoint = cleanEndpoint(b.endpoint);
   const row = await env.DB.prepare('SELECT * FROM push_subs WHERE endpoint = ?').bind(endpoint).first();
   if (!row) throw new HttpError(404, 'Pretplata nije pronađena');
-  const saved = cleanSaved(b.saved);
+  const saved = cleanSaved(b.saved), pl = cleanPlaces(b.places);
   await env.DB
-    .prepare("UPDATE push_subs SET lang = ?, promo = ?, remind = ?, saved = ?, seen_at = datetime('now') WHERE id = ?")
-    .bind(LANGS.includes(b.lang) ? b.lang : row.lang, flag(b.promo, row.promo), flag(b.remind, row.remind), saved ? JSON.stringify(saved) : row.saved, row.id)
+    .prepare("UPDATE push_subs SET lang = ?, promo = ?, remind = ?, saved = ?, places = ?, seen_at = datetime('now') WHERE id = ?")
+    .bind(LANGS.includes(b.lang) ? b.lang : row.lang, flag(b.promo, row.promo), flag(b.remind, row.remind), saved ? JSON.stringify(saved) : row.saved, pl ? JSON.stringify(pl) : row.places, row.id)
     .run();
   return json({ ok: true });
 }
@@ -223,7 +233,11 @@ export function cleanCampaign(b, nowMs = Date.now()) {
     if (sendAt.getTime() < nowMs - 5 * 60000) throw new HttpError(400, 'Vrijeme slanja je u prošlosti');
     if (sendAt.getTime() > nowMs + 366 * 86400000) throw new HttpError(400, 'Vrijeme slanja je predaleko');
   }
+  const rawPlaces = Array.isArray(b.places) ? b.places : [];
+  if (rawPlaces.some((x) => !OPSTINE_IDS.includes(x))) throw new HttpError(400, 'Nepoznata opština'); // greška ne smije tiho postati slanje svima
   return {
+    places: JSON.stringify([...new Set(rawPlaces)]),
+    and_unset: b.and_unset === false || b.and_unset === 0 ? 0 : 1,
     title: text(b.title, 60, 'Naslov', true),
     body: text(b.body, 180, 'Tekst', true),
     title_en: text(b.title_en, 60, 'Naslov (EN)'),
@@ -291,15 +305,18 @@ export async function adminPush(request, env, seg, method) {
     const c = await env.DB.prepare('SELECT COUNT(*) AS total, COALESCE(SUM(promo), 0) AS promo, COALESCE(SUM(remind), 0) AS remind FROM push_subs').first();
     const { results: langRows } = await env.DB.prepare('SELECT lang, COUNT(*) AS total, COALESCE(SUM(promo), 0) AS promo FROM push_subs GROUP BY lang').all();
     c.langs = Object.fromEntries(langRows.map((r) => [r.lang, { total: r.total, promo: r.promo }]));
+    const { results: plRows } = await env.DB.prepare('SELECT j.value AS place, COUNT(*) AS n FROM push_subs s, json_each(s.places) j GROUP BY j.value ORDER BY n DESC').all();
+    const unset = await env.DB.prepare("SELECT COUNT(*) AS n FROM push_subs WHERE places = '[]'").first();
+    c.places = { unset: unset.n, by: Object.fromEntries(plRows.map((r) => [r.place, r.n])) };
     const { results } = await env.DB
-      .prepare('SELECT c.id, c.title, c.body, c.url, c.audience, c.send_at, c.enqueued_at, c.recipients, (SELECT COUNT(*) FROM push_queue q WHERE q.campaign_id = c.id) AS pending, (SELECT COUNT(*) FROM push_stats t WHERE t.campaign_id = c.id) AS tracked, (SELECT COUNT(t.shown_at) FROM push_stats t WHERE t.campaign_id = c.id) AS shown, (SELECT COUNT(t.clicked_at) FROM push_stats t WHERE t.campaign_id = c.id) AS clicked FROM push_campaigns c ORDER BY c.id DESC LIMIT 20')
+      .prepare('SELECT c.id, c.title, c.body, c.url, c.audience, c.send_at, c.enqueued_at, c.recipients, c.places, c.and_unset, (SELECT COUNT(*) FROM push_queue q WHERE q.campaign_id = c.id) AS pending, (SELECT COUNT(*) FROM push_stats t WHERE t.campaign_id = c.id) AS tracked, (SELECT COUNT(t.shown_at) FROM push_stats t WHERE t.campaign_id = c.id) AS shown, (SELECT COUNT(t.clicked_at) FROM push_stats t WHERE t.campaign_id = c.id) AS clicked FROM push_campaigns c ORDER BY c.id DESC LIMIT 20')
       .all();
     return json({ configured: pushConfigured(env), subs: c, campaigns: results });
   }
   // izvještaj za jednu promociju (za partnera): ukupno, po jezicima i koliko ih je otvorilo u prvom satu / prva 24 sata
   if (seg[3] === 'report' && seg.length === 5 && method === 'GET' && /^\d{1,9}$/.test(seg[4])) {
     const id = Number(seg[4]);
-    const c = await env.DB.prepare('SELECT id, title, body, url, audience, send_at, enqueued_at, recipients FROM push_campaigns WHERE id = ?').bind(id).first();
+    const c = await env.DB.prepare('SELECT id, title, body, url, audience, send_at, enqueued_at, recipients, places FROM push_campaigns WHERE id = ?').bind(id).first();
     if (!c) throw new HttpError(404, 'Promocija nije pronađena');
     const totals = await env.DB
       .prepare("SELECT COUNT(*) AS sent, COUNT(shown_at) AS shown, COUNT(clicked_at) AS clicked, COALESCE(SUM(clicked_at IS NOT NULL AND julianday(clicked_at) - julianday(?) <= 1.0 / 24), 0) AS h1, COALESCE(SUM(clicked_at IS NOT NULL AND julianday(clicked_at) - julianday(?) <= 1.0), 0) AS h24 FROM push_stats WHERE campaign_id = ?")
@@ -311,13 +328,21 @@ export async function adminPush(request, env, seg, method) {
       .all();
     return json({ campaign: c, totals, langs });
   }
+  // procjena dosega prije slanja: koliko uređaja koji primaju promocije dobija ciljanu promociju
+  if (seg[3] === 'reach' && seg.length === 4 && method === 'GET') {
+    const u = new URL(request.url), raw = (u.searchParams.get('places') || '').split(',').filter(Boolean);
+    if (raw.some((x) => !OPSTINE_IDS.includes(x))) throw new HttpError(400, 'Nepoznata opština');
+    const pf = placeFilter(JSON.stringify([...new Set(raw)]), u.searchParams.get('unset') !== '0');
+    const r = await env.DB.prepare(`SELECT COUNT(*) AS n FROM push_subs WHERE promo = 1${pf.sql}`).bind(...pf.args).first();
+    return json({ n: r.n });
+  }
   if (seg[3] === 'translate' && seg.length === 4 && method === 'POST') return translateCampaign(env, await readJson(request, 4000));
   if (seg[3] === 'campaign' && seg.length === 4 && method === 'POST') {
     if (!pushConfigured(env)) throw new HttpError(503, 'Podesi VAPID_PUBLIC, VAPID_PRIVATE i VAPID_SUBJECT (vidi README)');
     const o = cleanCampaign(await readJson(request, 4000), nowMs);
     const r = await env.DB
-      .prepare('INSERT INTO push_campaigns (title, body, title_en, body_en, title_de, body_de, title_ru, body_ru, title_it, body_it, url, audience, send_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id')
-      .bind(o.title, o.body, o.title_en, o.body_en, o.title_de, o.body_de, o.title_ru, o.body_ru, o.title_it, o.body_it, o.url, o.audience, o.send_at)
+      .prepare('INSERT INTO push_campaigns (title, body, title_en, body_en, title_de, body_de, title_ru, body_ru, title_it, body_it, url, audience, send_at, places, and_unset) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id')
+      .bind(o.title, o.body, o.title_en, o.body_en, o.title_de, o.body_de, o.title_ru, o.body_ru, o.title_it, o.body_it, o.url, o.audience, o.send_at, o.places, o.and_unset)
       .first();
     return json({ id: r.id, send_at: o.send_at }, 201);
   }
@@ -360,10 +385,11 @@ async function dueCampaigns(env, iso) {
   const { results } = await env.DB.prepare('SELECT * FROM push_campaigns WHERE enqueued_at IS NULL AND send_at <= ? ORDER BY id LIMIT 5').bind(iso).all();
   for (const c of results) {
     const test = c.audience === 'test' ? ' AND id = (SELECT MAX(id) FROM push_subs)' : '';
+    const pf = c.audience === 'test' ? { sql: '', args: [] } : placeFilter(c.places, c.and_unset); // probna promocija uvijek ide na posljednji uređaj
     const ins = (cond, title, body) =>
       env.DB
-        .prepare(`INSERT INTO push_queue (sub_id, campaign_id, payload, ttl) SELECT id, ?, ?, 172800 FROM push_subs WHERE promo = 1 AND ${cond}${test}`)
-        .bind(c.id, JSON.stringify({ title, body, url: c.url, tag: 'promo-' + c.id, c: c.id }));
+        .prepare(`INSERT INTO push_queue (sub_id, campaign_id, payload, ttl) SELECT id, ?, ?, 172800 FROM push_subs WHERE promo = 1 AND ${cond}${pf.sql}${test}`)
+        .bind(c.id, JSON.stringify({ title, body, url: c.url, tag: 'promo-' + c.id, c: c.id }), ...pf.args);
     await env.DB.batch([
       ins("lang = 'sr'", c.title, c.body),
       ins("lang NOT IN ('sr', 'de', 'ru', 'it')", c.title_en || c.title, c.body_en || c.body),
