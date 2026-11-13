@@ -452,7 +452,7 @@ a.ev{color:inherit;text-decoration:none}
 .call .ic{width:20px;height:20px;flex:none;color:var(--sea)}
 .unotes{margin:0;padding:0 0 0 18px;display:grid;gap:8px;font-size:.95rem;line-height:1.5}
 .unotes:empty{display:none}
-#v-korisno .sub{color:var(--mute);margin:-6px 0 4px}
+#v-korisno .sub{color:var(--mute);margin:0 0 14px;text-align:center;font-weight:600}
 #v-korisno .note{color:var(--mute);font-size:.82rem;margin:22px 0 8px}
 
 /* obavještenja (push.js) */
@@ -856,3 +856,23 @@ body.ismap{overflow:hidden;overscroll-behavior:none}
 .mpempty[hidden]{display:none}
 .mpattr{position:absolute;left:6px;top:calc(62px + env(safe-area-inset-top,0px));z-index:2;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.78);color:#244;font-size:.68rem;text-decoration:none}
 @media (prefers-reduced-motion:reduce){.mpk,.mpt{transition:none}}
+
+/* ---- Korisno (sekcija 6) ---- */
+.khero{position:relative;display:flex;align-items:flex-end;justify-content:center;height:clamp(150px,24svh,210px);padding:0 16px 14px;background:#12384c url(/media/hero-boka-m.webp) 50% 55%/cover no-repeat;color:#fff;overflow:hidden}
+.khero::after{content:"";position:absolute;inset:0;background:linear-gradient(to bottom,rgba(1,20,92,.35),rgba(1,20,92,0) 45%,var(--bg) 100%)}
+.khero h1{position:relative;z-index:1;margin:0;font-size:1.7rem;font-weight:800;letter-spacing:-.02em;color:#fff;text-shadow:0 1px 8px rgba(1,20,92,.55)}
+.kw{padding-top:8px}
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ktile{display:flex;align-items:center;gap:10px;min-height:74px;padding:10px 10px 10px 12px;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:16px;box-shadow:0 6px 18px rgba(12,60,120,.1)}
+.ktile:active{transform:scale(.98)}
+.kti{flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--sea-t);color:var(--sea)}
+.kti .ic{width:22px;height:22px}
+.ktile>.ic{flex:none;width:16px;height:16px;margin-left:auto;color:var(--mute)}
+.ktt{flex:1;min-width:0;display:grid;gap:2px}
+.ktt b{font-size:.98rem;line-height:1.2;color:var(--sea)}
+.ktt small{color:var(--mute);font-size:.78rem;line-height:1.25}
+.ktile[data-kg="emergency"] .kti{background:#fde3e3;color:#d62828}
+.ktile[data-kg="emergency"] .ktt b{color:#d62828}
+@media (max-width:340px){.kgrid{grid-template-columns:1fr}}
+.khelp{position:sticky;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:5;display:flex;align-items:center;justify-content:center;gap:10px;min-height:54px;margin-top:18px;border-radius:999px;background:linear-gradient(180deg,#f04848,#d62828);color:#fff;font-size:1.05rem;font-weight:800;text-decoration:none;box-shadow:0 10px 24px rgba(214,40,40,.4)}
+.khelp .ic{width:22px;height:22px}

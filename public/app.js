@@ -779,12 +779,20 @@ $('sf').addEventListener('submit', (e) => {
 /* ---------- Korisno: statične informacije (korisno.js), jezik kao u aplikaciji ---------- */
 function usefulView() {
   const u = USEFUL[LANG] || USEFUL.en;
-  $('kout').innerHTML = u.groups.map((g) => {
-    const calls = (g.calls || []).map(([n, d]) => `<a class="call" href="tel:${esc(n)}"><b>${esc(n)}</b><span>${esc(d)}</span>${ic('phone')}</a>`).join('');
-    const notes = (g.notes || []).map((x) => `<li>${esc(x)}</li>`).join('');
-    return `<section class="sec" id="k-${esc(g.id)}"><h2 class="uh">${ic(g.icon)}${esc(g.title)}</h2><div class="box">${calls ? `<div class="calls">${calls}</div>` : ''}<ul class="unotes">${notes}</ul></div></section>`;
-  }).join('') + `<p class="note">${esc(u.updated)}</p>`;
+  $('kout').innerHTML = `<div class="kgrid">${u.groups.map((g) => `<button type="button" class="ktile" data-kg="${esc(g.id)}"><span class="kti">${ic(g.icon)}</span><span class="ktt"><b>${esc(g.title)}</b><small>${esc(g.sub || '')}</small></span>${ic('right')}</button>`).join('')}</div>`
+    + `<a class="khelp" href="tel:112">${ic('phone')}<span>${t('needHelp')}</span></a><p class="note">${esc(u.updated)}</p>`;
 }
+function usefulOpen(id) {
+  const g = (USEFUL[LANG] || USEFUL.en).groups.find((x) => x.id === id); if (!g) return;
+  const calls = (g.calls || []).map(([n, d]) => `<a class="call" href="tel:${esc(n)}"><b>${esc(n)}</b><span>${esc(d)}</span>${ic('phone')}</a>`).join('');
+  const notes = (g.notes || []).map((x) => `<li>${esc(x)}</li>`).join('');
+  $('ks-t').textContent = g.title;
+  $('ks-b').innerHTML = (calls ? `<div class="calls">${calls}</div>` : '') + `<ul class="unotes">${notes}</ul>`;
+  $('ksheet').hidden = false;
+}
+$('kout').addEventListener('click', (e) => { const b = e.target.closest('[data-kg]'); if (b) usefulOpen(b.getAttribute('data-kg')); });
+$('ksheet').addEventListener('click', (e) => { if (e.target.closest('[data-x]')) $('ksheet').hidden = true; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('ksheet').hidden) $('ksheet').hidden = true; });
 
 const VIEWS = ['pocetna', 'istrazi', 'plan', 'korisno', 'mapa', 'detalj'];
 function route() {
@@ -793,6 +801,7 @@ function route() {
   if (raw.startsWith('d/')) { h = 'detalj'; dkey = decodeURIComponent(raw.slice(2)); }
   else if (!VIEWS.includes(h) || h === 'detalj') h = 'pocetna';
   if (!$('lb').hidden) lbClose();
+  $('ksheet').hidden = true;
   VIEWS.forEach((v) => { $('v-' + v).className = 'view' + (v === h ? ' on' : ''); });
   const tab = h === 'detalj' || h === 'mapa' ? 'istrazi' : h;
   document.querySelectorAll('.tabs a').forEach((a) => (a.getAttribute('href') === '#' + tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
