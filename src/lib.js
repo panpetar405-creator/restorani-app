@@ -147,6 +147,7 @@ export function shapeItem(row, offSeason = false, lang = 'sr') {
     status: row.status,
     verifiedAt: row.verified_at,
     demo: !!row.demo,
+    featured: !!row.featured,
     lat: row.lat,
     lng: row.lng,
     offSeason,
