@@ -795,7 +795,7 @@ $('kout').addEventListener('click', (e) => { const b = e.target.closest('[data-k
 $('ksheet').addEventListener('click', (e) => { if (e.target.closest('[data-x]')) $('ksheet').hidden = true; });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('ksheet').hidden) $('ksheet').hidden = true; });
 
-const VIEWS = ['pocetna', 'istrazi', 'plan', 'korisno', 'mapa', 'vrijeme', 'detalj'];
+const VIEWS = ['pocetna', 'istrazi', 'plan', 'korisno', 'mapa', 'vrijeme', 'profil', 'detalj'];
 function route() {
   const raw = (location.hash || '#pocetna').slice(1);
   let h = raw, dkey = '', wkey = '';
@@ -805,7 +805,7 @@ function route() {
   if (!$('lb').hidden) lbClose();
   $('ksheet').hidden = true;
   VIEWS.forEach((v) => { $('v-' + v).className = 'view' + (v === h ? ' on' : ''); });
-  const tab = h === 'detalj' || h === 'mapa' ? 'istrazi' : h === 'vrijeme' ? 'pocetna' : h;
+  const tab = h === 'detalj' || h === 'mapa' ? 'istrazi' : h === 'vrijeme' || h === 'profil' ? 'pocetna' : h;
   document.querySelectorAll('.tabs a').forEach((a) => (a.getAttribute('href') === '#' + tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   document.body.classList.toggle('isdet', h === 'detalj');
   document.body.classList.toggle('ismap', h === 'mapa');
@@ -816,6 +816,7 @@ function route() {
   if (h === 'istrazi') { $('xq').value = Q; $('xnear').setAttribute('aria-pressed', sortNear); if ($('p').value.trim() || D.x.f || sortNear) xFilOpen(true); $('p').closest('.fld').querySelector('.clr').hidden = !$('p').value; done = search(); }
   if (h === 'plan') { planView(); if (window.mpPushRender) window.mpPushRender(); }
   if (h === 'korisno') usefulView();
+  if (h === 'profil' && window.profilView) window.profilView();
   if (h === 'mapa' && window.mapView) window.mapView();
   if (h === 'vrijeme' && window.weatherView) window.weatherView(wkey);
   if (h === 'detalj') showDetail(dkey);

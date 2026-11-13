@@ -68,6 +68,7 @@
   }
 
   function render() {
+    document.dispatchEvent(new Event('mp-push')); // profil prati stanje prekidača
     const el = box(); if (!el) return;
     if (!supported && !(ios && !standalone)) { el.hidden = true; return; }
     if (supported && (!cfg || !cfg.enabled)) { el.hidden = true; return; }
@@ -129,5 +130,12 @@
     timer = setTimeout(() => { if (sub) call('PUT', '/prefs', { endpoint: sub.endpoint, lang: LANG, saved: slugs() }).catch(() => {}); }, 1500);
   };
   window.mpPushRender = render;
+  /* profil (profil.js): stanje i prekidač obavještenja */
+  window.mpPushInfo = () => {
+    const blocked = supported && Notification.permission === 'denied';
+    const needIos = !supported || (ios && !standalone && !sub);
+    return { on: !!sub && !blocked, can: !!(supported && cfg && cfg.enabled && !blocked && !needIos), msg: needIos ? tx('ios') : blocked ? tx('blocked') : '' };
+  };
+  window.mpPushToggle = () => (sub ? disable() : enable());
   load();
 })();
