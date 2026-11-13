@@ -55,10 +55,11 @@ async function viewList() {
   };
   $app.innerHTML = `<div class="atop"><div class="in"><h1>Sadržaj</h1><button class="ghost" id="lo">Odjava</button></div></div>
   <div class="wrap" style="padding-top:14px"><div class="afld"><input type="search" id="q" placeholder="Traži po nazivu ili mjestu" aria-label="Traži"></div>
-  <button class="btn p full" id="nw">+ Novi događaj ili lokacija</button><button class="btn s full" id="pu" style="margin-top:10px">Obavještenja korisnicima</button><div id="rows">${draw('')}</div></div>`;
+  <button class="btn p full" id="nw">+ Novi događaj ili lokacija</button><button class="btn s full" id="pu" style="margin-top:10px">Obavještenja korisnicima</button><button class="btn s full" id="pa" style="margin-top:10px">Partneri</button><div id="rows">${draw('')}</div></div>`;
   document.getElementById('lo').onclick = () => logout();
   document.getElementById('nw').onclick = () => { location.hash = '#/new'; };
   document.getElementById('pu').onclick = () => { location.hash = '#/push'; };
+  document.getElementById('pa').onclick = () => { location.hash = '#/partners'; };
   document.getElementById('q').oninput = (e) => { document.getElementById('rows').innerHTML = draw(e.target.value); };
   document.getElementById('rows').onclick = (e) => { const b = e.target.closest('[data-r]'); if (b) location.hash = '#/e/' + b.getAttribute('data-r'); };
 }
@@ -287,8 +288,8 @@ async function showReport(id) {
   <div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>Izvještaj</h1></div></div>
   <div class="wrap" style="padding-top:14px">
     <h2 style="margin:0 0 4px;font-size:1.15rem">Izvještaj o promociji · Montepalm</h2>
-    <div class="afld noprint"><label for="rpn">Za koga je izvještaj (nije obavezno, ne čuva se)</label><input type="text" id="rpn" maxlength="80" placeholder="npr. Restoran Maslina"></div>
-    <p id="rwho" style="margin:6px 0"></p>
+    <div class="afld noprint"><label for="rpn">Za koga je izvještaj (nije obavezno, ne čuva se)</label><input type="text" id="rpn" maxlength="80" placeholder="npr. Restoran Maslina" value="${esc(c.partner_name || '')}"></div>
+    <p id="rwho" style="margin:6px 0">${c.partner_name ? 'Za: <b>' + esc(c.partner_name) + '</b>' : ''}</p>
     <p style="margin:6px 0"><b>${esc(c.title)}</b><br>${esc(c.body)}<br><small>Poslato: ${esc(date)}${c.audience === 'test' ? ' · test' : ''}${tgR ? ' · ciljano: ' + esc(tgR) : ''}</small></p>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0">
       ${card(t.sent, 'Poslato', 'uređaja')}${card(t.shown, 'Stiglo', pct(t.shown, t.sent))}${card(t.clicked, 'Otvoreno', pct(t.clicked, t.sent))}
@@ -322,7 +323,7 @@ async function viewPush() {
     const tgTxt = tg.length ? `<br>ciljano: ${tg.map((id) => ((typeof OPSTINE !== 'undefined' ? OPSTINE : []).find((o) => o[0] === id) || [id, id])[1]).map(esc).join(', ')}${c.and_unset ? ' (i bez izbora)' : ''}` : '';
     const rep = c.enqueued_at && c.tracked && !c.pending ? `<button class="ghost" data-rep="${c.id}">Izvještaj</button>` : '';
     const stats = c.enqueued_at && c.tracked ? `<br>stiglo <b>${c.shown}</b> (${pc(c.shown)}) · otvoreno <b>${c.clicked}</b> (${pc(c.clicked)})` : '';
-    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}${tgTxt}${stats}</small></span><span style="display:grid;gap:6px">${rep}<button class="ghost" data-del="${c.id}" data-st="${!c.enqueued_at ? 'plan' : c.pending ? 'busy' : 'done'}">${!c.enqueued_at ? 'Otkaži' : c.pending ? 'Zaustavi' : 'Obriši'}</button></span></div>`;
+    return `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(c.body)}<br>${esc(st)}${c.audience === 'test' ? ' · test' : ''}${c.partner_name ? '<br>partner: ' + esc(c.partner_name) : ''}${tgTxt}${stats}</small></span><span style="display:grid;gap:6px">${rep}<button class="ghost" data-del="${c.id}" data-st="${!c.enqueued_at ? 'plan' : c.pending ? 'busy' : 'done'}">${!c.enqueued_at ? 'Otkaži' : c.pending ? 'Zaustavi' : 'Obriši'}</button></span></div>`;
   }).join('');
   $app.innerHTML = `<div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>Obavještenja</h1></div></div>
   <div class="wrap" style="padding-top:14px">
@@ -336,6 +337,7 @@ async function viewPush() {
     <div class="afld"><label for="pbe">Tekst na engleskom (nije obavezno)</label><textarea id="pbe" maxlength="180" style="min-height:80px"></textarea></div>
     ${[['de', 'njemačkom'], ['ru', 'ruskom'], ['it', 'italijanskom']].map(([l, n]) => `<details class="afld"><summary>Na ${n} (nije obavezno)</summary><div class="afld"><label for="pt${l}">Naslov na ${n}</label><input type="text" id="pt${l}" maxlength="60"></div><div class="afld"><label for="pb${l}">Tekst na ${n}</label><textarea id="pb${l}" maxlength="180" style="min-height:80px"></textarea></div></details>`).join('')}
     <div class="afld"><button class="btn s full" type="button" id="ptr">Prevedi sa crnogorskog (EN, DE, RU, IT)</button><small>Popuni sva jezička polja iz naslova i teksta gore. Pregledaj prevod prije slanja; ručne izmjene se prepisuju pri novom prevođenju.</small></div>
+    <div class="afld"><label for="ppt">Partner (nije obavezno)</label><select id="ppt"><option value="">— bez partnera —</option>${(d.partners || []).map((x) => `<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div>
     <details class="afld"><summary>Ciljaj opštine (nije obavezno)</summary>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin:8px 0">${(typeof OPSTINE !== 'undefined' ? OPSTINE : []).map(([id, n]) => `<label class="chk"><input type="checkbox" data-tp="${id}"> ${n}</label>`).join('')}</div>
       <label class="chk"><input type="checkbox" id="pun" checked> Pošalji i onima koji nisu izabrali nijednu opštinu</label>
@@ -395,7 +397,7 @@ async function viewPush() {
   document.getElementById('psend').onclick = async () => {
     if (busy) return;
     const later = v('pw') === 'later';
-    const body = { title: v('pt'), body: v('pb'), title_en: v('pte'), body_en: v('pbe'), title_de: v('ptde'), body_de: v('pbde'), title_ru: v('ptru'), body_ru: v('pbru'), title_it: v('ptit'), body_it: v('pbit'), places: tp(), and_unset: document.getElementById('pun').checked, url: v('pu2') || '/', audience: document.getElementById('ptest').checked ? 'test' : 'all' };
+    const body = { title: v('pt'), body: v('pb'), title_en: v('pte'), body_en: v('pbe'), title_de: v('ptde'), body_de: v('pbde'), title_ru: v('ptru'), body_ru: v('pbru'), title_it: v('ptit'), body_it: v('pbit'), places: tp(), and_unset: document.getElementById('pun').checked, partner_id: v('ppt') ? Number(v('ppt')) : null, url: v('pu2') || '/', audience: document.getElementById('ptest').checked ? 'test' : 'all' };
     if (later) { if (!v('pd')) { toast('Izaberi datum i sat', true); return; } body.send_at = new Date(v('pd')).toISOString(); }
     if (body.audience === 'all' && !confirm(later ? 'Zakazati obavještenje za sve korisnike?' : `Poslati obavještenje na ${d.subs.promo} uređaja?`)) return;
     busy = true;
@@ -403,10 +405,108 @@ async function viewPush() {
   };
 }
 
+/* ---------- partneri: evidencija, obrazac i zbirni izvještaj ---------- */
+const PT = { restoran: 'Restoran / biznis', to: 'Turistička organizacija', institucija: 'Institucija', ostalo: 'Ostalo' };
+const fdate = (d) => (d ? d.split('-').reverse().join('. ') + '.' : '');
+const topbar = (title) => `<div class="atop"><div class="in"><button class="ghost" id="bk">← Nazad</button><h1>${title}</h1></div></div>`;
+function partnerStatus(p) {
+  const today = new Date().toISOString().slice(0, 10);
+  if (p.ends_on && p.ends_on < today) return '<b style="color:#b3261e">istekao ' + esc(fdate(p.ends_on)) + '</b>';
+  if (p.ends_on) {
+    const d = Math.round((Date.parse(p.ends_on) - Date.parse(today)) / 86400000);
+    return d <= 14 ? `<b style="color:#8a5a00">ističe za ${d} d (${esc(fdate(p.ends_on))})</b>` : 'do ' + esc(fdate(p.ends_on));
+  }
+  return 'bez roka';
+}
+async function viewPartners() {
+  $app.innerHTML = topbar('Partneri') + '<div class="wrap"><div class="skb" style="height:60px;margin-top:16px"></div></div>';
+  document.getElementById('bk').onclick = () => { location.hash = '#/'; };
+  let d; try { d = await api('GET', '/partners'); } catch (e) { if (KEY) toast(e.message, true); return; }
+  const rows = d.partners.map((p) => `<button class="arow" data-p="${p.id}"><span style="flex:1"><b>${esc(p.name)}</b><br><small>${esc(PT[p.type] || p.type)}${p.package ? ' · ' + esc(p.package) : ''}<br>${partnerStatus(p)} · promocija: ${p.promos}</small></span></button>`).join('');
+  $app.innerHTML = topbar('Partneri') + `<div class="wrap" style="padding-top:14px">
+    <button class="btn p full" id="pn">+ Novi partner</button>
+    <p class="afld"><small>Evidencija restorana, turističkih organizacija i institucija. Partner se bira u formi za promociju, pa dobijaš zbirni izvještaj svih njegovih promocija.</small></p>
+    <div class="alist" id="plist">${rows || '<small>Još nema partnera.</small>'}</div></div>`;
+  document.getElementById('bk').onclick = () => { location.hash = '#/'; };
+  document.getElementById('pn').onclick = () => { location.hash = '#/partner/new'; };
+  document.getElementById('plist').onclick = (e) => { const b = e.target.closest('[data-p]'); if (b) location.hash = '#/partner/' + b.getAttribute('data-p'); };
+}
+async function viewPartner(idRaw) {
+  const isNew = idRaw === 'new';
+  $app.innerHTML = topbar('Partner') + '<div class="wrap"><div class="skb" style="height:60px;margin-top:16px"></div></div>';
+  document.getElementById('bk').onclick = () => { location.hash = '#/partners'; };
+  let p = { name: '', type: 'restoran', contact: '', package: '', starts_on: '', ends_on: '', note: '' };
+  if (!isNew) { try { p = (await api('GET', '/partners/' + idRaw)).partner; } catch (e) { if (KEY) { toast(e.message, true); location.hash = '#/partners'; } return; } }
+  const fld = (id, label, val, max) => `<div class="afld"><label for="${id}">${label}</label><input type="text" id="${id}" maxlength="${max}" value="${esc(val)}"></div>`;
+  $app.innerHTML = topbar(isNew ? 'Novi partner' : esc(p.name)) + `<div class="wrap" style="padding-top:14px">
+    ${fld('pr_n', 'Naziv', p.name, 80)}
+    <div class="afld"><label for="pr_t">Vrsta</label><select id="pr_t">${Object.entries(PT).map(([k, n]) => `<option value="${k}"${p.type === k ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+    ${fld('pr_c', 'Kontakt (osoba, telefon, mejl)', p.contact, 200)}
+    ${fld('pr_p', 'Paket (npr. istaknuto mjesto + 2 push)', p.package, 120)}
+    <div class="afld"><label for="pr_s">Početak</label><input type="date" id="pr_s" value="${esc(p.starts_on || '')}"></div>
+    <div class="afld"><label for="pr_e">Kraj</label><input type="date" id="pr_e" value="${esc(p.ends_on || '')}"></div>
+    <div class="afld"><label for="pr_o">Napomena</label><textarea id="pr_o" maxlength="500" style="min-height:90px">${esc(p.note)}</textarea></div>
+    <div style="display:grid;gap:10px;margin-top:10px">
+      <button class="btn p full" id="pr_save">Sačuvaj</button>
+      ${isNew ? '' : '<button class="btn s full" id="pr_rep">Izvještaj partnera</button><button class="btn s full" id="pr_del">Obriši partnera</button>'}
+    </div></div>`;
+  document.getElementById('bk').onclick = () => { location.hash = '#/partners'; };
+  document.getElementById('pr_save').onclick = async () => {
+    if (busy) return; busy = true;
+    const body = { name: v('pr_n'), type: v('pr_t'), contact: v('pr_c'), package: v('pr_p'), starts_on: v('pr_s'), ends_on: v('pr_e'), note: v('pr_o') };
+    try {
+      if (isNew) { await api('POST', '/partners', body); toast('Partner dodat'); location.hash = '#/partners'; }
+      else { await api('PUT', '/partners/' + idRaw, body); toast('Sačuvano'); }
+    } catch (e) { toast(e.message, true); } finally { busy = false; }
+  };
+  if (!isNew) {
+    document.getElementById('pr_rep').onclick = () => { location.hash = '#/partner/' + idRaw + '/report'; };
+    document.getElementById('pr_del').onclick = async () => {
+      if (!confirm('Obrisati partnera? Njegove promocije ostaju u istoriji, samo bez partnera.')) return;
+      try { await api('DELETE', '/partners/' + idRaw); toast('Obrisano'); location.hash = '#/partners'; } catch (e) { toast(e.message, true); }
+    };
+  }
+}
+async function viewPartnerReport(id) {
+  $app.innerHTML = topbar('Izvještaj partnera') + '<div class="wrap"><div class="skb" style="height:60px;margin-top:16px"></div></div>';
+  document.getElementById('bk').onclick = () => { location.hash = '#/partner/' + id; };
+  let r; try { r = await api('GET', '/partners/' + id + '/report'); } catch (e) { if (KEY) { toast(e.message, true); location.hash = '#/partners'; } return; }
+  const p = r.partner, t = r.totals;
+  const pct = (n, dn) => (dn ? (Math.round((n * 1000) / dn) / 10).toString().replace('.', ',') + '%' : '–');
+  const note = 'Brojke su donja granica: telefon bez interneta u tom trenutku ne javlja prikaz ni otvaranje. Procenti su nad promocijama koje su imale praćenje.';
+  const line = (c) => `„${c.title}” (${fmtT(c.enqueued_at)}): poslato ${c.recipients}` + (c.tracked ? `, stiglo ${c.shown} (${pct(c.shown, c.recipients)}), otvoreno ${c.clicked} (${pct(c.clicked, c.recipients)})` : ', bez statistike');
+  const mk = () => ['IZVJEŠTAJ PARTNERA · Montepalm', `Partner: ${p.name}`, p.package ? `Paket: ${p.package}${p.ends_on ? ' (do ' + fdate(p.ends_on) + ')' : ''}` : '', '',
+    `Poslatih promocija: ${t.promos}`, `Poslato na uređaja: ${t.sent}`, `Stiglo na telefon: ${t.shown} (${pct(t.shown, t.tracked_sent)})`, `Otvoreno: ${t.clicked} (${pct(t.clicked, t.tracked_sent)})`, '',
+    ...(r.campaigns.length ? ['Po promocijama:', ...r.campaigns.map((c) => '- ' + line(c))] : []), '', note].filter((x, i, a) => x !== '' || a[i - 1] !== '').join('\n');
+  const card = (n, label, sub) => `<div style="background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center"><div style="font-size:1.7rem;font-weight:800">${n}</div><div><b>${label}</b></div><small>${sub}</small></div>`;
+  $app.innerHTML = `<style>@media print{.atop,.noprint{display:none!important}.wrap{padding:0!important}body{background:#fff!important}}</style>` + topbar('Izvještaj partnera') + `<div class="wrap" style="padding-top:14px">
+    <h2 style="margin:0 0 4px;font-size:1.15rem">${esc(p.name)} · Montepalm</h2>
+    <p style="margin:6px 0"><small>${esc(PT[p.type] || p.type)}${p.package ? ' · ' + esc(p.package) : ''} · ${partnerStatus(p)}</small></p>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:14px 0">
+      ${card(t.sent, 'Poslato', 'uređaja · promocija: ' + t.promos)}${card(t.shown, 'Stiglo', pct(t.shown, t.tracked_sent))}${card(t.clicked, 'Otvoreno', pct(t.clicked, t.tracked_sent))}
+    </div>
+    <h3 style="margin:16px 0 8px;font-size:1rem">Po promocijama</h3>
+    <div class="alist">${r.campaigns.map((c) => `<div class="arow" style="cursor:default"><span style="flex:1"><b>${esc(c.title)}</b><br><small>${esc(fmtT(c.enqueued_at))}<br>poslato ${c.recipients}${c.tracked ? ` · stiglo ${c.shown} (${pct(c.shown, c.recipients)}) · otvoreno ${c.clicked} (${pct(c.clicked, c.recipients)})` : ' · bez statistike'}</small></span></div>`).join('') || '<small>Ovom partneru još nije poslata nijedna promocija.</small>'}</div>
+    <p style="margin:14px 0"><small>${esc(note)}</small></p>
+    <div class="noprint" style="display:grid;gap:10px;margin-top:10px">
+      <button class="btn p full" id="rsh">Podijeli kao tekst</button>
+      <button class="btn s full" id="rcp">Kopiraj tekst</button>
+      <button class="btn s full" id="rpr">Sačuvaj kao PDF / štampaj</button>
+    </div></div>`;
+  document.getElementById('bk').onclick = () => { location.hash = '#/partner/' + id; };
+  const copy = () => navigator.clipboard.writeText(mk()).then(() => toast('Kopirano')).catch(() => toast('Kopiranje nije uspjelo', true));
+  document.getElementById('rcp').onclick = copy;
+  document.getElementById('rsh').onclick = async () => { if (navigator.share) { try { await navigator.share({ title: 'Izvještaj partnera', text: mk() }); } catch { /* korisnik je odustao */ } } else copy(); };
+  document.getElementById('rpr').onclick = () => window.print();
+}
+
 function route() {
   if (!KEY) { viewLogin(); return; }
   const h = location.hash.slice(2);
   if (h === 'push') viewPush();
+  else if (h === 'partners') viewPartners();
+  else if (/^partner\/(new|\d+)$/.test(h)) viewPartner(h.slice(8));
+  else if (/^partner\/\d+\/report$/.test(h)) viewPartnerReport(h.split('/')[1]);
   else if (h === 'new') viewEdit('new');
   else if (h.startsWith('e/')) viewEdit(decodeURIComponent(h.slice(2)));
   else viewList();
