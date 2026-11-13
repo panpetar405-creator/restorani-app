@@ -481,3 +481,88 @@ a.ev{color:inherit;text-decoration:none}
 /* izbor opština u kartici obavještenja */
 .pushbox .pp summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center}
 .pushbox .pg{display:grid;grid-template-columns:1fr 1fr;gap:2px 12px;margin-top:6px}
+
+/* =====================================================================
+   SEKCIJA 1: POČETNA (po dizajnu)
+   Font Inter, plava #1a63d1 kao glavna boja, bijele kartice, mekane sjene.
+   ===================================================================== */
+:root{--bg:#f4f8fc;--ink:#0f2236;--mute:#6b7c8e;--line:#e3ecf4;--sea:#1a63d1;--sea-t:#e3eefc;--teal:#1fb89a}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0b1c26;--ink:#e6f0ef;--mute:#8fa9b3;--line:#22404f;--sea:#6ab0ff;--sea-t:#16314f;--teal:#3ed3b5}}
+body{font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif}
+
+/* hero: fotografija, logo, zvonce, naslov */
+.hero{display:flex;align-items:flex-end;height:clamp(310px,44svh,400px);min-height:310px;background-color:#12384c;background-image:url(/media/hero-kotor.jpg),url(/media/fasinada-4.jpg);background-size:cover;background-position:50% 38%}
+@media (min-width:701px){.hero{background-image:url(/media/hero-kotor.jpg),url(/media/fasinada-4.jpg);background-position:50% 45%}}
+.hero::after{background:linear-gradient(180deg,rgba(4,24,52,.5) 0%,rgba(4,24,52,.06) 30%,rgba(4,24,52,.12) 58%,rgba(4,24,52,.66) 100%)}
+.hbrand{position:absolute;z-index:2;top:14px;left:16px;display:flex;align-items:center;gap:10px}
+.hlogo{width:46px;height:34px;flex:none;filter:drop-shadow(0 2px 6px rgba(0,0,0,.35))}
+.hbt{display:grid;line-height:1.12;text-shadow:0 1px 6px rgba(0,0,0,.4)}
+.hbt b{font-size:1.32rem;font-weight:800;letter-spacing:-.01em}
+.hbt span{font-size:.74rem;font-weight:500;opacity:.95}
+.hero .bell{top:14px;right:16px;width:38px;height:38px;border:0;background:linear-gradient(135deg,#27e0b0,#10b39b);box-shadow:0 4px 12px rgba(16,179,155,.45);backdrop-filter:none}
+.hero .bell .ic{width:20px;height:20px}
+.hero .bell .badge{top:-5px;right:-5px}
+.hin{padding-bottom:54px}
+.hero h1{font-size:clamp(2.2rem,10.2vw,2.8rem);line-height:1.04;font-weight:800;letter-spacing:-.025em;margin:0 0 10px}
+.htag{margin:0;font-size:.95rem;font-weight:500;max-width:none}
+.swoosh{display:block;width:80px;height:9px;margin-top:6px;fill:none;stroke:#f6b400;stroke-width:3.4;stroke-linecap:round;filter:drop-shadow(0 1px 2px rgba(0,0,0,.3))}
+
+/* pretraga preko ruba fotografije */
+.hsearch{position:relative;z-index:3;display:flex;align-items:center;gap:12px;height:52px;margin:-26px auto 0;width:calc(100% - 32px);max-width:608px;padding:0 20px;background:var(--card);border-radius:26px;box-shadow:0 10px 28px rgba(12,60,120,.16),0 1px 2px rgba(12,60,120,.08)}
+.hsearch .ic{width:22px;height:22px;color:var(--ink)}
+.hsearch input{flex:1;min-width:0;height:100%;border:0;background:transparent;font-size:.98rem;font-weight:500;outline:0;-webkit-appearance:none;appearance:none}
+.hsearch input::placeholder{color:var(--mute);opacity:1}
+.hsearch input::-webkit-search-cancel-button{display:none}
+.hsearch input:focus-visible{outline:0}
+.hsearch:focus-within{box-shadow:0 0 0 3px var(--sea-t),0 10px 28px rgba(12,60,120,.16)}
+
+/* brzi izbori */
+.hchips{display:flex;gap:10px;margin:16px 0 0}
+.hchip{flex:1 1 0;min-width:0;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 10px;background:var(--card);border:1px solid var(--line);border-radius:999px;font-weight:600;font-size:.9rem;white-space:nowrap;box-shadow:0 2px 8px rgba(12,60,120,.06);transition:transform .08s,border-color .15s}
+.hchip .ic{width:18px;height:18px;color:var(--sea)}
+.hchip:hover{border-color:var(--sea)}
+.hchip:active{transform:scale(.97)}
+.hchip:disabled{opacity:.6}
+
+/* naslovi sekcija na početnoj */
+#v-pocetna .hd{margin:24px 0 12px}
+#v-pocetna .hd h2{font-size:1.25rem;font-weight:800;letter-spacing:-.015em}
+#v-pocetna .lnk{color:var(--sea);font-weight:700;font-size:.9rem}
+
+/* pločice kategorija */
+#v-pocetna .tiles{gap:12px}
+#v-pocetna .tile{min-height:0;aspect-ratio:1.9/1;padding:12px;border-radius:16px;box-shadow:0 4px 14px rgba(12,60,120,.14)}
+#v-pocetna .tile .bd{width:auto;height:auto;background:none;border-radius:0}
+#v-pocetna .tile .bd .ic{width:30px;height:30px;stroke-width:1.7;filter:drop-shadow(0 1px 3px rgba(0,0,0,.4))}
+#v-pocetna .tile .tl{font-size:1rem;font-weight:700;text-shadow:0 1px 5px rgba(0,0,0,.5)}
+#v-pocetna .tile.hasbg::after{background:linear-gradient(180deg,rgba(5,25,50,.08) 0%,rgba(5,25,50,.55) 100%)}
+
+/* uskoro: horizontalna kartica */
+.soon{display:grid;gap:12px}
+.sc{position:relative;display:flex;gap:12px;align-items:stretch;padding:10px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 4px 16px rgba(12,60,120,.10)}
+.sci{flex:none;width:112px;height:92px;border-radius:12px;overflow:hidden;background:var(--ct,var(--line))}
+.sci img{width:100%;height:100%;object-fit:cover;display:block}
+.sci.ph{display:grid;place-items:center;background:linear-gradient(150deg,#01145c,#0b5aa8 60%,#0175a1);color:#fff}
+.sci.ph .ic{width:34px;height:34px;stroke-width:1.5}
+.scb{flex:1;min-width:0;display:grid;align-content:center;gap:3px;padding-right:38px}
+.spill{justify-self:start;padding:2px 10px;border-radius:999px;background:linear-gradient(135deg,#36d17c,#1fb86a);color:#fff;font-size:.7rem;font-weight:700}
+.sct{font-size:.98rem;font-weight:800;line-height:1.2;letter-spacing:-.01em}
+.sct .lk{color:inherit;text-decoration:none}
+.scl{display:flex;align-items:center;gap:6px;color:var(--mute);font-size:.8rem;font-weight:500;min-width:0}
+.scl span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.scl .ic{width:14px;height:14px;color:var(--sea)}
+.sch{position:absolute;z-index:2;top:10px;right:10px;width:34px;height:34px;display:grid;place-items:center;border-radius:50%;border:1.5px solid var(--teal);background:var(--card);color:var(--teal);padding:0}
+.sch .ic{width:18px;height:18px}
+.sch[aria-pressed="true"]{background:var(--teal);color:#fff}
+
+/* donja navigacija: puna ikona i plava boja za aktivan tab */
+.tabs{background:var(--card);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(12,60,120,.06);padding-top:4px}
+.tabs a{gap:2px;color:var(--mute);font-size:.72rem;font-weight:600}
+.tabs a[aria-current="page"]{color:var(--sea);font-weight:800}
+.ti{width:auto;height:30px;background:none}
+.tabs a[aria-current="page"] .ti{background:none;color:var(--sea)}
+.ti .ic{width:26px;height:26px}
+.ti .ic.on{display:none}
+.tabs a[aria-current="page"] .ti .ic.on{display:block}
+.tabs a[aria-current="page"] .ti .ic.off{display:none}
+.ti .badge{top:-4px;right:-9px}

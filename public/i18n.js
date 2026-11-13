@@ -19,6 +19,7 @@ let LANG = 'en';
 
 const DICT = {
   sr: {
+    heroTag: 'Otkrij. Istraži. Doživi.', brandSub: 'Crna Gora na dlanu', searchPh: 'Pretraži lokacije, događaje…', seeAll: 'Sve', seeAllLink: 'Pogledaj sve', popular: 'Popularno',
     heroTitle: 'Crna Gora<br>na dlanu', heroSub: 'Šta se dešava, gdje i kada. Izaberi mjesto i period.',
     where: 'Gdje', wherePh: 'Herceg Novi, Kotor, Žabljak…', place: 'Mjesto', placePh: 'Cijela Crna Gora',
     from: 'Od', to: 'Do', pickDate: 'Izaberi datum', pickStart: 'Izaberi početni datum', pickEndHint: ' · izaberi krajnji datum ili primijeni za jedan dan',
@@ -40,7 +41,7 @@ const DICT = {
     demo: 'Primjer', perPerson: ' po osobi', priceSoon: 'Cijena uskoro', inPlan: 'U planu', addPlan: 'Dodaj u plan', removePlan: 'Ukloni iz plana',
     verified: 'Provjereno ', offSeason: 'Van sezone u tom periodu',
     retry: 'Pokušaj ponovo', clearSearch: 'Očisti pretragu', offlineT: 'Nema internet veze', offlineD: 'Provjeri vezu. Pokušaćemo ponovo čim se vrati.', offBar: 'Nema internet veze',
-    nearTitle: 'Danas i u blizini', nToday: 'Danas', nWeekend: 'Vikend', nNear: 'Blizu mene', nearNoneT: 'Nema događaja u ovom periodu', nearNoneD: 'Probaj „Blizu mene“ za mjesta oko tebe.', nearNoLocT: 'Nema ničega u blizini', nearNoLocD: 'Za ova mjesta još nemamo lokaciju.', locDenied: 'Lokacija nije dostupna. Provjeri dozvolu za lokaciju.',
+    nearTitle: 'Danas i u blizini', nToday: 'Danas', nWeekend: 'Vikend', nNear: 'U blizini', nearNoneT: 'Nema događaja u ovom periodu', nearNoneD: 'Probaj „Blizu mene“ za mjesta oko tebe.', nearNoLocT: 'Nema ničega u blizini', nearNoLocD: 'Za ova mjesta još nemamo lokaciju.', locDenied: 'Lokacija nije dostupna. Provjeri dozvolu za lokaciju.',
     loadErrT: 'Podaci nisu učitani', loadErrD: 'Provjeri internet vezu i pokušaj ponovo.',
     noUpT: 'Nema nadolazećih događaja', noUpD: 'Pogledaj plaže, kulturu i gastronomiju.',
     found: 'Pronađeno: ', nothingT: 'Ništa nije pronađeno', nothingD: 'Probaj šire datume ili ukloni mjesto.',
@@ -58,6 +59,7 @@ const DICT = {
     euroDec: ',',
   },
   en: {
+    heroTag: 'Discover. Explore. Experience.', brandSub: 'Montenegro in your hand', searchPh: 'Search places, events…', seeAll: 'All', seeAllLink: 'See all', popular: 'Popular',
     heroTitle: 'Montenegro<br>in your hand', heroSub: "What's on, where and when. Pick a place and your dates.",
     where: 'Where', wherePh: 'Herceg Novi, Kotor, Žabljak…', place: 'Place', placePh: 'All of Montenegro',
     from: 'From', to: 'To', pickDate: 'Pick a date', pickStart: 'Pick a start date', pickEndHint: ' · pick an end date, or apply for a single day',
@@ -97,6 +99,7 @@ const DICT = {
     euroDec: '.',
   },
   de: {
+    heroTag: 'Entdecken. Erkunden. Erleben.', brandSub: 'Montenegro in deiner Hand', searchPh: 'Orte, Events suchen…', seeAll: 'Alle', seeAllLink: 'Alle ansehen', popular: 'Beliebt',
     heroTitle: 'Montenegro<br>in deiner Hand', heroSub: 'Was los ist, wo und wann. Wähle Ort und Reisezeitraum.',
     where: 'Wo', wherePh: 'Herceg Novi, Kotor, Žabljak…', place: 'Ort', placePh: 'Ganz Montenegro',
     from: 'Von', to: 'Bis', pickDate: 'Datum wählen', pickStart: 'Startdatum wählen', pickEndHint: ' · Enddatum wählen oder für einen Tag übernehmen',
@@ -136,6 +139,7 @@ const DICT = {
     euroDec: ',',
   },
   ru: {
+    heroTag: 'Открывайте. Исследуйте. Переживайте.', brandSub: 'Черногория на ладони', searchPh: 'Поиск мест и событий…', seeAll: 'Все', seeAllLink: 'Смотреть все', popular: 'Популярное',
     heroTitle: 'Черногория<br>на ладони', heroSub: 'Что, где и когда. Выберите место и даты.',
     where: 'Где', wherePh: 'Герцег-Нови, Котор, Жабляк…', place: 'Место', placePh: 'Вся Черногория',
     from: 'С', to: 'По', pickDate: 'Выберите дату', pickStart: 'Выберите дату начала', pickEndHint: ' · выберите дату окончания или примените для одного дня',
@@ -176,6 +180,7 @@ const DICT = {
     euroDec: ',',
   },
   it: {
+    heroTag: 'Scopri. Esplora. Vivi.', brandSub: 'Montenegro a portata di mano', searchPh: 'Cerca luoghi, eventi…', seeAll: 'Tutti', seeAllLink: 'Vedi tutti', popular: 'Popolare',
     heroTitle: 'Montenegro<br>a portata di mano', heroSub: 'Cosa succede, dove e quando. Scegli il luogo e le date.',
     where: 'Dove', wherePh: 'Herceg Novi, Kotor, Žabljak…', place: 'Luogo', placePh: 'Tutto il Montenegro',
     from: 'Dal', to: 'Al', pickDate: 'Scegli una data', pickStart: 'Scegli la data di inizio', pickEndHint: ' · scegli la data di fine oppure applica per un solo giorno',

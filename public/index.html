@@ -13,13 +13,13 @@
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="theme-color" content="#10303f">
+<meta name="theme-color" content="#0b5aa8">
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="icon" href="/icons/favicon-64.png" type="image/png">
 <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;600;800&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="preload" as="image" href="/media/hero-m.webp" media="(max-width:700px)">
 <link rel="stylesheet" href="/styles.css">
 </head>
@@ -68,59 +68,54 @@
   <symbol id="i-nav" viewBox="0 0 24 24"><path d="M12 3l7 17-7-4-7 4z"/></symbol>
   <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0"/></symbol>
   <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-calstar" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="2.8"/><path d="M8 3v4M16 3v4M3.5 10h17"/><path d="M12 12.2l1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h8M18 7h2M4 12h2M12 12h8M4 17h10M20 17h0"/><circle cx="15" cy="7" r="2.4"/><circle cx="9" cy="12" r="2.4"/><circle cx="17" cy="17" r="2.4"/></symbol>
+  <symbol id="i-home-f" viewBox="0 0 24 24"><path fill="currentColor" d="M3 11.2L12 4l9 7.2V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-search-f" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.6" style="stroke-width:2.6"/><path d="M20 20l-4.2-4.2" style="stroke-width:2.8"/></symbol>
+  <symbol id="i-sliders-f" viewBox="0 0 24 24"><path d="M4 7h8M18 7h2M4 12h2M12 12h8M4 17h10M20 17h0" style="stroke-width:2.4"/><circle cx="15" cy="7" r="2.4" fill="currentColor"/><circle cx="9" cy="12" r="2.4" fill="currentColor"/><circle cx="17" cy="17" r="2.4" fill="currentColor"/></symbol>
+  <symbol id="i-info-f" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.6" fill="currentColor" stroke="none"/><path d="M12 11v5M12 7.9h.01" style="stroke:var(--card);stroke-width:2.2"/></symbol>
+  <symbol id="i-heart-o" viewBox="0 0 24 24"><path d="M12 20.5S3.5 15 3.5 8.9A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 8.5 1.9C20.5 15 12 20.5 12 20.5z"/></symbol>
 </svg>
 
 <section class="view on" id="v-pocetna">
-  <header class="hero has" id="hero">
-    <svg class="scene" viewBox="0 0 400 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-      <defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fa9cf"/><stop offset="1" stop-color="#d6e6ea"/></linearGradient><linearGradient id="se" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2487a0"/><stop offset="1" stop-color="#0b3c52"/></linearGradient></defs>
-      <rect width="400" height="520" fill="url(#sk)"/>
-      <polygon points="0,240 60,190 120,220 190,150 260,205 330,165 400,220 400,330 0,330" fill="#6d8ca2"/>
-      <polygon points="0,290 90,220 170,280 250,230 340,290 400,260 400,360 0,360" fill="#3f6479"/>
-      <rect y="330" width="400" height="190" fill="url(#se)"/>
-      <rect x="10" y="328" width="34" height="24" fill="#e9d2b0"/><polygon points="8,328 27,316 46,328" fill="#c9683a"/>
-      <rect x="80" y="326" width="36" height="28" fill="#e9d2b0"/><polygon points="78,326 98,312 118,326" fill="#c9683a"/>
-      <rect x="302" y="290" width="34" height="140" fill="#bda98c"/><ellipse cx="319" cy="256" rx="14" ry="12" fill="#a8896a"/><rect x="306" y="256" width="26" height="36" fill="#c8b698"/>
-    </svg>
-    <div class="brand"><img src="/icons/icon-192.png" width="32" height="32" alt="" class="blogo">Montepalm</div>
-    <button class="lang" id="lbtn" type="button" aria-label="Jezik" aria-haspopup="true" aria-expanded="false"><span class="on">SR</span><svg class="ic" aria-hidden="true"><use href="#i-down"/></svg></button>
+  <header class="hero" id="hero">
+    <div class="hbrand">
+      <svg class="hlogo" viewBox="0 0 58 42" aria-hidden="true">
+        <defs><linearGradient id="lgm" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3df0c0"/><stop offset="1" stop-color="#13b5a2"/></linearGradient></defs>
+        <g fill="none" stroke="url(#lgm)" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 30 L18 9 L26.5 20.5 L32 14 L41 26"/>
+          <path d="M3 36 q6.5 -5.5 13 0 t13 0 t13 0 t11 -2"/>
+          <path d="M45 30 q-1.5 -9 2 -17"/>
+          <path d="M47 13 q-6 -4.5 -12 -1 M47 13 q6 -5 11 -1 M47 13 q-1 -6 3.5 -9.5"/>
+        </g>
+      </svg>
+      <div class="hbt"><b>Montepalm</b><span data-i18n="brandSub">Crna Gora na dlanu</span></div>
+    </div>
     <button class="bell" id="nbtn" type="button" aria-haspopup="dialog"><svg class="ic" aria-hidden="true"><use href="#i-bell"/></svg><span class="badge" id="nbd" hidden></span></button>
-    <div class="lmenu" id="lmenu" hidden></div>
-    <button class="photo" id="pbtn" type="button" aria-label="Dodaj fotografiju" title="Dodaj fotografiju" data-i18n-aria="addPhoto" data-i18n-title="addPhoto"><svg class="ic" aria-hidden="true"><use href="#i-camera"/></svg></button>
-    <input type="file" id="pfile" accept="image/*" hidden>
-    <div class="hin"><h1 data-i18n-html="heroTitle">Crna Gora<br>na dlanu</h1><p data-i18n="heroSub">Šta se dešava, gdje i kada. Izaberi mjesto i period.</p></div>
+    <div class="hin">
+      <h1 data-i18n-html="heroTitle">Crna Gora<br>na dlanu</h1>
+      <p class="htag" data-i18n="heroTag">Otkrij. Istraži. Doživi.</p>
+      <svg class="swoosh" viewBox="0 0 90 10" aria-hidden="true"><path d="M3 7.5 C 26 2.5, 56 2, 87 5"/></svg>
+    </div>
   </header>
 
-  <form class="search" id="sf" autocomplete="off">
-    <div class="pw">
-      <div class="fld">
-        <svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg>
-        <div class="fb"><label for="hp" data-i18n="where">Gdje</label><input id="hp" data-i18n-ph="wherePh" placeholder="Herceg Novi, Kotor, Žabljak…" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="hs"></div>
-        <button class="clr" type="button" hidden aria-label="Obriši mjesto" data-i18n-aria="clearPlace"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button>
-      </div>
-      <div class="sug" id="hs" role="listbox" hidden></div>
-    </div>
-    <div class="r2">
-      <button class="fld df" type="button" id="hf" data-pair="h" data-f="f"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl" data-i18n="from">Od</span><span class="v e">Izaberi datum</span></span></button>
-      <button class="fld df" type="button" id="ht" data-pair="h" data-f="t"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span class="fb"><span class="lbl" data-i18n="to">Do</span><span class="v e">Izaberi datum</span></span></button>
-    </div>
-    <button class="btn p full" id="hgo" type="button"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg><span data-i18n="search">Pretraži</span></button>
+  <form class="hsearch" id="sf" role="search" autocomplete="off">
+    <svg class="ic" aria-hidden="true"><use href="#i-search"/></svg>
+    <input id="hq" type="search" enterkeyhint="search" autocomplete="off" placeholder="Pretraži lokacije, događaje…" aria-label="Pretraži lokacije, događaje…" data-i18n-ph="searchPh" data-i18n-aria="searchPh">
   </form>
 
   <div class="wrap">
-    <div class="hd"><h2 data-i18n="soon">Uskoro</h2><button class="lnk" id="allev" type="button"><span data-i18n="allEvents">Svi događaji</span><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
-    <div class="rail" id="rail"></div>
-    <section id="nsec" hidden>
-      <div class="hd"><h2 data-i18n="nearTitle">Danas i u blizini</h2></div>
-      <div class="chips" id="nchips" role="group" aria-label="Danas i u blizini">
-        <button class="chip" type="button" data-n="today" aria-pressed="true"><span data-i18n="nToday">Danas</span></button>
-        <button class="chip" type="button" data-n="weekend" aria-pressed="false"><span data-i18n="nWeekend">Vikend</span></button>
-        <button class="chip" type="button" data-n="near" aria-pressed="false"><span data-i18n="nNear">Blizu mene</span></button>
-      </div>
-      <div class="rail" id="nrail"></div>
-    </section>
-    <div class="hd"><h2 data-i18n="whatToday">Šta želiš danas?</h2></div>
+    <div class="hchips" id="nchips" role="group" aria-label="Brzi izbor">
+      <button class="hchip" type="button" data-n="today"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span data-i18n="nToday">Danas</span></button>
+      <button class="hchip" type="button" data-n="weekend"><svg class="ic" aria-hidden="true"><use href="#i-cal"/></svg><span data-i18n="nWeekend">Vikend</span></button>
+      <button class="hchip" type="button" data-n="near"><svg class="ic" aria-hidden="true"><use href="#i-pin"/></svg><span data-i18n="nNear">U blizini</span></button>
+    </div>
+
+    <div class="hd"><h2 data-i18n="whatToday">Šta želiš danas?</h2><button class="lnk" id="allcat" type="button"><span data-i18n="seeAll">Sve</span><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
     <div class="tiles" id="tiles"></div>
+
+    <div class="hd"><h2 data-i18n="soon">Uskoro</h2><button class="lnk" id="allev" type="button"><span data-i18n="seeAllLink">Pogledaj sve</span><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
+    <div class="soon" id="rail"></div>
   </div>
 </section>
 
@@ -171,10 +166,10 @@
 </section>
 
 <nav class="tabs" aria-label="Glavna navigacija" data-i18n-aria="mainNav">
-  <a href="#pocetna"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-home"/></svg></span><span data-i18n="home">Početna</span></a>
-  <a href="#istrazi"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-search"/></svg></span><span data-i18n="explore">Istraži</span></a>
-  <a href="#plan"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-route"/></svg><span class="badge" id="pb" hidden></span></span><span data-i18n="myTrip">Moj put</span></a>
-  <a href="#korisno"><span class="ti"><svg class="ic" aria-hidden="true"><use href="#i-info"/></svg></span><span data-i18n="useful">Korisno</span></a>
+  <a href="#pocetna"><span class="ti"><svg class="ic off" aria-hidden="true"><use href="#i-home"/></svg><svg class="ic on" aria-hidden="true"><use href="#i-home-f"/></svg></span><span data-i18n="home">Početna</span></a>
+  <a href="#istrazi"><span class="ti"><svg class="ic off" aria-hidden="true"><use href="#i-search"/></svg><svg class="ic on" aria-hidden="true"><use href="#i-search-f"/></svg></span><span data-i18n="explore">Istraži</span></a>
+  <a href="#plan"><span class="ti"><svg class="ic off" aria-hidden="true"><use href="#i-sliders"/></svg><svg class="ic on" aria-hidden="true"><use href="#i-sliders-f"/></svg><span class="badge" id="pb" hidden></span></span><span data-i18n="myTrip">Moj put</span></a>
+  <a href="#korisno"><span class="ti"><svg class="ic off" aria-hidden="true"><use href="#i-info"/></svg><svg class="ic on" aria-hidden="true"><use href="#i-info-f"/></svg></span><span data-i18n="useful">Korisno</span></a>
 </nav>
 
 <!-- kalendar -->

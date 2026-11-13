@@ -41,7 +41,8 @@ const CG_PLACES = [
   'Bjelasica', 'Biogradska gora', 'Crno jezero', 'Durmitor', 'Komovi', 'Prokletije', 'Sinjajevina', 'Piva', 'Tara', 'Plavsko jezero', 'Grnčar', 'Vusanje', 'Kolašin 1600', 'Savin Kuk'
 ];
 let all = [], rests = [], places = [], dataPlaces = [], cat = 'all', plan = [], known = {};
-const D = { h: { f: '', t: '' }, x: { f: '', t: '' } };
+const D = { x: { f: '', t: '' } };
+let Q = '', sortNear = false, here = null; // Q = slobodan tekst sa početne; lokacija se drži samo u memoriji, nikad se ne šalje ni ne čuva
 try { plan = JSON.parse(localStorage.getItem('mp.plan') || '[]'); } catch { plan = []; }
 /* kopija sačuvanih stavki plana: plan se vidi i bez interneta */
 let snap = {};
@@ -83,10 +84,19 @@ const retryBtn = (what) => `<button type="button" class="btn p" data-retry="${wh
 const errBox = (what, extra = '') => navigator.onLine === false
   ? emptyBox('alert', t('offlineT'), t('offlineD'), retryBtn(what) + extra)
   : emptyBox('alert', t('loadErrT'), t('loadErrD'), retryBtn(what) + extra);
-function railCard(x) {
-  known['i:' + x.slug] = x;
-  const d = parse(x.from);
-  return `<a class="ev" href="#d/i:${esc(x.slug)}">${x.cover ? `<span class="evi"><img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async"></span>` : `<span class="evi ph" aria-hidden="true">${ic(GLYPH.event)}</span>`}<span class="evr"><span class="dt"><b>${d.getDate()}</b><span>${MS[d.getMonth()]}</span></span><span class="tx"><span class="tt">${esc(x.title)}</span><span class="pl">${ic('pin')}<span>${esc(x.place)}</span></span><span class="rng">${esc(span(x))}</span></span></span></a>`;
+const dm = (s) => { const a = String(s).slice(0, 10).split('-'); return `${a[2]}.${a[1]}.`; };
+// 30.08. – 01.09.2025. (kao na dizajnu); engleski zadržava „30 Aug 2025”
+function rangeShort(x) {
+  if (!x.from) return '';
+  if (LANG === 'en') return span(x);
+  const multi = x.to && x.to !== x.from, end = multi ? x.to : x.from;
+  return multi ? `${dm(x.from)} – ${dm(x.to)}${end.slice(0, 4)}.` : `${dm(x.from)}${end.slice(0, 4)}.`;
+}
+const heartBtn = (key) => { const on = likes.includes(key); return `<button type="button" class="sch" data-lk="${esc(key)}" aria-pressed="${on}" aria-label="${on ? t('unlike') : t('like')}">${ic('heart', on ? 'f' : '')}</button>`; };
+function soonCard(x) {
+  const key = 'i:' + x.slug; known[key] = x;
+  const img = x.cover ? `<span class="sci"><img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async"></span>` : `<span class="sci ph" aria-hidden="true">${ic(GLYPH.event)}</span>`;
+  return `<article class="sc" data-c="event">${img}<div class="scb">${x.featured ? `<span class="spill">${t('popular')}</span>` : ''}<h3 class="sct"><a class="lk" href="#d/${esc(key)}">${esc(x.title)}</a></h3><div class="scl">${ic('pin')}<span>${esc(x.place)}</span></div><div class="scl">${ic('cal')}<span>${esc(rangeShort(x))}</span></div></div>${heartBtn(key)}</article>`;
 }
 
 /* ---- podaci ---- */
@@ -100,11 +110,10 @@ async function loadAll() {
   // za prijedloge: sva mjesta iz baze + spisak mjesta u Crnoj Gori, bez duplikata (poređenje bez dijakritike)
   const seen = new Set(); places = [];
   for (const p of [...dataPlaces, ...CG_PLACES]) { const k = norm(p); if (!seen.has(k)) { seen.add(k); places.push(p); } }
-  const up = all.filter((x) => x.kind === 'event' && (x.to || x.from) >= today).sort((a, b) => (a.from < b.from ? -1 : 1)).slice(0, 6);
-  if (up.length) $('rail').innerHTML = up.map(railCard).join('');
+  const up = all.filter((x) => x.kind === 'event' && (x.to || x.from) >= today).sort((a, b) => (a.from < b.from ? -1 : 1)).slice(0, 4);
+  if (up.length) $('rail').innerHTML = up.map(soonCard).join('');
   else if (all.length) $('rail').innerHTML = emptyBox('cal', t('noUpT'), t('noUpD'), `<a class="btn s" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
   saveSnap();
-  renderNear();
   planView();
 }
 let timer;
@@ -118,16 +127,23 @@ async function search() {
   if (cat !== 'all' && cat !== 'food') qs.set('kind', cat);
   let items = [];
   if (cat !== 'food') { try { items = (await api('/items?' + qs)).items; } catch { $('count').textContent = ''; $('out').innerHTML = errBox('search'); return; } }
-  const q = norm(place);
-  const rs = cat === 'all' || cat === 'food' ? rests.filter((r) => !q || norm(r.city).includes(q)) : [];
-  const list = items.sort((a, b) => (a.offSeason - b.offSeason)).map(itemCard).concat(rs.map(restCard));
-  $('count').textContent = list.length ? t('found') + list.length : '';
+  const q = norm(place), tq = norm(Q);
+  const hit = (...p) => !tq || norm(p.join(' ')).includes(tq);
+  items = items.filter((x) => hit(x.title, x.place, x.region, x.description));
+  const rs = cat === 'all' || cat === 'food' ? rests.filter((r) => (!q || norm(r.city).includes(q)) && hit(r.name, r.city, (r.tags || []).join(' '))) : [];
+  const pool = items.sort((a, b) => (a.offSeason - b.offSeason)).map((x) => ({ x, r: false })).concat(rs.map((x) => ({ x, r: true })));
+  const near = sortNear && here;
+  if (near) {
+    pool.forEach((o) => { o.d = hasLoc(o.x) ? kmBetween(here, { lat: +o.x.lat, lng: +o.x.lng }) : null; });
+    pool.sort((a, b) => (a.d === null) - (b.d === null) || a.d - b.d);
+  }
+  const list = pool.map((o) => (o.r ? restCard(o.x) : itemCard(o.x)));
+  $('count').textContent = list.length ? t('found') + list.length + (Q ? ' · „' + Q + '“' : '') + (near ? ' · ' + t('nNear') : '') : '';
   $('out').innerHTML = list.length ? list.join('') : emptyBox('search', t('nothingT'), t('nothingD'), `<button type="button" class="btn s" data-clear-search>${t('clearSearch')}</button>`);
 }
 
 /* ---- plan ---- */
 /* ---- Danas i u blizini ---- */
-let nearMode = 'today', here = null; // lokacija se drži samo u memoriji, nikad se ne šalje ni ne čuva
 const isoPlus = (s, n) => iso(addDays(parse(s), n));
 function weekendRange() {
   const d = parse(today), w = d.getDay(); // 0 = nedjelja
@@ -150,41 +166,22 @@ const askLoc = () => new Promise((res) => {
   if (!navigator.geolocation) { res(null); return; }
   navigator.geolocation.getCurrentPosition((p) => res({ lat: p.coords.latitude, lng: p.coords.longitude }), () => res(null), { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
 });
-function nearList() {
-  const run = (x, f, to) => x.from <= to && (x.to || x.from) >= f;
-  const pool = [...all.map((x) => ({ x, r: false })), ...rests.map((x) => ({ x, r: true }))];
-  let list;
-  if (nearMode === 'near') list = pool.filter(({ x, r }) => hasLoc(x) && (r || x.kind !== 'event' || (x.from && run(x, today, isoPlus(today, 30)))));
-  else { const [f, to] = nearMode === 'today' ? [today, today] : weekendRange(); list = pool.filter(({ x, r }) => !r && x.kind === 'event' && x.from && run(x, f, to)); }
-  list.forEach((o) => { o.d = here && hasLoc(o.x) ? kmBetween(here, { lat: +o.x.lat, lng: +o.x.lng }) : null; });
-  if (here) list.sort((p, q) => (p.d === null) - (q.d === null) || p.d - q.d);
-  return list.slice(0, 10);
-}
-function nearCard({ x, r, d }) {
-  const key = (r ? 'r:' : 'i:') + x.slug; known[key] = x;
-  const kind = r ? 'food' : x.kind, title = r ? x.name : x.title, place = r ? x.city : x.place;
-  const sub = !r && x.kind === 'event' && x.from ? span(x) : (KIND[kind] || '');
-  const img = x.cover ? `<span class="evi"><img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async"></span>` : `<span class="evi ph" aria-hidden="true">${ic(GLYPH[kind] || GLYPH.event)}</span>`;
-  return `<a class="ev nc" data-c="${esc(kind)}" href="#d/${esc(key)}">${img}<span class="evr"><span class="tx"><span class="tt">${esc(title)}</span><span class="pl">${ic('pin')}<span>${esc(place)}</span></span><span class="rng">${esc(sub)}</span>${d !== null ? `<span class="dst">${ic('nav')}${fmtKm(d)}</span>` : ''}</span></span></a>`;
-}
-function renderNear() {
-  const sec = $('nsec'); if (!sec) return;
-  sec.hidden = !(all.length || rests.length);
-  const list = nearList();
-  $('nrail').innerHTML = list.length ? list.map(nearCard).join('')
-    : nearMode === 'near' ? emptyBox('pin', t('nearNoLocT'), t('nearNoLocD'))
-      : emptyBox('cal', t('nearNoneT'), t('nearNoneD'), `<button type="button" class="btn s" data-n="near">${t('nNear')}</button>`);
-}
+const resetFilters = () => { Q = ''; sortNear = false; D.x = { f: '', t: '' }; $('p').value = ''; showDates(); };
+const syncCat = (k) => { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); };
+// brzi izbori sa početne: Danas, Vikend, U blizini -> Istraži sa tim filterom
 document.addEventListener('click', async (e) => {
-  const b = e.target.closest('[data-n]'); if (!b) return;
+  const b = e.target.closest('#nchips [data-n]'); if (!b) return;
   const m = b.getAttribute('data-n');
   if (m === 'near' && !here) {
     b.disabled = true; here = await askLoc(); b.disabled = false;
     if (!here) { toast(t('locDenied')); return; }
   }
-  nearMode = m;
-  document.querySelectorAll('#nchips [data-n]').forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-n') === m));
-  renderNear();
+  resetFilters(); syncCat('all');
+  if (m === 'today') D.x = { f: today, t: today };
+  else if (m === 'weekend') { const [f, to] = weekendRange(); D.x = { f, t: to }; }
+  else sortNear = true;
+  showDates();
+  location.hash = '#istrazi';
 });
 
 /* ---- izvoz u kalendar (.ics) ---- */
@@ -270,13 +267,12 @@ function bindPlace(id, sid, onChange) {
   box.addEventListener('click', (e) => { const b = e.target.closest('[data-p]'); if (b) pick(b.getAttribute('data-p')); });
   clr.addEventListener('click', () => { inp.value = ''; clr.hidden = true; inp.focus(); onChange(); });
 }
-bindPlace('hp', 'hs', () => {});
 bindPlace('p', 'xs', later);
 
 /* ---- kalendar ---- */
 const cal = { pair: 'h', f: '', t: '', view: new Date(), step: 'f' };
 function showDates() {
-  [['h', 'f'], ['h', 't'], ['x', 'f'], ['x', 't']].forEach(([p, k]) => {
+  [['x', 'f'], ['x', 't']].forEach(([p, k]) => {
     const v = D[p][k], el = $(p + k).querySelector('.v');
     el.textContent = v ? nice(v) : t('pickDate'); el.classList.toggle('e', !v);
   });
@@ -338,28 +334,6 @@ $('cclr').onclick = () => { cal.f = ''; cal.t = ''; cal.step = 'f'; renderCal();
 $('capp').onclick = applyCal;
 $('cal').addEventListener('click', (e) => { if (e.target.closest('[data-x]')) closeCal(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('cal').hidden) closeCal(); });
-
-/* ---- fotografija u heroju ---- */
-function applyPhoto(u) { const h = $('hero'); h.style.backgroundImage = 'url(' + u + ')'; h.classList.add('has'); $('pbtn').setAttribute('aria-label', t('changePhoto')); $('pbtn').title = t('changePhoto'); }
-try { const sv = localStorage.getItem('mp.hero'); if (sv) applyPhoto(sv); } catch { /* ignore */ }
-$('pbtn').onclick = () => $('pfile').click();
-$('pfile').onchange = function () {
-  const f = this.files[0]; if (!f) return;
-  const r = new FileReader();
-  r.onload = () => {
-    const im = new Image();
-    im.onload = () => {
-      const s = Math.min(1, 1100 / im.width), c = document.createElement('canvas');
-      c.width = im.width * s; c.height = im.height * s;
-      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
-      const u = c.toDataURL('image/jpeg', 0.82);
-      try { localStorage.setItem('mp.hero', u); } catch { /* ignore */ }
-      applyPhoto(u);
-    };
-    im.src = r.result;
-  };
-  r.readAsDataURL(f);
-};
 
 /* ---- detalj stavke ---- */
 const DAYN = DICT[LANG].dayn;
@@ -553,11 +527,20 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') lbClose(); else if (e.key === 'ArrowLeft') lbShow(lbPos - 1); else if (e.key === 'ArrowRight') lbShow(lbPos + 1);
 });
 
+function syncHearts() {
+  document.querySelectorAll('[data-lk]').forEach((b) => { const on = likes.includes(b.getAttribute('data-lk')); b.setAttribute('aria-pressed', on); b.setAttribute('aria-label', on ? t('unlike') : t('like')); b.innerHTML = ic('heart', on ? 'f' : ''); });
+}
+document.addEventListener('click', (e) => {
+  const h = e.target.closest('[data-lk]'); if (!h) return;
+  e.preventDefault(); toggleLike(h.getAttribute('data-lk'));
+  if (likes.includes(h.getAttribute('data-lk'))) bump(h, 'pop');
+});
 function toggleLike(k, forceOn) {
   const i = likes.indexOf(k);
   if (i >= 0 && !forceOn) likes.splice(i, 1); else if (i < 0) likes.push(k);
   saveLikes();
   document.querySelectorAll('[data-like]').forEach((b) => { if (b.getAttribute('data-like') === k) setLike(b, likes.includes(k)); });
+  syncHearts();
   if (likes.includes(k)) { buzz(10); document.querySelectorAll('[data-like]').forEach((b) => { if (b.getAttribute('data-like') === k) bump(b, 'pop'); }); }
 }
 /* dupli dodir na fotografiju = srce, kao na Instagramu */
@@ -581,7 +564,7 @@ document.addEventListener('click', (e) => {
     return;
   }
   if (e.target.closest('[data-clear-search]')) {
-    $('p').value = ''; D.x = { f: '', t: '' }; showDates();
+    resetFilters();
     $('p').closest('.fld').querySelector('.clr').hidden = true;
     search();
   }
@@ -621,21 +604,26 @@ document.addEventListener('click', (e) => { if (e.target.closest('.lk, a.ev')) s
 
 /* ---- navigacija ---- */
 function setCat(k) { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); search(); }
-const SUB = DICT[LANG].sub;
+const TG = { ...GLYPH, event: 'calstar' };
 function renderTiles() {
   const cov = (k) => (k === 'food' ? (rests.find((r) => r.cover) || {}).cover : (all.find((x) => x.kind === k && x.cover) || {}).cover) || '';
-  $('tiles').innerHTML = Object.keys(CATS).map((k) => { const c = cov(k); return `<button class="tile${c ? ' hasbg' : ''}" type="button" data-c="${k}" data-cat="${k}">${c ? `<img class="tbg" src="${esc(c)}" alt="" loading="lazy" decoding="async">` : ''}<span class="bd">${ic(GLYPH[k])}</span>${ic(GLYPH[k], 'deco')}<span class="tl">${CATS[k]}<small>${SUB[k]}</small></span></button>`; }).join('');
+  $('tiles').innerHTML = Object.keys(CATS).map((k) => { const c = cov(k); return `<button class="tile${c ? ' hasbg' : ''}" type="button" data-c="${k}" data-cat="${k}">${c ? `<img class="tbg" src="${esc(c)}" alt="" loading="lazy" decoding="async">` : ''}<span class="bd">${ic(TG[k])}</span><span class="tl">${CATS[k]}</span></button>`; }).join('');
 }
 renderTiles();
 ['all', ...Object.keys(CATS)].forEach((k) => {
   const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = k === 'all' ? t('all') : CATS[k];
   b.setAttribute('data-cat', k); b.setAttribute('aria-pressed', k === 'all'); b.onclick = () => setCat(k); $('chips').appendChild(b);
 });
-$('tiles').onclick = (e) => { const b = e.target.closest('.tile'); if (!b) return; setCat(b.getAttribute('data-cat')); location.hash = '#istrazi'; };
-$('allev').onclick = () => { setCat('event'); location.hash = '#istrazi'; };
-$('sf').addEventListener('submit', (e) => e.preventDefault());
-$('hgo').onclick = () => { $('p').value = $('hp').value; D.x = { ...D.h }; showDates(); search(); location.hash = '#istrazi'; };
-$('hp').addEventListener('keydown', (e) => { if (e.key === 'Enter' && $('hs').hidden) $('hgo').click(); });
+$('tiles').onclick = (e) => { const b = e.target.closest('.tile'); if (!b) return; resetFilters(); setCat(b.getAttribute('data-cat')); location.hash = '#istrazi'; };
+$('allev').onclick = () => { resetFilters(); setCat('event'); location.hash = '#istrazi'; };
+$('allcat').onclick = () => { resetFilters(); setCat('all'); location.hash = '#istrazi'; };
+$('sf').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const v = $('hq').value.trim();
+  resetFilters(); syncCat('all'); Q = v;
+  $('hq').blur();
+  location.hash = '#istrazi';
+});
 
 /* ---------- Korisno: statične informacije (korisno.js), jezik kao u aplikaciji ---------- */
 function usefulView() {
@@ -672,10 +660,12 @@ window.addEventListener('hashchange', () => { navs++; route(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => {});
 applyStatic();
 const lbtn = $('lbtn'), lmenu = $('lmenu');
-const lopen = (on) => { lmenu.hidden = !on; lbtn.setAttribute('aria-expanded', on); };
-lbtn.onclick = (e) => { e.stopPropagation(); lopen(lmenu.hidden); if (!lmenu.hidden) { const c = lmenu.querySelector('[aria-current]'); if (c) c.focus(); } };
-lmenu.onclick = (e) => { const b = e.target.closest('[data-lang]'); if (b) setLang(b.getAttribute('data-lang')); };
-document.addEventListener('click', () => { if (!lmenu.hidden) lopen(false); });
-document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !lmenu.hidden) { lopen(false); lbtn.focus(); } });
+if (lbtn && lmenu) {
+  const lopen = (on) => { lmenu.hidden = !on; lbtn.setAttribute('aria-expanded', on); };
+  lbtn.onclick = (e) => { e.stopPropagation(); lopen(lmenu.hidden); if (!lmenu.hidden) { const c = lmenu.querySelector('[aria-current]'); if (c) c.focus(); } };
+  lmenu.onclick = (e) => { const b = e.target.closest('[data-lang]'); if (b) setLang(b.getAttribute('data-lang')); };
+  document.addEventListener('click', () => { if (!lmenu.hidden) lopen(false); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !lmenu.hidden) { lopen(false); lbtn.focus(); } });
+}
 showDates();
 loadAll().then(route);
