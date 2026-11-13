@@ -17,7 +17,7 @@ test('korisno: hitni brojevi su tačni i nijedan tekst nije prazan', () => {
   for (const l of LANGS) {
     assert.ok(USEFUL[l].updated.length > 10, l);
     for (const g of USEFUL[l].groups) {
-      assert.ok(g.title, l + g.id);
+      assert.ok(g.title && g.sub, l + g.id);
       for (const c of g.calls || []) assert.ok(/^\d+$/.test(c[0]) && c[1], l + g.id);
       for (const n of g.notes || []) assert.ok(n.length > 10, l + g.id);
     }
@@ -28,4 +28,5 @@ test('korisno: i18n ima naslov taba za svaki jezik', () => {
   const src = readFileSync(new URL('../public/i18n.js', import.meta.url), 'utf8');
   assert.equal((src.match(/useful: '/g) || []).length, 5);
   assert.equal((src.match(/usefulSub: '/g) || []).length, 5);
+  assert.equal((src.match(/needHelp: '/g) || []).length, 5);
 });
