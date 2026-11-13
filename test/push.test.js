@@ -62,7 +62,7 @@ const count = (sql, ...a) => db.prepare(sql).get(...a).n;
 before(() => {
   db = new DatabaseSync(':memory:');
   for (const f of readdirSync(new URL('../migrations/', import.meta.url)).sort()) {
-    if (!/^(0007|0008|0009|0011|0012|0013|0014|0015)_/.test(f)) continue;
+    if (!/^(0007|0008|0009|0011|0012|0013|0014|0015|0016)_/.test(f)) continue;
     db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8').replace(/^ALTER TABLE restaurants.*$/m, ''));
   }
   sent = [];
@@ -403,4 +403,49 @@ test('opštine: spisak u public/opstine.js isti je kao na serveru', () => {
   const ids = [...readFileSync(new URL('../public/opstine.js', import.meta.url), 'utf8').matchAll(/\['([a-z-]+)', '/g)].map((m) => m[1]);
   assert.deepEqual(ids, OPSTINE_IDS);
   assert.equal(OPSTINE_IDS.length, 25);
+});
+
+test('partneri: validacija, veza sa promocijom, zbirni izvještaj bez probnih, brisanje odvaja promocije', async () => {
+  const admin = (path, body, method = 'POST') => worker.fetch(new Request('https://mp.test/api/admin' + path, { method, headers: { 'content-type': 'application/json', authorization: 'Bearer ' + 'x'.repeat(24) }, body: body && JSON.stringify(body) }), env);
+  assert.equal((await admin('/partners', { name: '' })).status, 400);
+  assert.equal((await admin('/partners', { name: 'X', type: 'banka' })).status, 400);
+  assert.equal((await admin('/partners', { name: 'X', starts_on: '2027-05-01', ends_on: '2027-04-01' })).status, 400);
+  assert.equal((await admin('/partners', { name: 'X', ends_on: 'sutra' })).status, 400);
+  const r = await admin('/partners', { name: 'TO Kotor', type: 'to', contact: 'Ana 067 000 000', package: 'Istaknuto + 2 push', starts_on: '2027-09-01', ends_on: '2027-12-31', note: 'pilot' });
+  assert.equal(r.status, 201);
+  const id = (await r.json()).id;
+  let list = (await (await admin('/partners', undefined, 'GET')).json()).partners;
+  assert.equal(list.find((p) => p.id === id).promos, 0);
+  assert.equal((await admin('/partners/' + id, { name: 'TO Kotor (opština)' }, 'PUT')).status, 204);
+  assert.equal((await (await admin('/partners/' + id, undefined, 'GET')).json()).partner.name, 'TO Kotor (opština)');
+  assert.equal((await (await admin('/partners/' + id, undefined, 'GET')).json()).partner.package, 'Istaknuto + 2 push'); // izmjena jednog polja ne briše ostala
+
+  // promocija: nepostojeći partner se odbija
+  env.NOW = '2027-09-10T10:00:00Z';
+  const mk = async (extra) => admin('/push/campaign', { title: 'Partner promo', body: 'x', send_at: '2027-09-10T10:00:00Z', ...extra });
+  assert.equal((await mk({ partner_id: id + 999 })).status, 400);
+  assert.equal((await mk({ partner_id: 'abc' })).status, 400);
+  const c1 = (await (await mk({ partner_id: id })).json()).id;
+  for (let i = 0; i < 30 && (i === 0 || count('SELECT COUNT(*) AS n FROM push_queue WHERE campaign_id = ?', c1) !== 0); i++) await tick(env);
+  await post('/push/event', { c: c1, kind: 'click', endpoint: EP('t-u') });
+  const c2 = (await (await mk({ partner_id: id, audience: 'test' })).json()).id; // probna se ne računa partneru
+  await tick(env);
+  const rep = await (await admin('/partners/' + id + '/report', undefined, 'GET')).json();
+  assert.equal(rep.partner.name, 'TO Kotor (opština)');
+  assert.equal(rep.totals.promos, 1); assert.equal(rep.campaigns[0].id, c1);
+  assert.equal(rep.totals.sent, rep.campaigns[0].recipients); assert.equal(rep.totals.tracked_sent, rep.totals.sent);
+  assert.equal(rep.totals.clicked, 1); assert.ok(rep.totals.shown >= 1 && rep.totals.shown <= rep.totals.sent);
+  list = (await (await admin('/partners', undefined, 'GET')).json()).partners;
+  assert.equal(list.find((p) => p.id === id).promos, 1);
+  const push = await (await admin('/push', undefined, 'GET')).json();
+  assert.ok(push.partners.some((p) => p.id === id));
+  assert.equal(push.campaigns.find((c) => c.id === c1).partner_name, 'TO Kotor (opština)');
+  assert.equal((await (await admin('/push/report/' + c1, undefined, 'GET')).json()).campaign.partner_name, 'TO Kotor (opština)');
+
+  // brisanje partnera: promocije ostaju, bez partnera
+  assert.equal((await admin('/partners/' + id, undefined, 'DELETE')).status, 204);
+  assert.equal((await admin('/partners/' + id, undefined, 'GET')).status, 404);
+  const after = (await (await admin('/push', undefined, 'GET')).json()).campaigns;
+  assert.equal(after.find((c) => c.id === c1).partner_id, null);
+  assert.ok(after.some((c) => c.id === c2));
 });
