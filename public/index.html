@@ -42,6 +42,7 @@
   <symbol id="i-right" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
   <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
   <symbol id="i-star" viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9l-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z"/></symbol>
   <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5M12 16.2v.1"/></symbol>
@@ -199,6 +200,28 @@
   </div>
 </section>
 
+<section class="view" id="v-mapa">
+  <div class="mp" id="mp">
+    <div class="mps" id="mp-surf" role="application" aria-label="Mapa Crne Gore" data-i18n-aria="mapT"><div class="mpp" id="mp-pane"><div id="mp-tiles"></div><div id="mp-marks"></div></div></div>
+    <div class="mpbar">
+      <button class="mpib" type="button" id="mp-back" aria-label="Nazad" data-i18n-aria="back"><svg class="ic" aria-hidden="true"><use href="#i-left"/></svg></button>
+      <h1 data-i18n="mapT">Mapa Crne Gore</h1>
+      <button class="mpib" type="button" id="mp-list" aria-label="Prikaži listu" data-i18n-aria="listB"><svg class="ic" aria-hidden="true"><use href="#i-list"/></svg></button>
+    </div>
+    <div class="mpctl">
+      <button class="mpib" type="button" id="mp-in" aria-label="Uvećaj" data-i18n-aria="zoomIn"><svg class="ic" aria-hidden="true"><use href="#i-plus"/></svg></button>
+      <button class="mpib" type="button" id="mp-out" aria-label="Umanji" data-i18n-aria="zoomOut"><svg class="ic" aria-hidden="true"><use href="#i-minus"/></svg></button>
+      <button class="mpib loc" type="button" id="mp-loc" aria-label="Moja lokacija" data-i18n-aria="locateB"><svg class="ic" aria-hidden="true"><use href="#i-nav"/></svg></button>
+    </div>
+    <div class="mpbot">
+      <div class="mpcard" id="mp-card" hidden></div>
+      <div class="mpchips" id="mp-chips" role="group" aria-label="Kategorija" data-i18n-aria="category"></div>
+    </div>
+    <p class="mpempty" id="mp-empty" hidden data-i18n="mapEmpty">Nema mjesta za prikaz na mapi za ovaj izbor.</p>
+    <a class="mpattr" href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">© OpenStreetMap</a>
+  </div>
+</section>
+
 <section class="view" id="v-detalj">
   <div id="dt" aria-live="polite"></div>
 </section>
@@ -269,6 +292,7 @@
 <script src="/i18n.js" defer></script>
 <script src="/korisno.js" defer></script>
 <script src="/app.js" defer></script>
+<script src="/map.js" defer></script>
 <script src="/opstine.js" defer></script>
 <script src="/push.js" defer></script>
 <script src="/inbox.js" defer></script>

@@ -786,7 +786,7 @@ function usefulView() {
   }).join('') + `<p class="note">${esc(u.updated)}</p>`;
 }
 
-const VIEWS = ['pocetna', 'istrazi', 'plan', 'korisno', 'detalj'];
+const VIEWS = ['pocetna', 'istrazi', 'plan', 'korisno', 'mapa', 'detalj'];
 function route() {
   const raw = (location.hash || '#pocetna').slice(1);
   let h = raw, dkey = '';
@@ -794,9 +794,10 @@ function route() {
   else if (!VIEWS.includes(h) || h === 'detalj') h = 'pocetna';
   if (!$('lb').hidden) lbClose();
   VIEWS.forEach((v) => { $('v-' + v).className = 'view' + (v === h ? ' on' : ''); });
-  const tab = h === 'detalj' ? 'istrazi' : h;
+  const tab = h === 'detalj' || h === 'mapa' ? 'istrazi' : h;
   document.querySelectorAll('.tabs a').forEach((a) => (a.getAttribute('href') === '#' + tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
   document.body.classList.toggle('isdet', h === 'detalj');
+  document.body.classList.toggle('ismap', h === 'mapa');
   if (h !== 'detalj') document.title = t('pageTitle');
   const back = saved.hash === '#' + h ? saved.y : null;
   if (back !== null) saved = { hash: '', y: 0 };
@@ -804,6 +805,7 @@ function route() {
   if (h === 'istrazi') { $('xq').value = Q; $('xnear').setAttribute('aria-pressed', sortNear); if ($('p').value.trim() || D.x.f || sortNear) xFilOpen(true); $('p').closest('.fld').querySelector('.clr').hidden = !$('p').value; done = search(); }
   if (h === 'plan') { planView(); if (window.mpPushRender) window.mpPushRender(); }
   if (h === 'korisno') usefulView();
+  if (h === 'mapa' && window.mapView) window.mapView();
   if (h === 'detalj') showDetail(dkey);
   window.scrollTo(0, 0);
   if (back !== null) done.then(() => window.scrollTo(0, back));
@@ -826,7 +828,7 @@ $('xback').onclick = () => { if (navs > 0) history.back(); else location.hash = 
 $('xpin').onclick = () => xFilOpen($('xfil').hidden);
 $('xq').addEventListener('input', () => { Q = $('xq').value.trim(); later(); });
 $('xq').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('xq').blur(); } });
-$('xmap').onclick = () => toast(t('mapSoon'));
+$('xmap').onclick = () => { location.hash = '#mapa'; };
 $('xnear').onclick = async () => {
   const b = $('xnear');
   if (!sortNear) {

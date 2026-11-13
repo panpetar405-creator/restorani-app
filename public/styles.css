@@ -807,3 +807,52 @@ body.isdet .tabs{display:none}
   #pprint li{margin:4px 0;font-size:14px}
   #pprint .ppf{margin-top:28px;color:#888;font-size:11px}
 }
+
+/* ---- Mapa Crne Gore (sekcija 5) ---- */
+body.ismap{overflow:hidden;overscroll-behavior:none}
+#v-mapa .mp{position:relative;height:calc(100svh - 84px - env(safe-area-inset-bottom,0px));overflow:hidden;background:#cfe3ea}
+.mps{position:absolute;inset:0;touch-action:none;cursor:grab;overflow:hidden;user-select:none;-webkit-user-select:none}
+.mps:active{cursor:grabbing}
+.mpp{position:absolute;left:0;top:0;width:0;height:0;transform-origin:0 0;will-change:transform}
+.mpt{position:absolute;width:256px;height:256px;max-width:none;opacity:0;transition:opacity .25s ease;pointer-events:none;-webkit-user-drag:none}
+.mpt.on{opacity:1}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .mpt{filter:brightness(.74) contrast(1.05) saturate(.85)}:root:not([data-theme="light"]) #v-mapa .mp{background:#1a2f3a}}
+.mpbar{position:absolute;left:0;right:0;top:0;z-index:3;display:grid;grid-template-columns:48px 1fr 48px;align-items:center;gap:8px;padding:calc(10px + env(safe-area-inset-top,0px)) 12px 10px;background:linear-gradient(180deg,rgba(11,90,168,.92),rgba(11,90,168,0));pointer-events:none}
+.mpbar>*{pointer-events:auto}
+.mpbar h1{margin:0;text-align:center;font-size:1.15rem;font-weight:700;letter-spacing:-.01em;color:#fff;text-shadow:0 1px 6px rgba(1,20,92,.45)}
+.mpib{width:44px;height:44px;display:grid;place-items:center;padding:0;border:0;border-radius:50%;background:var(--card);color:var(--ink);box-shadow:0 4px 14px rgba(12,60,120,.28)}
+.mpib .ic{width:22px;height:22px;stroke-width:2.2}
+.mpib:active{transform:scale(.94)}
+.mpib:disabled{opacity:.6}
+.mpctl{position:absolute;right:12px;top:calc(76px + env(safe-area-inset-top,0px));z-index:3;display:grid;gap:10px}
+.mpctl .loc{background:var(--ink);color:var(--on-ink)}
+.mpbot{position:absolute;left:0;right:0;bottom:0;z-index:3;display:grid;gap:10px;padding:0 12px 12px;pointer-events:none}
+.mpbot>*{pointer-events:auto}
+.mpchips{display:flex;gap:8px;overflow-x:auto;padding:4px;scrollbar-width:none;background:var(--card);border:1px solid var(--line);border-radius:999px;box-shadow:0 8px 24px rgba(12,60,120,.22)}
+.mpchips::-webkit-scrollbar{display:none}
+.mpchip{flex:1 0 auto;min-height:40px;padding:0 16px;border:0;border-radius:999px;background:transparent;color:var(--ink);font-size:.9rem;font-weight:700;white-space:nowrap}
+.mpchip[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);box-shadow:0 4px 12px rgba(15,34,54,.25)}
+.mpcard[hidden]{display:none}
+.mpcl{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 10px;background:var(--card);border:1px solid var(--line);border-radius:20px;box-shadow:0 10px 28px rgba(12,60,120,.28);text-decoration:none;color:var(--ink)}
+.mpci{flex:none;width:64px;height:64px;border-radius:14px;overflow:hidden;background:var(--ct,var(--line));display:grid;place-items:center;color:var(--c,var(--ink))}
+.mpci img{width:100%;height:100%;object-fit:cover;display:block}
+.mpci .xph .ic{width:28px;height:28px}
+.mpcb{flex:1;min-width:0;display:grid;gap:2px}
+.mpcb small{color:var(--c,var(--mute));font-size:.72rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase}
+.mpcb b{font-size:1.02rem;line-height:1.2;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mpcp{display:flex;align-items:center;gap:4px;color:var(--mute);font-size:.86rem;min-width:0}
+.mpcp .ic{width:15px;height:15px;flex:none}
+.mpcp span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mpca{flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:50%;background:var(--ink);color:var(--on-ink)}
+.mpca .ic{width:20px;height:20px}
+/* oznake */
+.mpk{position:absolute;z-index:1;width:38px;height:38px;margin:-38px 0 0 -19px;padding:0;display:grid;place-items:center;border:3px solid #fff;border-radius:50% 50% 50% 8%;transform:rotate(-45deg);background:var(--c,#0b5aa8);color:#fff;box-shadow:0 4px 12px rgba(1,20,92,.4);transition:transform .15s ease}
+.mpk .ic{width:19px;height:19px;transform:rotate(45deg);stroke-width:2.1}
+.mpk.ap{border-style:dashed}
+.mpk.sel{z-index:2;transform:rotate(-45deg) scale(1.28);box-shadow:0 0 0 5px rgba(255,255,255,.55),0 6px 16px rgba(1,20,92,.5)}
+.mpk.cl{width:42px;height:42px;margin:-21px 0 0 -21px;border-radius:50%;transform:none;background:var(--ink);color:var(--on-ink);font-size:.95rem;font-weight:800;border-color:#fff}
+.mpyou{position:absolute;z-index:1;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:#1a73e8;border:3px solid #fff;box-shadow:0 0 0 8px rgba(26,115,232,.25);pointer-events:none}
+.mpempty{position:absolute;left:16px;right:16px;top:50%;z-index:3;margin:0;transform:translateY(-50%);padding:14px 16px;text-align:center;background:var(--card);border:1px solid var(--line);border-radius:16px;font-weight:600;box-shadow:0 8px 24px rgba(12,60,120,.22)}
+.mpempty[hidden]{display:none}
+.mpattr{position:absolute;left:6px;top:calc(62px + env(safe-area-inset-top,0px));z-index:2;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.78);color:#244;font-size:.68rem;text-decoration:none}
+@media (prefers-reduced-motion:reduce){.mpk,.mpt{transition:none}}
