@@ -788,7 +788,8 @@ async function askSend(q) {
     const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q, lang: LANG }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw Object.assign(new Error('ask'), { status: r.status });
-    out.innerHTML = `<p class="askrp">${esc(d.reply || '')}</p>` + ((d.results || []).length ? `<div class="xlist">${d.results.map((x) => xCard(x, x.type === 'rest')).join('')}</div>` : '');
+    const rs = d.results || [];
+    out.innerHTML = (rs.length ? `<div class="askrec"><span class="askrb">${ic('spark')}${esc(t('askRec'))}</span><p class="askrp">${esc(d.reply || '')}</p></div><div class="xlist askl">${rs.map((x) => xCard(x, x.type === 'rest')).join('')}</div>` : `<p class="askrp">${esc(d.reply || '')}</p>`);
   } catch (e) {
     out.innerHTML = `<div class="askerr">${esc(t(e.status === 429 ? 'askBusy' : e.status === 400 ? 'askShort' : 'askErr'))}</div>`;
   } finally { btn.disabled = false; }

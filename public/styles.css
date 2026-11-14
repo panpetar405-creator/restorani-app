@@ -1092,3 +1092,24 @@ body.isdet .askfab,body.ismap .askfab{display:none}
 .askp{min-height:62svh}
 .askp .ask{margin:0;padding:0;background:none;border:0;border-radius:0;box-shadow:none}
 .askp .askx{margin:10px -16px 0;padding:0 16px 2px}
+
+/* Pitaj: preporuka + kompaktne kartice u panelu */
+.askrec{padding:12px 14px;border-radius:14px;background:var(--sea-t);border:1px solid var(--sea)}
+.askrb{display:inline-flex;align-items:center;gap:6px;margin-bottom:6px;color:var(--sea);font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.04em}
+.askrb .ic{width:16px;height:16px}
+.askrec .askrp{font-size:1.02rem;font-weight:700;line-height:1.4}
+.askl{gap:10px;margin-top:12px}
+.askl .xc{display:grid;grid-template-columns:104px minmax(0,1fr);align-items:stretch;border-radius:16px}
+.askl .xi{aspect-ratio:auto;height:100%;min-height:104px}
+.askl .xi .xb,.askl .xd,.askl .xdt{display:none}
+.askl .xbd{gap:4px;padding:10px 12px}
+.askl .xt{font-size:1rem;line-height:1.2}
+.askl .xm{font-size:.8rem}
+.askl .xf{margin-top:2px}
+.askl .xo{padding:5px 8px;gap:6px;border-radius:10px}
+.askl .xo>.ic{width:16px;height:16px}
+.askl .xo b{font-size:.78rem}
+.askl .xo small{font-size:.7rem}
+.askl .sch{top:6px;right:auto;left:6px;width:30px;height:30px}
+.askl .sch .ic{width:17px;height:17px}
+.askl .xc:first-child{border-color:var(--sea);box-shadow:0 0 0 2px var(--sea-t)}
