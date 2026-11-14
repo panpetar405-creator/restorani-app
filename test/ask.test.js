@@ -22,7 +22,7 @@ function d1(db) {
 let base;
 before(() => {
   const db = new DatabaseSync(':memory:');
-  for (const f of ['0001_init.sql', '0007_items.sql', '0008_demo_items.sql', '0009_detalji_mediji.sql', '0011_engleski.sql', '0017_featured.sql']) {
+  for (const f of ['0001_init.sql', '0002_demo_seed.sql', '0007_items.sql', '0008_demo_items.sql', '0009_detalji_mediji.sql', '0011_engleski.sql', '0017_featured.sql']) {
     try { db.exec(readFileSync(new URL('../migrations/' + f, import.meta.url), 'utf8')); } catch { /* neke migracije su već primijenjene kroz druge */ }
   }
   base = { DB: d1(db), RL: null, RL_AUTH: null, TODAY: '2026-11-14' };
@@ -101,4 +101,13 @@ test('svako pitanje dobija preporuku: i kad ništa ne odgovara', async () => {
   assert.ok(r.reply.startsWith('Nisam našao tačno to, ali preporučujem:'));
   const rr = await (await post({ ...base, AI: { run: async () => ({ response: '{"refs":[],"reply":"Nema ništa."}' }) } }, { q: 'gdje na večeru uz more', lang: 'sr' })).json();
   assert.ok(rr.results.length >= 1 && rr.reply.length > 0);
+});
+test('bez AI-ja pitanje o večeri daje samo restorane, o plaži samo plaže, o događajima samo događaje', async () => {
+  const kinds = async (q) => (await (await post(base, { q, lang: 'sr' })).json()).results;
+  const food = await kinds('Gdje na večeru uz more?');
+  assert.ok(food.length > 0 && food.every((x) => x.type === 'rest'));
+  const beach = await kinds('Plaža za porodicu');
+  assert.ok(beach.length > 0 && beach.every((x) => x.type === 'item' && x.kind === 'beach'));
+  const ev = await kinds('Šta ima ovaj vikend?');
+  assert.ok(ev.length > 0 && ev.every((x) => x.type === 'item' && x.kind === 'event'));
 });
