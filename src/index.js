@@ -5,6 +5,7 @@ import {
 import { adminRoute, serveMedia } from './adminapi.js';
 import { sharePage } from './share.js';
 import { pushRoute, tick } from './push.js';
+import { ask } from './ask.js';
 
 const SLUG = /^[a-z0-9-]{1,60}$/;
 
@@ -303,6 +304,10 @@ async function route(request, env, url) {
 
   if (await limited(env.RL, ip)) throw new HttpError(429, 'Previše zahtjeva, pokušaj ponovo za minut');
 
+  if (pathname === '/api/ask' && method === 'POST') {
+    if (await limited(env.RL_ASK, ip)) throw new HttpError(429, 'Previše pitanja, pokušaj ponovo za minut');
+    return ask(env, request);
+  }
   if (pathname === '/api/items' && method === 'GET') return listItems(env, url);
   if (seg[1] === 'items' && seg.length === 3 && method === 'GET') return json(await getItem(env, seg[2], pickLang(url)));
   if (pathname === '/api/weather' && method === 'GET') return getWeather(env, url);
