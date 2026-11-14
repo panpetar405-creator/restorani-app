@@ -757,7 +757,13 @@ document.addEventListener('click', (e) => { if (e.target.closest('.lk, a.ev')) s
 /* ---- navigacija ---- */
 function setCat(k) { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); search(); }
 const TG = { ...GLYPH, event: 'calstar' };
+// sr: gotove fotografije sa ikonicom i nazivom (media/cat-*.webp); ostali jezici zadržavaju sliku iz baze sa prevedenim nazivom
+const TILE_ART = LANG === 'sr';
 function renderTiles() {
+  if (TILE_ART) {
+    $('tiles').innerHTML = Object.keys(CATS).map((k) => `<button class="tile art" type="button" data-c="${k}" data-cat="${k}" aria-label="${esc(CATS[k])}"><img class="tbg" src="/media/cat-${k}.webp" alt="" width="692" height="427" loading="lazy" decoding="async"></button>`).join('');
+    return;
+  }
   const cov = (k) => (k === 'food' ? (rests.find((r) => r.cover) || {}).cover : (all.find((x) => x.kind === k && x.cover) || {}).cover) || '';
   $('tiles').innerHTML = Object.keys(CATS).map((k) => { const c = cov(k); return `<button class="tile${c ? ' hasbg' : ''}" type="button" data-c="${k}" data-cat="${k}">${c ? `<img class="tbg" src="${esc(c)}" alt="" loading="lazy" decoding="async">` : ''}<span class="bd">${ic(TG[k])}</span><span class="tl">${CATS[k]}</span></button>`; }).join('');
 }
