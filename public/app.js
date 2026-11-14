@@ -94,10 +94,20 @@ function rangeShort(x) {
   return multi ? `${dm(x.from)} – ${dm(x.to)}${end.slice(0, 4)}.` : `${dm(x.from)}${end.slice(0, 4)}.`;
 }
 const heartBtn = (key) => { const on = likes.includes(key); return `<button type="button" class="sch" data-lk="${esc(key)}" aria-pressed="${on}" aria-label="${on ? t('unlike') : t('like')}">${ic('heart', on ? 'f' : '')}</button>`; };
+/* Uskoro = hibrid: "stories" red (brz pregled) + feed velikih kartica (slika, datum bedž, srce, podijeli) */
+let seen = [];
+try { seen = JSON.parse(localStorage.getItem('mp.seen') || '[]'); } catch { seen = []; }
+const dayLabel = (x) => (LANG === 'sr' ? dm(x.from) : nice(x.from));
+function storyItem(x) {
+  const key = 'i:' + x.slug; known[key] = x;
+  const inner = x.cover ? `<img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async">` : ic(GLYPH.event);
+  return `<a class="st${seen.includes(key) ? ' seen' : ''}" role="listitem" href="#d/${esc(key)}" data-seen="${esc(key)}"><span class="stp"><span class="sti">${inner}</span></span><b class="stt">${esc(x.title)}</b><span class="std">${esc(dayLabel(x))}</span></a>`;
+}
 function soonCard(x) {
   const key = 'i:' + x.slug; known[key] = x;
-  const img = x.cover ? `<span class="sci"><img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async"></span>` : `<span class="sci ph" aria-hidden="true">${ic(GLYPH.event)}</span>`;
-  return `<article class="sc" data-c="event">${img}<div class="scb">${x.featured ? `<span class="spill">${t('popular')}</span>` : ''}<h3 class="sct"><a class="lk" href="#d/${esc(key)}">${esc(x.title)}</a></h3><div class="scl">${ic('pin')}<span>${esc(x.place)}</span></div><div class="scl">${ic('cal')}<span>${esc(rangeShort(x))}</span></div></div>${heartBtn(key)}</article>`;
+  const img = x.cover ? `<img src="${esc(x.cover)}" alt="" loading="lazy" decoding="async" draggable="false">` : `<span class="fph" aria-hidden="true">${ic(GLYPH.event)}</span>`;
+  const like = heartBtn(key).replace('class="sch"', 'class="fa"');
+  return `<article class="fc" data-c="event"><div class="fi" data-open="${esc(key)}">${img}<span class="fdate">${esc(dayLabel(x))}</span>${x.featured ? `<span class="spill fpop">${t('popular')}</span>` : ''}</div><div class="fbar">${like}<button type="button" class="fa" data-sharek="${esc(key)}" aria-label="${t('share')}">${ic('share')}</button></div><div class="fcap"><h3 class="sct"><a class="lk" href="#d/${esc(key)}">${esc(x.title)}</a></h3><div class="scl">${ic('pin')}<span>${esc(x.place)}</span></div><div class="scl">${ic('cal')}<span>${esc(rangeShort(x))}</span></div></div></article>`;
 }
 
 /* ---- podaci ---- */
@@ -111,8 +121,9 @@ async function loadAll() {
   // za prijedloge: sva mjesta iz baze + spisak mjesta u Crnoj Gori, bez duplikata (poređenje bez dijakritike)
   const seen = new Set(); places = [];
   for (const p of [...dataPlaces, ...CG_PLACES]) { const k = norm(p); if (!seen.has(k)) { seen.add(k); places.push(p); } }
-  const up = all.filter((x) => x.kind === 'event' && (x.to || x.from) >= today).sort((a, b) => (a.from < b.from ? -1 : 1)).slice(0, 4);
-  if (up.length) $('rail').innerHTML = up.map(soonCard).join('');
+  const up = all.filter((x) => x.kind === 'event' && (x.to || x.from) >= today).sort((a, b) => (a.from < b.from ? -1 : 1)).slice(0, 8);
+  $('stories').hidden = up.length < 2;
+  if (up.length) { $('stories').innerHTML = up.map(storyItem).join(''); $('rail').innerHTML = up.slice(0, 4).map(soonCard).join(''); }
   else if (all.length) $('rail').innerHTML = emptyBox('cal', t('noUpT'), t('noUpD'), `<a class="btn s" href="#istrazi" style="text-decoration:none">${t('goExplore')}</a>`);
   saveSnap();
   planView();
@@ -737,6 +748,31 @@ $('dt').addEventListener('click', async (e) => {
   }
 });
 document.addEventListener('click', (e) => { if (e.target.closest('.lk, a.ev')) saved = { hash: location.hash || '#pocetna', y: window.scrollY }; });
+
+/* Uskoro: stories označeni kao viđeni, dupli dodir na sliku = srce, jedan dodir = detalji, podijeli */
+document.addEventListener('click', (e) => {
+  const st = e.target.closest('[data-seen]');
+  if (st) { const k = st.getAttribute('data-seen'); if (!seen.includes(k)) { seen.push(k); try { localStorage.setItem('mp.seen', JSON.stringify(seen.slice(-100))); } catch { /* ignore */ } } saved = { hash: location.hash || '#pocetna', y: window.scrollY }; }
+});
+let feedTap = { k: '', at: 0, tm: 0 };
+$('rail').addEventListener('click', (e) => {
+  const fi = e.target.closest('[data-open]'); if (!fi) return;
+  const k = fi.getAttribute('data-open'), now = Date.now();
+  if (feedTap.k === k && now - feedTap.at < 320) {
+    clearTimeout(feedTap.tm); feedTap = { k: '', at: 0, tm: 0 };
+    toggleLike(k, true);
+    const b = document.createElement('span'); b.className = 'fburst'; b.innerHTML = ic('heart', 'f'); fi.appendChild(b); setTimeout(() => b.remove(), 800);
+    return;
+  }
+  clearTimeout(feedTap.tm);
+  feedTap = { k, at: now, tm: setTimeout(() => { feedTap = { k: '', at: 0, tm: 0 }; saved = { hash: location.hash || '#pocetna', y: window.scrollY }; location.hash = '#d/' + k; }, 330) };
+});
+document.addEventListener('click', async (e) => {
+  const b = e.target.closest('[data-sharek]'); if (!b) return;
+  const k = b.getAttribute('data-sharek'), x = known[k] || {};
+  const link = /^[ir]:[a-z0-9-]+$/.test(k) ? `${location.origin}/s/${k[0]}/${k.slice(2)}${LANG === 'sr' ? '' : '?lang=' + LANG}` : location.href;
+  try { if (navigator.share) await navigator.share({ title: x.title || x.name || 'Montepalm', url: link }); else { await navigator.clipboard.writeText(link); toast(t('linkCopied')); } } catch { /* otkazano */ }
+});
 
 /* ---- navigacija ---- */
 function setCat(k) { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); search(); }
