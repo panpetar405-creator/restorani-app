@@ -73,12 +73,25 @@
     out.innerHTML = h + attr();
   }
 
+  // kartica sa trenutnim vremenom na početnoj; dodir otvara ekran #vrijeme
+  const wxc = $('wxcard');
+  const cardFill = (p, d) => {
+    if (!wxc || !p || !d || !d.now) return;
+    const n = d.now, g = iconOf(n.code, n.day);
+    wxc.querySelector('.wxci').innerHTML = ic(g);
+    wxc.querySelector('.wxct').innerHTML = `<b>${n.temp}°C</b><small>${esc(p[1])} · ${esc(txt(g))}</small>`;
+  };
+  const cardLoad = async () => {
+    const p = WXP.find((x) => x[0] === slug);
+    try { cardFill(p, await api(`/forecast?lat=${p[2]}&lng=${p[3]}`)); } catch { /* kartica ostaje bez podatka */ }
+  };
+
   async function load() {
     const my = ++tok, p = WXP.find((x) => x[0] === slug);
     out.innerHTML = '<div class="skb" style="height:236px;border-radius:24px"></div><div class="skb" style="height:150px;margin-top:16px;border-radius:18px"></div>';
     try { data = await api(`/forecast?lat=${p[2]}&lng=${p[3]}`); }
     catch { data = null; if (my === tok) out.innerHTML = errBox('wx'); return; }
-    if (my === tok) render();
+    if (my === tok) { cardFill(p, data); render(); }
   }
   const setTab = (k) => { tab = k; [...tabs.children].forEach((b) => b.setAttribute('aria-pressed', b.getAttribute('data-t') === k)); render(); };
 
@@ -92,6 +105,8 @@
   tabs.addEventListener('click', (e) => { const b = e.target.closest('[data-t]'); if (b) setTab(b.getAttribute('data-t')); });
   out.addEventListener('click', (e) => { if (e.target.closest('#wx-more')) { more = !more; render(); } });
   $('wx-back').onclick = () => { if (navs > 0) history.back(); else location.hash = '#pocetna'; };
+
+  cardLoad();
 
   window.weatherView = (s) => {
     if (s && WXP.some((p) => p[0] === s)) { slug = s; try { localStorage.setItem(KEY, slug); } catch { /* ignore */ } }

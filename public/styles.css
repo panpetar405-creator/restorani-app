@@ -992,7 +992,12 @@ body.ismap{overflow:hidden;overscroll-behavior:none}
 .hbt span { display:none }
 /* Srca: isti izgled označenog srca na svim karticama */
 .sch[aria-pressed="true"] { background:#e0245e;border-color:#e0245e;color:#fff }
-/* Brzi izbori: na uskim ekranima se klize umjesto da se sabijaju */
-.hchips { overflow-x:auto;scrollbar-width:none }
-.hchips::-webkit-scrollbar { display:none }
-.hchips .hchip { flex:1 0 auto }
+/* Početna: kartica sa vremenom ispod brzih izbora */
+.wxcard { display:flex;align-items:center;gap:12px;margin:12px 0 0;padding:10px 14px 10px 10px;background:var(--card);border:1px solid var(--line);border-radius:18px;color:var(--ink);text-decoration:none }
+.wxcard:active { transform:scale(.99) }
+.wxci { flex:none;width:40px;height:40px;display:grid;place-items:center;border-radius:12px;background:var(--sea-t);color:var(--sea) }
+.wxci .ic { width:24px;height:24px }
+.wxct { flex:1;min-width:0;display:grid;gap:1px }
+.wxct b { font-size:1.05rem;line-height:1.2 }
+.wxct small { color:var(--mute);font-size:.8rem;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis }
+.wxcc { flex:none;width:16px;height:16px;color:var(--mute) }
