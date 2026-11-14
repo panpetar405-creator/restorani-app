@@ -1118,3 +1118,13 @@ body.isdet .askfab,body.ismap .askfab{display:none}
 .askx{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:max-content;justify-content:start;gap:8px}
 
 .askrec .unotes{margin:10px 0 0}
+
+/* Obavještenja uključena: sklopljena kartica */
+.pushbox .pn>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:48px;cursor:pointer;list-style:none}
+.pushbox .pn>summary::-webkit-details-marker{display:none}
+.pushbox .pn>summary::after{content:"";width:10px;height:10px;border-right:2.5px solid var(--mute);border-bottom:2.5px solid var(--mute);transform:rotate(45deg);margin:-4px 4px 0 0;flex:none;transition:transform .15s}
+.pushbox .pn[open]>summary::after{transform:rotate(-135deg);margin:4px 4px 0 0}
+.pushbox .pnt{display:grid;gap:2px}
+.pushbox .pnt b{font-size:1.15rem;font-weight:800}
+.pushbox .pns{color:var(--sea);font-size:.85rem;font-weight:700}
+.pushbox .pnb{display:grid;gap:10px;margin-top:8px}
