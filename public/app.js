@@ -55,25 +55,6 @@ const saveSnap = () => {
 };
 const savePlan = () => { try { localStorage.setItem('mp.plan', JSON.stringify(plan)); } catch { /* ignore */ } saveSnap(); if (window.mpPushSync) window.mpPushSync(); };
 
-/* ---- kartice ---- */
-function itemCard(x) {
-  const key = 'i:' + x.slug; known[key] = x;
-  const meta = [], pills = [];
-  if (x.kind === 'event') meta.push(`<li class="w">${ic('cal')}${esc(span(x))}</li>`);
-  if (x.offSeason) meta.push(`<li class="warn">${ic('alert')}${t('offSeason')}</li>`);
-  if (x.status !== 'potvrdjeno') pills.push(`<span class="pill">${esc(STATUS[x.status])}</span>`);
-  if (x.demo) pills.push(`<span class="pill demo">${t('demo')}</span>`);
-  if (x.verifiedAt) meta.push(`<li>${ic('shield')}${t('verified')}${esc(fmt(x.verifiedAt))}</li>`);
-  return card(key, x.kind, x.title, x.place, x.description, meta, pills, x.offSeason, x.cover);
-}
-function restCard(r) {
-  const key = 'r:' + r.slug; known[key] = r;
-  const meta = [];
-  if (r.rating) meta.push(`<li class="star">${ic('star', 'f')}${esc(r.rating)} <span class="m">(${esc(r.reviews)})</span></li>`);
-  meta.push(`<li class="w">${r.price ? '€ ' + esc(r.price.lo) + ' – ' + esc(r.price.hi) + t('perPerson') : t('priceSoon')}</li>`);
-  if (r.verifiedAt) meta.push(`<li>${ic('shield')}${t('verified')}${esc(fmt(r.verifiedAt))}</li>`);
-  return card(key, 'food', r.name, r.city, r.tags.join(', ') || r.ambience, meta, [], false, r.cover);
-}
 /* ---- Istraži: velika kartica sa fotografijom (sekcija 2 po dizajnu) ---- */
 const kfmt = (n) => { n = +n; if (!(n >= 1000)) return String(n); const v = n / 1000; return (v >= 10 ? Math.round(v) : Math.round(v * 10) / 10) + 'k'; };
 function xCard(x, rest) {
@@ -516,18 +497,6 @@ function slideHtml(m, i, title) {
   if (m.type === 'image') return `<div class="sl"><img src="${esc(m.url)}" alt="${esc(m.caption || title)}" ${i ? 'loading="lazy"' : ''} decoding="async"><button type="button" class="zoom" data-z="${i}" aria-label="${t('zoom')}"></button></div>`;
   if (m.type === 'video') return `<div class="sl vid"><video src="${esc(m.url)}" muted loop playsinline preload="metadata"${m.poster ? ` poster="${esc(m.poster)}"` : ''}></video><button type="button" class="vtap" data-vt aria-label="${t('vidToggle')}"></button><button type="button" class="mute" data-mute aria-label="${t('soundOn')}">${ic('mute')}</button><span class="rbadge">${ic('reel')}</span></div>`;
   return `<div class="sl"><button type="button" class="vp" data-yt="${esc(m.id)}" aria-label="${t('playVideo')}${m.caption ? ': ' + esc(m.caption) : ''}"><img src="${esc(m.poster)}" alt="" loading="lazy"></button><span class="pl2">${ic('play')}</span><span class="rbadge">${ic('reel')}</span></div>`;
-}
-
-function postHtml(x, key, kind, title, place, pills, media) {
-  lbList = media;
-  const inp = plan.includes(key), liked = likes.includes(key), n = media.length;
-  const head = `<header class="ph"><span class="bd">${ic(GLYPH[kind])}</span><div class="cm"><div class="pt">${esc(title)}</div><div class="pl">${ic('pin')}<span>${esc(place)}</span></div></div>${pills.join('')}</header>`;
-  const body = n
-    ? `<div class="pm"><div class="gtrack" id="gtrack">${media.map((m, i) => slideHtml(m, i, title)).join('')}</div>${n > 1 ? `<div class="gcount" id="gcount">1 / ${n}</div>` : ''}<span class="burst" id="burst" aria-hidden="true">${ic('heart', 'f')}</span></div>${n > 1 ? `<div class="dots" id="dots" aria-hidden="true">${media.map((_, i) => `<i${i ? '' : ' class="on"'}></i>`).join('')}</div>` : ''}`
-    : `<div class="pm"><div class="gempty">${ic('camera')}<span>${t('photosSoon')}</span></div></div>`;
-  const acts = `<div class="pa"><button type="button" class="pab like" data-like="${esc(key)}" aria-pressed="${liked}" aria-label="${liked ? t('unlike') : t('like')}">${ic('heart', liked ? 'f' : '')}<span>${t('like')}</span></button></div>`;
-  const cur = media[0], cap = cur && (cur.caption || cur.credit) ? `<p class="pcr" id="pcr">${esc(cur.caption)}${cur.credit ? `<i>${esc(cur.credit)}</i>` : ''}</p>` : '';
-  return `<article class="post">${head}${body}${acts}${cap}</article>`;
 }
 
 function gridHtml(media) {
