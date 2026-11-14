@@ -1113,3 +1113,8 @@ body.isdet .askfab,body.ismap .askfab{display:none}
 .askl .sch{top:6px;right:auto;left:6px;width:30px;height:30px}
 .askl .sch .ic{width:17px;height:17px}
 .askl .xc:first-child{border-color:var(--sea);box-shadow:0 0 0 2px var(--sea-t)}
+
+/* Pitaj: primjeri pitanja u dva reda, vodoravno se pomjera */
+.askx{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:max-content;justify-content:start;gap:8px}
+
+.askrec .unotes{margin:10px 0 0}

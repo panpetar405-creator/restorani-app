@@ -780,7 +780,7 @@ const askClose = () => { if ($('asksheet').hidden) return; $('asksheet').hidden 
 $('askfab').onclick = askOpen;
 $('asksheet').addEventListener('click', (e) => { if (e.target.closest('[data-x]')) askClose(); });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') askClose(); });
-$('askx').innerHTML = [t('askEx1'), t('askEx2'), t('askEx3')].map((x) => `<button type="button" class="askc" data-ask="${esc(x)}">${esc(x)}</button>`).join('');
+$('askx').innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((i) => t('askEx' + i)).map((x) => `<button type="button" class="askc" data-ask="${esc(x)}">${esc(x)}</button>`).join('');
 async function askSend(q) {
   const out = $('askout'), btn = $('askb');
   out.hidden = false; out.innerHTML = `<div class="askld">${esc(t('askLoad'))}</div>`; btn.disabled = true;
@@ -789,6 +789,11 @@ async function askSend(q) {
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw Object.assign(new Error('ask'), { status: r.status });
     const rs = d.results || [];
+    const gd = d.guide ? (USEFUL[LANG] || USEFUL.en).groups.find((x) => x.id === d.guide) : null;
+    if (gd) { // odgovor su napomene iz vodiča Korisno (npr. parking)
+      out.innerHTML = `<div class="askrec"><span class="askrb">${ic('spark')}${esc(t('askRec'))}</span><p class="askrp">${esc(d.reply || '')}</p><ul class="unotes">${(gd.notes || []).map((x) => `<li>${esc(x)}</li>`).join('')}</ul></div>`;
+      return;
+    }
     out.innerHTML = (rs.length ? `<div class="askrec"><span class="askrb">${ic('spark')}${esc(t('askRec'))}</span><p class="askrp">${esc(d.reply || '')}</p></div><div class="xlist askl">${rs.map((x) => xCard(x, x.type === 'rest')).join('')}</div>` : `<p class="askrp">${esc(d.reply || '')}</p>`);
   } catch (e) {
     out.innerHTML = `<div class="askerr">${esc(t(e.status === 429 ? 'askBusy' : e.status === 400 ? 'askShort' : 'askErr'))}</div>`;
