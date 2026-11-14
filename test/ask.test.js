@@ -30,7 +30,7 @@ before(() => {
 const post = (env, body) => worker.fetch(new Request('https://mp.test/api/ask', { method: 'POST', body: typeof body === 'string' ? body : JSON.stringify(body) }), env);
 
 test('pomoćne funkcije: parseModel, safeReply, vikend, score', () => {
-  assert.deepEqual(parseModel('Evo: {"refs":["i:a","i:b"],"reply":"Ok"} hvala'), { refs: ['i:a', 'i:b'], reply: 'Ok' });
+  assert.deepEqual(parseModel('Evo: {"refs":["i:a","i:b"],"reply":"Ok"} hvala'), { refs: ['i:a', 'i:b'], pick: '', reply: 'Ok' });
   assert.equal(parseModel('nema jsona'), null);
   assert.equal(parseModel('{"refs":"x"}'), null);
   assert.equal(safeReply('Počinje 15.12. u Kolašinu'), '');
@@ -58,7 +58,7 @@ test('AI bira samo stavke sa liste; izmišljene se odbacuju', async () => {
 test('AI: uvodna rečenica sa brojevima se zamjenjuje, činjenice samo sa kartica', async () => {
   const AI = { run: async () => ({ response: '{"refs":["i:grad-teatar"],"reply":"Počinje 1.7. i košta 20 eura"}' }) };
   const r = await (await post({ ...base, AI }, { q: 'teatar', lang: 'en' })).json();
-  assert.equal(r.reply, 'Here is what I found in the app:');
+  assert.equal(r.reply, 'I recommend: Grad teatar (Budva).');
   assert.equal(r.results[0].from, '2027-07-01');
 });
 test('AI zakaže ili vrati smeće: pada na pretragu po riječima', async () => {
@@ -68,10 +68,13 @@ test('AI zakaže ili vrati smeće: pada na pretragu po riječima', async () => {
     assert.ok(r.results.length > 0);
   }
 });
-test('prošli događaji se ne nude', async () => {
-  const AI = { run: async (_m, a) => ({ response: JSON.stringify({ refs: [], reply: a.messages[1].content.includes('i:grad-teatar') ? 'ima' : 'nema' }) }) };
-  const late = await (await post({ ...base, AI, TODAY: '2028-01-01' }, { q: 'teatar' })).json();
-  assert.equal(late.reply, 'nema');
+test('prošli događaji se ne nude modelu', async () => {
+  let seen = '';
+  const AI = { run: async (_m, a) => { seen = a.messages[1].content; return { response: '{"refs":[],"reply":""}' }; } };
+  await post({ ...base, AI, TODAY: '2028-01-01' }, { q: 'teatar' });
+  assert.ok(!seen.includes('i:grad-teatar'));
+  await post({ ...base, AI, TODAY: '2026-11-14' }, { q: 'teatar' });
+  assert.ok(seen.includes('i:grad-teatar'));
 });
 test('hitni slučajevi: bez AI-ja, upućuje na 112', async () => {
   let called = false;
@@ -85,4 +88,17 @@ test('neispravan unos i ograničenje broja pitanja', async () => {
   assert.equal((await post(base, { q: 'x'.repeat(201) })).status, 400);
   assert.equal((await post(base, 'nije json')).status, 400);
   assert.equal((await post({ ...base, RL_ASK: { limit: async () => ({ success: false }) } }, { q: 'plaža' })).status, 429);
+});
+test('preporuka je uvijek prva, čak i kad je model navede drugu', async () => {
+  const AI = { run: async () => ({ response: '{"pick":"i:grad-teatar","refs":["i:skijaska-sezona","i:grad-teatar"],"reply":"Grad teatar je dobar izbor za veče."}' }) };
+  const r = await (await post({ ...base, AI }, { q: 'nešto za veče' })).json();
+  assert.equal(r.results[0].slug, 'grad-teatar');
+  assert.equal(r.reply, 'Grad teatar je dobar izbor za veče.');
+});
+test('svako pitanje dobija preporuku: i kad ništa ne odgovara', async () => {
+  const r = await (await post(base, { q: 'qwzxv', lang: 'sr' })).json();
+  assert.ok(r.results.length >= 1);
+  assert.ok(r.reply.startsWith('Nisam našao tačno to, ali preporučujem:'));
+  const rr = await (await post({ ...base, AI: { run: async () => ({ response: '{"refs":[],"reply":"Nema ništa."}' }) } }, { q: 'gdje na večeru uz more', lang: 'sr' })).json();
+  assert.ok(rr.results.length >= 1 && rr.reply.length > 0);
 });
