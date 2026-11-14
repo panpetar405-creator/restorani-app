@@ -347,15 +347,19 @@ function openPSheet(mode, key) {
   } else {
     ttl.textContent = t('myTrip');
     const row = (id, g, l) => `<button type="button" class="btn s full prow" data-act="${id}">${ic(g)}${t(l)}</button>`;
-    body.innerHTML = row('pmap', 'map', 'planMapB') + row('share', 'share', 'shareB') + row('ics', 'cal', 'pCal') + row('ppdf', 'file', 'pPdf') + row('pclr', 'trash', 'pClear');
+    const has = plan.length > 0, notif = !$('pushbox').hidden; // obavještenja su u ovom meniju (samo ako ih uređaj podržava)
+    const h = (has ? row('pmap', 'map', 'planMapB') + row('share', 'share', 'shareB') + row('ics', 'cal', 'pCal') + row('ppdf', 'file', 'pPdf') : '')
+      + (notif ? row('pnot', 'bell', 'notifB') : '') + (has ? row('pclr', 'trash', 'pClear') : '');
+    if (!h) return openPSheet('edit');
+    body.innerHTML = h;
   }
   $('psheet').hidden = false;
 }
 $('pedit').onclick = () => openPSheet('edit');
-$('pmenu').onclick = () => { if (plan.length) openPSheet('trip'); else openPSheet('edit'); };
+$('pmenu').onclick = () => openPSheet('trip');
 $('pout').addEventListener('click', (e) => { const b = e.target.closest('[data-pm]'); if (b) { e.preventDefault(); openPSheet('item', b.getAttribute('data-pm')); } });
 $('psheet').addEventListener('click', (e) => {
-  const a = e.target.closest('[data-act]'); if (a) { psClose(); $(a.getAttribute('data-act')).click(); return; }
+  const a = e.target.closest('[data-act]'); if (a) { psClose(); if (a.getAttribute('data-act') === 'pnot') $('nsheet').hidden = false; else $(a.getAttribute('data-act')).click(); return; }
   const dy = e.target.closest('[data-day]'); if (dy) { planDays[dy.getAttribute('data-k')] = +dy.getAttribute('data-day'); saveDays(); psClose(); planView(); return; }
   const rm = e.target.closest('[data-rm]'); if (rm) { const k = rm.getAttribute('data-rm'), i = plan.indexOf(k); if (i >= 0) plan.splice(i, 1); delete planDays[k]; savePlan(); saveDays(); psClose(); planView(); return; }
   if (e.target.closest('[data-pcd]')) { $('pst').value = ''; return; }
@@ -363,6 +367,8 @@ $('psheet').addEventListener('click', (e) => {
   if (e.target.closest('[data-x]')) psClose();
 });
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('psheet').hidden) psClose(); });
+$('nsheet').addEventListener('click', (e) => { if (e.target.closest('[data-x]')) $('nsheet').hidden = true; });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('nsheet').hidden = true; });
 
 /* ---- polje „Gdje“ sa prijedlozima ---- */
 function bindPlace(id, sid, onChange) {
@@ -867,7 +873,7 @@ function route() {
   else if (raw === 'vrijeme' || raw.startsWith('vrijeme/')) { h = 'vrijeme'; wkey = raw.slice(8); }
   else if (!VIEWS.includes(h) || h === 'detalj') h = 'pocetna';
   if (!$('lb').hidden) lbClose();
-  $('ksheet').hidden = true; askClose();
+  $('ksheet').hidden = true; $('nsheet').hidden = true; askClose();
   VIEWS.forEach((v) => { $('v-' + v).className = 'view' + (v === h ? ' on' : ''); });
   const tab = h === 'detalj' || h === 'mapa' ? 'istrazi' : h === 'vrijeme' || h === 'profil' ? 'pocetna' : h;
   document.querySelectorAll('.tabs a').forEach((a) => (a.getAttribute('href') === '#' + tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
