@@ -29,6 +29,10 @@ const NOFIT = {
   it: 'Non ho trovato esattamente questo, ma ti consiglio:',
 };
 const FOOD_RE = /vecer|rucak|rucat|jesti|jelo|gladan|restoran|dinner|lunch|\beat\b|food|restaurant|abendessen|mittag|essen|ужин|обед|поесть|ресторан|\bcena\b|pranzo|mangiare|ristorante/;
+const EVENT_RE = /dogadj|program|festival|koncert|vikend|sta ima|event|weekend|what.s on|veranstalt|wochenende|evento|fine settimana|событ|концерт|выходн|фестивал/;
+const WEEKEND_RE = /vikend|weekend|wochenende|fine settimana|выходн/;
+const BEACH_RE = /plaz|kupa|plivati|beach|swim|strand|baden|spiaggia|nuot|пляж|купа/;
+const CULTURE_RE = /kultur|muzej|crkv|tvrdj|istorij|manastir|museum|church|fortress|history|museo|chiesa|культур|музей|церков|крепост/;
 const EMERGENCY = {
   sr: 'Za hitne slučajeve odmah zovi 112. Za sigurnost i zdravlje oslanjaj se na zvanične izvore.',
   en: 'In an emergency call 112 right away. For safety and health, rely on official sources.',
@@ -47,6 +51,17 @@ const KIND_WORDS = {
 const KIND_LABEL = { event: 'event', beach: 'beach', culture: 'culture' };
 
 const todayLocal = (env) => env.TODAY || new Date().toLocaleDateString('sv-SE', { timeZone: TZ });
+
+/* šta korisnik traži (za slučaj bez AI-ja): hrana, događaji, plaže ili kultura */
+export function intent(q) {
+  const n = norm(q);
+  if (FOOD_RE.test(n)) return 'food';
+  if (EVENT_RE.test(n)) return 'event';
+  if (BEACH_RE.test(n)) return 'beach';
+  if (CULTURE_RE.test(n)) return 'culture';
+  return '';
+}
+const fits = (c, it) => (it === 'food' ? c.type === 'rest' : c.type === 'item' && c.row.kind === it);
 
 export function weekend(today) {
   const dow = new Date(today + 'T12:00:00Z').getUTCDay(); // 0 = nedjelja
@@ -191,13 +206,20 @@ export async function ask(env, request) {
       }
     } catch (e) { console.error('ask ai', e); }
   }
-  if (!picks || !picks.length) { // bez AI-ja ili bez izbora: pretraga po riječima, a ako ni ona ništa ne nađe, najbliža preporuka
+  if (!picks || !picks.length) { // bez AI-ja ili bez izbora: pametna pretraga po namjeri i riječima, a na kraju najbliža preporuka
     ai = false; reply = '';
-    picks = ranked.filter((x) => x.s > 0).slice(0, MAX_OUT).map((x) => x.c);
+    const it = intent(q);
+    let pool = it ? ranked.filter((x) => fits(x.c, it)) : ranked;
+    if (!pool.length) pool = ranked;
+    else if (it === 'event' && WEEKEND_RE.test(norm(q))) { // "ovaj vikend": događaji koji se tada dešavaju
+      const { sat, sun } = weekend(today);
+      const now = pool.filter((x) => x.c.row.date_from && x.c.row.date_from <= sun && (x.c.row.date_to || x.c.row.date_from) >= sat);
+      if (now.length) pool = now; else exact = false;
+    }
+    picks = pool.filter((x) => x.s > 0).slice(0, MAX_OUT).map((x) => x.c);
     if (!picks.length) {
-      exact = false;
-      const pool = FOOD_RE.test(norm(q)) ? ranked.filter((x) => x.c.type === 'rest') : ranked;
-      picks = pool.slice(0, 3).map((x) => x.c);
+      if (!it) exact = false;
+      picks = pool.slice(0, it ? MAX_OUT : 3).map((x) => x.c);
     }
   }
   if (!reply && picks.length) { // činjenice samo iz baze: naziv i mjesto prve stavke
