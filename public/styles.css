@@ -576,8 +576,8 @@ body{font-family:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif}
 .xch .chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:var(--on-ink);box-shadow:0 4px 12px rgba(15,34,54,.25)}
 
 /* Lista / Mapa */
-.xseg{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:14px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;box-shadow:0 2px 8px rgba(12,60,120,.06)}
-.xseg button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;border:0;border-radius:999px;background:transparent;color:var(--ink);font-size:.92rem;font-weight:700}
+.xseg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:14px;padding:4px;background:var(--card);border:1px solid var(--line);border-radius:999px;box-shadow:0 2px 8px rgba(12,60,120,.06)}
+.xseg button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;border:0;border-radius:999px;background:transparent;color:var(--ink);font-size:.92rem;font-weight:700}
 .xseg button .ic{width:20px;height:20px}
 .xseg button[aria-pressed="true"]{background:var(--ink);color:var(--on-ink);box-shadow:0 4px 12px rgba(15,34,54,.25)}
 
@@ -1039,3 +1039,23 @@ body.ismap{overflow:hidden;overscroll-behavior:none}
   @keyframes fburst{0%{transform:scale(.4);opacity:0}25%{transform:scale(1.15);opacity:1}60%{transform:scale(1);opacity:1}100%{transform:scale(1.1);opacity:0}}
 }
 @media (prefers-reduced-motion:reduce){.fburst{animation:fburstr .8s linear forwards}@keyframes fburstr{0%,70%{opacity:1}100%{opacity:0}}}
+
+/* Istraži: prikaz u mreži (2 kolone) */
+.xlist.grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:start}
+.xlist.grid .xc{border-radius:16px}
+.xlist.grid .xi{aspect-ratio:1/1}
+.xlist.grid .xph .ic{width:34px;height:34px}
+.xlist.grid .xbd{gap:4px;padding:10px 10px 12px}
+.xlist.grid .xt{font-size:.95rem;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.xlist.grid .xm{font-size:.78rem;gap:2px 8px}
+.xlist.grid .xd,.xlist.grid .xdt{display:none}
+.xlist.grid .xf{margin-top:2px}
+.xlist.grid .xo{padding:6px 8px;gap:6px;border-radius:10px}
+.xlist.grid .xo>.ic{width:16px;height:16px}
+.xlist.grid .xo b{font-size:.74rem}
+.xlist.grid .xo small{font-size:.68rem}
+.xlist.grid .xb{left:8px;bottom:8px;padding:3px 9px 3px 4px;font-size:.68rem}
+.xlist.grid .xb .ic{width:14px;height:14px}
+.xlist.grid .sch{top:8px;right:8px;width:32px;height:32px}
+.xlist.grid .sch .ic{width:18px;height:18px}
+.xlist.grid .empty,.xlist.grid .count{grid-column:1/-1}

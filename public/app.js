@@ -870,6 +870,15 @@ $('xpin').onclick = () => xFilOpen($('xfil').hidden);
 $('xq').addEventListener('input', () => { Q = $('xq').value.trim(); later(); });
 $('xq').addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); $('xq').blur(); } });
 $('xmap').onclick = () => { location.hash = '#mapa'; };
+/* prekidač Lista / Mreža (izbor se pamti) */
+function xView(g) {
+  $('out').classList.toggle('grid', g);
+  $('xgrid').setAttribute('aria-pressed', g); $('xlist').setAttribute('aria-pressed', !g);
+  try { localStorage.setItem('mp.xgrid', g ? '1' : '0'); } catch { /* ignore */ }
+}
+$('xlist').onclick = () => xView(false);
+$('xgrid').onclick = () => xView(true);
+{ let g = false; try { g = localStorage.getItem('mp.xgrid') === '1'; } catch { /* ignore */ } xView(g); }
 $('xnear').onclick = async () => {
   const b = $('xnear');
   if (!sortNear) {
