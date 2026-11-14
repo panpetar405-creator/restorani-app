@@ -321,8 +321,23 @@ $('share').onclick = async () => {
 $('ics').onclick = () => { const l = icsPlanList(); if (!l.length) { toast(t('icsNone')); return; } saveIcs(l, 'montepalm-plan.ics'); };
 $('ppdf').onclick = printPlan;
 $('pmap').onclick = mapsRoute;
-$('pclr').onclick = () => {
-  if (!plan.length || !window.confirm(t('clearPlanQ'))) return;
+/* potvrda u stilu aplikacije (umjesto sistemskog prozora): askConfirm({ text, ok, icon }) vraća Promise<boolean> */
+function askConfirm({ text, ok, icon = 'trash' }) {
+  return new Promise((res) => {
+    const prev = document.activeElement;
+    const el = document.createElement('div');
+    el.className = 'cdlg';
+    el.innerHTML = `<div class="scrim" data-no></div><div class="cbox" role="alertdialog" aria-modal="true" aria-labelledby="cdt"><span class="cico" aria-hidden="true">${ic(icon)}</span><h2 id="cdt">${esc(text)}</h2><div class="cact"><button type="button" class="btn s" data-no>${esc(t('cancel'))}</button><button type="button" class="btn d" data-yes>${esc(ok)}</button></div></div>`;
+    document.body.appendChild(el); document.body.classList.add('lock');
+    const done = (v) => { document.removeEventListener('keydown', key, true); el.remove(); document.body.classList.remove('lock'); if (prev && prev.focus) prev.focus(); res(v); };
+    const key = (e) => { if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); done(false); } };
+    document.addEventListener('keydown', key, true);
+    el.addEventListener('click', (e) => { if (e.target.closest('[data-yes]')) done(true); else if (e.target.closest('[data-no]')) done(false); });
+    el.querySelector('[data-no].btn').focus();
+  });
+}
+$('pclr').onclick = async () => {
+  if (!plan.length || !(await askConfirm({ text: t('clearPlanQ'), ok: t('pClear') }))) return;
   plan.length = 0; planDays = {}; savePlan(); saveDays(); planView();
 };
 $('pback').onclick = () => { if (navs > 0) history.back(); else location.hash = '#pocetna'; };
@@ -758,10 +773,12 @@ document.addEventListener('click', (e) => { if (e.target.closest('.lk, a.ev')) s
 function setCat(k) { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); search(); }
 const TG = { ...GLYPH, event: 'calstar' };
 // sr: gotove fotografije sa ikonicom i nazivom (media/cat-*.webp); ostali jezici zadržavaju sliku iz baze sa prevedenim nazivom
-const TILE_ART = LANG === 'sr';
+let TILE_ART = LANG === 'sr';
 function renderTiles() {
   if (TILE_ART) {
     $('tiles').innerHTML = Object.keys(CATS).map((k) => `<button class="tile art" type="button" data-c="${k}" data-cat="${k}" aria-label="${esc(CATS[k])}"><img class="tbg" src="/media/cat-${k}.webp" alt="" width="692" height="427" loading="lazy" decoding="async"></button>`).join('');
+    // ako slika ne postoji na serveru, vrati se na raniji prikaz umjesto praznih pločica
+    $('tiles').addEventListener('error', () => { if (TILE_ART) { TILE_ART = false; renderTiles(); } }, { capture: true, once: true });
     return;
   }
   const cov = (k) => (k === 'food' ? (rests.find((r) => r.cover) || {}).cover : (all.find((x) => x.kind === k && x.cover) || {}).cover) || '';
