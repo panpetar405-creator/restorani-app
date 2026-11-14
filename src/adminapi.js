@@ -7,7 +7,7 @@ import { HttpError, KINDS, isDate, json, norm, parseList, readJson, sha256, shap
 const REF = /^[ir]:[a-z0-9-]{1,60}$/;
 const STATUSES = ['potvrdjeno', 'okvirno', 'provjeriti'];
 const MAX_IMAGE = 8 * 1024 * 1024;
-const MAX_VIDEO = 60 * 1024 * 1024;
+const MAX_VIDEO = 90 * 1024 * 1024; // Workers primaju tijelo zahtjeva do 100 MB
 const MAX_MEDIA = 30;
 export const MEDIA_KEY = /^[0-9a-f-]{36}\.(jpg|png|gif|webp|mp4|webm|mov)$/;
 const MIME = { jpg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime' };
@@ -135,10 +135,10 @@ async function storeFile(env, file, expect) {
   const head = new Uint8Array(await file.slice(0, 16).arrayBuffer());
   const t = sniff(head);
   if (!t) throw new HttpError(415, 'Dozvoljeno: JPG, PNG, WebP, GIF, MP4, WebM, MOV');
-  if (t.kind === 'heic') throw new HttpError(415, 'HEIC/HEIF nije podržan u pregledačima. Snimi kao JPG ili pošalji običnu fotografiju.');
+  if (t.kind === 'heic') throw new HttpError(415, 'HEIC/HEIF nije podržan. Admin ga obično sam pretvori u JPG; ako nije uspjelo, snimi kao JPG (iPhone: Podešavanja > Kamera > Formati > Najkompatibilnije).');
   if (expect && t.kind !== expect) throw new HttpError(415, 'Ovaj fajl nije ' + (expect === 'image' ? 'slika' : 'video'));
   if (file.size > (t.kind === 'image' ? MAX_IMAGE : MAX_VIDEO)) {
-    throw new HttpError(413, t.kind === 'image' ? 'Slika je veća od 8 MB' : 'Video je veći od 60 MB');
+    throw new HttpError(413, t.kind === 'image' ? 'Slika je veća od 8 MB' : 'Video je veći od 90 MB');
   }
   const key = `${crypto.randomUUID()}.${t.ext}`;
   await env.MEDIA.put(key, file, { httpMetadata: { contentType: MIME[t.ext] } });
