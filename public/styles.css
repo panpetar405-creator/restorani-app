@@ -974,3 +974,25 @@ body.ismap{overflow:hidden;overscroll-behavior:none}
 /* ručna tamna tema (generisano iz blokova prefers-color-scheme:dark) */
 :root[data-theme="dark"]{color-scheme:dark}:root[data-theme="light"]{color-scheme:light}
 :root[data-theme="dark"]{--bg:#0b1c26;--ink:#e6f0ef;--on-ink:#0b1c26;--mute:#8fa9b3;--card:#12293a;--line:#22404f;--sea:#5cc3cf;--sea-t:#17404b;--warn:#e0a064;--warn-t:#3a2a1a;--ok:#6fd1a0;--ok-t:#16372b;--sh:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35)}:root[data-theme="dark"] [data-c="event"]{--c:#f2c25a;--ct:#3a2f12}:root[data-theme="dark"] [data-c="beach"]{--c:#6fd0da;--ct:#12363f}:root[data-theme="dark"] [data-c="food"]{--c:#f0a07c;--ct:#3d2318}:root[data-theme="dark"] [data-c="culture"]{--c:#a9bdd3;--ct:#23303f}:root[data-theme="dark"]{--sea:#5cb8e6;--sea-t:#15384f}:root[data-theme="dark"] [data-c="event"]{--c:#7db8f2;--ct:#12304f}:root[data-theme="dark"] [data-c="beach"]{--c:#6fd0da;--ct:#12363f}:root[data-theme="dark"] [data-c="food"]{--c:#f0a07c;--ct:#3d2318}:root[data-theme="dark"] [data-c="culture"]{--c:#aab6f0;--ct:#222a52}:root[data-theme="dark"] .lmenu{background:#14323f;color:#fff}:root[data-theme="dark"] .lmenu button[aria-current]{background:#1f4a5a}:root[data-theme="dark"] .lmenu button:hover{background:#1b3f4e}:root[data-theme="dark"]{--bg:#0b1c26;--ink:#e6f0ef;--mute:#8fa9b3;--line:#22404f;--sea:#6ab0ff;--sea-t:#16314f;--teal:#3ed3b5}:root[data-theme="dark"] #v-istrazi{background:linear-gradient(180deg,#123556 0,#0f2b45 160px,var(--bg) 360px) no-repeat top/100% 380px}:root[data-theme="dark"] .wmain{background:#16314f}:root[data-theme="dark"] .dcta{background:linear-gradient(180deg,rgba(11,28,38,0),var(--bg) 38%)}:root[data-theme="dark"] #pclr .pci{background:#3a1b25;color:#ff7a95}:root[data-theme="dark"] .mpt{filter:brightness(.74) contrast(1.05) saturate(.85)}:root[data-theme="dark"] #v-mapa .mp{background:#1a2f3a}:root[data-theme="dark"] #v-profil{background:linear-gradient(180deg,#123556 0,#0f2b45 160px,var(--bg) 360px) no-repeat top/100% 380px}:root[data-theme="dark"] .prsw{background:#3a5663}:root[data-theme="dark"] .cico{background:#3a1b25;color:#ff7a95}
+
+/* ---- dizajnerske ispravke ---- */
+/* Korisno: dovoljno mjesta za duže nazive (npr. „Novac i mjenjačnice”) bez lomljenja usred riječi */
+.ktile { gap:6px;padding:10px 8px 10px 10px }
+.kti { width:34px;height:34px;border-radius:11px }
+.kti .ic { width:20px;height:20px }
+.ktile > .ic { width:12px;height:12px }
+.ktt b { font-size:.86rem;overflow-wrap:break-word }
+.ktt small { font-size:.76rem;overflow-wrap:break-word }
+/* Početna i Moj put: tamniji prelaz i sjenka da se naslov čita preko šarene fotografije */
+.hero::after { background:linear-gradient(180deg,rgba(4,24,52,.5) 0%,rgba(4,24,52,.06) 22%,rgba(4,24,52,.4) 46%,rgba(4,24,52,.74) 70%,rgba(4,24,52,.92) 100%) }
+.hero h1, .hero .htag { text-shadow:0 2px 14px rgba(0,0,0,.55) }
+.phero::after { background:linear-gradient(180deg,rgba(4,24,52,.5) 0%,rgba(4,24,52,.06) 28%,rgba(4,24,52,.42) 52%,rgba(4,24,52,.82) 100% ) }
+.pct h2, .pct p { text-shadow:0 2px 12px rgba(0,0,0,.55) }
+/* Početna: podnaslov uz logo ponavlja naslov ispod, pa se ne prikazuje */
+.hbt span { display:none }
+/* Srca: isti izgled označenog srca na svim karticama */
+.sch[aria-pressed="true"] { background:#e0245e;border-color:#e0245e;color:#fff }
+/* Brzi izbori: na uskim ekranima se klize umjesto da se sabijaju */
+.hchips { overflow-x:auto;scrollbar-width:none }
+.hchips::-webkit-scrollbar { display:none }
+.hchips .hchip { flex:1 0 auto }
