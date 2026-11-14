@@ -1083,3 +1083,12 @@ body.ismap{overflow:hidden;overscroll-behavior:none}
 .askerr{color:var(--warn)}
 .askout .xlist{margin-top:12px}
 .asknote{margin:10px 0 0;color:var(--mute);font-size:.76rem;line-height:1.35}
+
+/* Pitaj: plutajuće dugme + panel odozdo */
+.askfab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:12;width:54px;height:54px;display:grid;place-items:center;border:0;border-radius:50%;background:linear-gradient(135deg,#01145c 0%,#0175a1 60%,#1aedad 100%);color:#fff;box-shadow:0 8px 20px rgba(1,73,133,.38);padding:0;transition:transform .08s}
+.askfab .ic{width:26px;height:26px}
+.askfab:active{transform:scale(.94)}
+body.isdet .askfab,body.ismap .askfab{display:none}
+.askp{min-height:62svh}
+.askp .ask{margin:0;padding:0;background:none;border:0;border-radius:0;box-shadow:none}
+.askp .askx{margin:10px -16px 0;padding:0 16px 2px}

@@ -124,17 +124,6 @@
     <div class="hd"><h2 data-i18n="whatToday">Šta želiš danas?</h2><button class="lnk" id="allcat" type="button"><span data-i18n="seeAll">Sve</span><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
     <div class="tiles" id="tiles"></div>
 
-    <form class="ask" id="askf" autocomplete="off">
-      <label class="askh" for="askq"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg><b data-i18n="askT">Pitaj pomoćnika</b></label>
-      <div class="askr">
-        <input id="askq" type="text" maxlength="200" enterkeyhint="send" placeholder="Šta ima ovaj vikend s djecom?" data-i18n-ph="askPh">
-        <button class="askb" id="askb" type="submit" data-i18n="askGo">Pitaj</button>
-      </div>
-      <div class="askx" id="askx"></div>
-      <div class="askout" id="askout" aria-live="polite" hidden></div>
-      <p class="asknote" data-i18n="askNote">Odgovori dolaze samo iz sadržaja aplikacije. Provjeri detalje prije puta.</p>
-    </form>
-
     <div class="hd"><h2 data-i18n="soon">Uskoro</h2><button class="lnk" id="allev" type="button"><span data-i18n="seeAllLink">Pogledaj sve</span><svg class="ic" aria-hidden="true"><use href="#i-right"/></svg></button></div>
     <div class="stories" id="stories" role="list" hidden></div>
     <div class="soon feed" id="rail"></div>
@@ -277,6 +266,8 @@
   <div id="dt" aria-live="polite"></div>
 </section>
 
+<button class="askfab" id="askfab" type="button" aria-haspopup="dialog" aria-label="Pitaj pomoćnika" data-i18n-aria="askT"><svg class="ic" aria-hidden="true"><use href="#i-spark"/></svg></button>
+
 <nav class="tabs" aria-label="Glavna navigacija" data-i18n-aria="mainNav">
   <a href="#pocetna"><span class="ti"><svg class="ic off" aria-hidden="true"><use href="#i-home"/></svg><svg class="ic on" aria-hidden="true"><use href="#i-home-f"/></svg></span><span data-i18n="home">Početna</span></a>
   <a href="#istrazi"><span class="ti"><svg class="ic off" aria-hidden="true"><use href="#i-search"/></svg><svg class="ic on" aria-hidden="true"><use href="#i-search-f"/></svg></span><span data-i18n="explore">Istraži</span></a>
@@ -316,6 +307,24 @@
     <div class="grab" aria-hidden="true"></div>
     <div class="pshd"><h2 id="ps-t"></h2><button class="ib" type="button" data-x aria-label="Zatvori" data-i18n-aria="close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
     <div id="psb"></div>
+  </div>
+</div>
+
+<!-- pitaj pomoćnika -->
+<div class="sheet" id="asksheet" hidden>
+  <div class="scrim" data-x></div>
+  <div class="panel askp" role="dialog" aria-modal="true" aria-labelledby="ask-t">
+    <div class="grab" aria-hidden="true"></div>
+    <div class="pshd"><h2 id="ask-t" data-i18n="askT">Pitaj pomoćnika</h2><button class="ib" type="button" data-x aria-label="Zatvori" data-i18n-aria="close"><svg class="ic" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+    <form class="ask" id="askf" autocomplete="off">
+      <div class="askr">
+        <input id="askq" type="text" maxlength="200" enterkeyhint="send" placeholder="Šta ima ovaj vikend s djecom?" aria-label="Pitaj pomoćnika" data-i18n-ph="askPh" data-i18n-aria="askT">
+        <button class="askb" id="askb" type="submit" data-i18n="askGo">Pitaj</button>
+      </div>
+      <div class="askx" id="askx"></div>
+      <div class="askout" id="askout" aria-live="polite" hidden></div>
+      <p class="asknote" data-i18n="askNote">Odgovori dolaze samo iz sadržaja aplikacije. Provjeri detalje prije puta.</p>
+    </form>
   </div>
 </div>
 

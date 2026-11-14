@@ -775,6 +775,11 @@ document.addEventListener('click', async (e) => {
 });
 
 /* Pitaj: pomoćnik odgovara samo iz sadržaja aplikacije; kartice dolaze sa servera, ne iz teksta modela */
+const askOpen = () => { $('asksheet').hidden = false; document.body.classList.add('lock'); if ($('askout').hidden) setTimeout(() => $('askq').focus(), 60); };
+const askClose = () => { if ($('asksheet').hidden) return; $('asksheet').hidden = true; document.body.classList.remove('lock'); };
+$('askfab').onclick = askOpen;
+$('asksheet').addEventListener('click', (e) => { if (e.target.closest('[data-x]')) askClose(); });
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') askClose(); });
 $('askx').innerHTML = [t('askEx1'), t('askEx2'), t('askEx3')].map((x) => `<button type="button" class="askc" data-ask="${esc(x)}">${esc(x)}</button>`).join('');
 async function askSend(q) {
   const out = $('askout'), btn = $('askb');
@@ -856,7 +861,7 @@ function route() {
   else if (raw === 'vrijeme' || raw.startsWith('vrijeme/')) { h = 'vrijeme'; wkey = raw.slice(8); }
   else if (!VIEWS.includes(h) || h === 'detalj') h = 'pocetna';
   if (!$('lb').hidden) lbClose();
-  $('ksheet').hidden = true;
+  $('ksheet').hidden = true; askClose();
   VIEWS.forEach((v) => { $('v-' + v).className = 'view' + (v === h ? ' on' : ''); });
   const tab = h === 'detalj' || h === 'mapa' ? 'istrazi' : h === 'vrijeme' || h === 'profil' ? 'pocetna' : h;
   document.querySelectorAll('.tabs a').forEach((a) => (a.getAttribute('href') === '#' + tab ? a.setAttribute('aria-current', 'page') : a.removeAttribute('aria-current')));
