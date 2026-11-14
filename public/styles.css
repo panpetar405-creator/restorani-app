@@ -1059,3 +1059,27 @@ body.ismap{overflow:hidden;overscroll-behavior:none}
 .xlist.grid .sch{top:8px;right:8px;width:32px;height:32px}
 .xlist.grid .sch .ic{width:18px;height:18px}
 .xlist.grid .empty,.xlist.grid .count{grid-column:1/-1}
+
+/* =====================================================================
+   PITAJ: pomoćnik na početnoj
+   ===================================================================== */
+.ask{margin-top:24px;padding:14px;background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 4px 16px rgba(12,60,120,.10)}
+.askh{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:1.05rem;font-weight:800;letter-spacing:-.01em}
+.askh .ic{width:22px;height:22px;color:var(--sea)}
+.askr{display:flex;gap:8px}
+.askr input{flex:1;min-width:0;height:48px;padding:0 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);color:var(--ink);font-size:.95rem;font-weight:500;outline:0;-webkit-appearance:none;appearance:none}
+.askr input::placeholder{color:var(--mute);opacity:1}
+.askr input:focus{border-color:var(--sea);box-shadow:0 0 0 3px var(--sea-t)}
+.askb{flex:none;min-height:48px;padding:0 18px;border:0;border-radius:14px;background:linear-gradient(100deg,#01145c 0%,#014985 32%,#0175a1 58%,#03a1bc 80%,#1aedad 100%);color:#fff;font-size:.95rem;font-weight:800}
+.askb:disabled{opacity:.5}
+.askx{display:flex;gap:8px;margin:10px -14px 0;padding:0 14px 2px;overflow-x:auto;scrollbar-width:none}
+.askx::-webkit-scrollbar{display:none}
+.askc{flex:none;min-height:36px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--ink);font-size:.84rem;font-weight:600;white-space:nowrap}
+.askc:active{background:var(--sea-t);border-color:var(--sea)}
+.askout{margin-top:12px}
+.askout[hidden]{display:none}
+.askrp{margin:0;font-size:.98rem;font-weight:700;line-height:1.35}
+.askld,.askerr{color:var(--mute);font-size:.92rem;font-weight:600}
+.askerr{color:var(--warn)}
+.askout .xlist{margin-top:12px}
+.asknote{margin:10px 0 0;color:var(--mute);font-size:.76rem;line-height:1.35}

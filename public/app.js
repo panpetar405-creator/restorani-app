@@ -774,6 +774,31 @@ document.addEventListener('click', async (e) => {
   try { if (navigator.share) await navigator.share({ title: x.title || x.name || 'Montepalm', url: link }); else { await navigator.clipboard.writeText(link); toast(t('linkCopied')); } } catch { /* otkazano */ }
 });
 
+/* Pitaj: pomoćnik odgovara samo iz sadržaja aplikacije; kartice dolaze sa servera, ne iz teksta modela */
+$('askx').innerHTML = [t('askEx1'), t('askEx2'), t('askEx3')].map((x) => `<button type="button" class="askc" data-ask="${esc(x)}">${esc(x)}</button>`).join('');
+async function askSend(q) {
+  const out = $('askout'), btn = $('askb');
+  out.hidden = false; out.innerHTML = `<div class="askld">${esc(t('askLoad'))}</div>`; btn.disabled = true;
+  try {
+    const r = await fetch('/api/ask', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ q, lang: LANG }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw Object.assign(new Error('ask'), { status: r.status });
+    out.innerHTML = `<p class="askrp">${esc(d.reply || '')}</p>` + ((d.results || []).length ? `<div class="xlist">${d.results.map((x) => xCard(x, x.type === 'rest')).join('')}</div>` : '');
+  } catch (e) {
+    out.innerHTML = `<div class="askerr">${esc(t(e.status === 429 ? 'askBusy' : e.status === 400 ? 'askShort' : 'askErr'))}</div>`;
+  } finally { btn.disabled = false; }
+}
+$('askf').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const q = $('askq').value.trim();
+  if (q.length < 2) { $('askq').focus(); return; }
+  $('askq').blur(); askSend(q);
+});
+$('askx').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-ask]'); if (!b) return;
+  $('askq').value = b.getAttribute('data-ask'); $('askf').requestSubmit();
+});
+
 /* ---- navigacija ---- */
 function setCat(k) { cat = k; [...$('chips').children].forEach((c) => c.setAttribute('aria-pressed', c.getAttribute('data-cat') === k)); search(); }
 const TG = { ...GLYPH, event: 'calstar' };
