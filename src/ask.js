@@ -29,10 +29,22 @@ const NOFIT = {
   it: 'Non ho trovato esattamente questo, ma ti consiglio:',
 };
 const FOOD_RE = /vecer|rucak|rucat|jesti|jelo|gladan|restoran|dinner|lunch|\beat\b|food|restaurant|abendessen|mittag|essen|ужин|обед|поесть|ресторан|\bcena\b|pranzo|mangiare|ristorante/;
-const EVENT_RE = /dogadj|program|festival|koncert|vikend|sta ima|event|weekend|what.s on|veranstalt|wochenende|evento|fine settimana|событ|концерт|выходн|фестивал/;
+/* norm() ćirilicu prevodi u latinicu, pa se pravila testiraju i na izvornom i na normalizovanom tekstu */
+const has = (re, q) => re.test(String(q).toLowerCase()) || re.test(norm(q));
+const EVENT_RE = /dogadj|program|festival|koncert|concert|konzert|vikend|sta ima|event|weekend|what.s on|veranstalt|wochenende|evento|fine settimana|событ|концерт|выходн|фестивал/;
 const WEEKEND_RE = /vikend|weekend|wochenende|fine settimana|выходн/;
 const BEACH_RE = /plaz|kupa|plivati|beach|swim|strand|baden|spiaggia|nuot|пляж|купа/;
-const CULTURE_RE = /kultur|muzej|crkv|tvrdj|istorij|manastir|museum|church|fortress|history|museo|chiesa|культур|музей|церков|крепост/;
+const CULTURE_RE = /kultur|muzej|musei|museen|kisa|kisn|\brain\b|\bregen\b|piove|pioggia|дожд|crkv|tvrdj|istorij|manastir|museum|church|fortress|history|museo|chiesa|культур|музей|церков|крепост/;
+const PARK = {
+  sr: 'Evo savjeta za parking:',
+  en: 'Here are the parking tips:',
+  de: 'Hier die Tipps zum Parken:',
+  ru: 'Вот советы по парковке:',
+  it: 'Ecco i consigli per il parcheggio:',
+};
+const PARK_RE = /parkir|parking|parken|parkplatz|парковк|припарков|parcheggi|(where|can|do|should) i park\b|park (my|the) car/;
+const KIDS_RE = /djec|dece|dijet|porodic|family|famil|kids|child|kinder|дет|семь|bambin|famigli/;
+const STOP = new Set(['sta', 'ima', 'gdje', 'kad', 'kada', 'raditi', 'ovaj', 'ovo', 'najbolji', 'the', 'and', 'for', 'what', 'where', 'with', 'best', 'was', 'wie', 'cosa', 'fare', 'dove']);
 const EMERGENCY = {
   sr: 'Za hitne slučajeve odmah zovi 112. Za sigurnost i zdravlje oslanjaj se na zvanične izvore.',
   en: 'In an emergency call 112 right away. For safety and health, rely on official sources.',
@@ -54,11 +66,10 @@ const todayLocal = (env) => env.TODAY || new Date().toLocaleDateString('sv-SE', 
 
 /* šta korisnik traži (za slučaj bez AI-ja): hrana, događaji, plaže ili kultura */
 export function intent(q) {
-  const n = norm(q);
-  if (FOOD_RE.test(n)) return 'food';
-  if (EVENT_RE.test(n)) return 'event';
-  if (BEACH_RE.test(n)) return 'beach';
-  if (CULTURE_RE.test(n)) return 'culture';
+  if (has(FOOD_RE, q)) return 'food';
+  if (has(EVENT_RE, q)) return 'event';
+  if (has(BEACH_RE, q)) return 'beach';
+  if (has(CULTURE_RE, q)) return 'culture';
   return '';
 }
 const fits = (c, it) => (it === 'food' ? c.type === 'rest' : c.type === 'item' && c.row.kind === it);
@@ -73,7 +84,7 @@ export function weekend(today) {
 export function tokens(q) {
   return norm(q)
     .split(/[^a-z0-9]+/)
-    .filter((t) => t.length >= 3)
+    .filter((t) => t.length >= 3 && !STOP.has(t))
     .map((t) => t.slice(0, Math.max(4, t.length - 2))); // grubi "stem": padeži (Budvi/Budva) i množina i dalje pogađaju
 }
 export function score(q, hay) {
@@ -113,7 +124,7 @@ async function loadCandidates(env, today) {
     c.push({ ref: 'i:' + r.slug, type: 'item', row: r, hay: norm([r.title, r.title_en, r.place, r.region, r.description, KIND_WORDS[r.kind] || ''].join(' ')) });
   }
   for (const r of rs.results) {
-    c.push({ ref: 'r:' + r.slug, type: 'rest', row: r, hay: norm([r.name, r.city, r.tags, r.ambience, 'restoran hrana jelo vecera rucak restaurant food'].join(' ')) });
+    c.push({ ref: 'r:' + r.slug, type: 'rest', row: r, hay: norm([r.name, r.city, r.tags, r.ambience, r.amenities, r.why, 'restoran hrana jelo vecera rucak restaurant food'].join(' ')) });
   }
   return c;
 }
@@ -185,10 +196,13 @@ export async function ask(env, request) {
 
   if (EMERGENCY_RE.test(q)) return json({ reply: EMERGENCY[lang], results: [], ai: false });
 
+  if (has(PARK_RE, q)) return json({ reply: PARK[lang], results: [], guide: 'parking', ai: false }); // odgovor su napomene iz vodiča Korisno
+
   const today = todayLocal(env);
   const all = await loadCandidates(env, today);
+  const qx = has(KIDS_RE, q) ? q + ' porodica djeca family kids' : q; // "s djecom" pogađa i opise sa "porodice"
   const ranked = all
-    .map((c) => ({ c, s: score(q, c.hay) }))
+    .map((c) => ({ c, s: score(qx, c.hay) }))
     .sort((a, z) => z.s - a.s || (a.c.row.date_from || '9999') .localeCompare(z.c.row.date_from || '9999'));
 
   let picks = null, reply = '', ai = false, exact = true;
@@ -211,7 +225,7 @@ export async function ask(env, request) {
     const it = intent(q);
     let pool = it ? ranked.filter((x) => fits(x.c, it)) : ranked;
     if (!pool.length) pool = ranked;
-    else if (it === 'event' && WEEKEND_RE.test(norm(q))) { // "ovaj vikend": događaji koji se tada dešavaju
+    else if (it === 'event' && has(WEEKEND_RE, q)) { // "ovaj vikend": događaji koji se tada dešavaju
       const { sat, sun } = weekend(today);
       const now = pool.filter((x) => x.c.row.date_from && x.c.row.date_from <= sun && (x.c.row.date_to || x.c.row.date_from) >= sat);
       if (now.length) pool = now; else exact = false;
