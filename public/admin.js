@@ -162,9 +162,9 @@ async function save() {
 /* ---------- mediji ---------- */
 function mediaSection() {
   const m = cur.media || [];
-  const up = R2 ? `<label class="drop" for="mf"><b>+ Dodaj slike i video</b><span>Izaberi jedan ili više fajlova (JPG, PNG, WebP, MP4, WebM, MOV)</span></label>
-  <input type="file" id="mf" multiple accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" hidden>
-  <div class="up" id="up"></div>` : '<div class="up" id="up"></div>';
+  const up = R2 ? `<label class="drop" for="mf"><b>+ Dodaj slike i video</b><span>Izaberi jedan ili više fajlova sa telefona (slika do 8 MB, video do 90 MB)</span></label>
+  <input type="file" id="mf" multiple accept="image/*,video/mp4,video/webm,video/quicktime" hidden>
+  <div class="up" id="up"></div>` : '<div class="up" id="up"><div class="upi err">Upload fotografija sa telefona još nije uključen (nedostaje R2 skladište MEDIA). Dok se ne podesi, koristi link ispod.</div></div>';
   return `<section class="msec"><h2>Slike i video <span class="cnt">${m.length}/30</span></h2>${up}
   <div class="afld" style="margin-top:12px"><label for="yl">Dodaj link na sliku, video ili YouTube</label><div class="lnkrow"><input id="yl" type="text" inputmode="url" autocapitalize="off" placeholder="/media/foto.jpg ili https://…"><button class="btn s" type="button" id="yb" style="min-height:48px">Dodaj</button></div>
   <small>Fajl koji si dodao u GitHub folder <b>public/media</b> upiši kao <b>/media/ime.jpg</b>. Radi i bilo koji https link, kao i YouTube.</small></div>
@@ -175,16 +175,22 @@ const mcard = (it, i, n) => `<div class="mcard" data-id="${it.id}"><div class="m
 <div class="mmeta"><input data-f="caption" type="text" maxlength="200" placeholder="Opis" aria-label="Opis" value="${esc(it.caption)}"><input data-f="credit" type="text" maxlength="120" placeholder="Autor / izvor" aria-label="Autor" value="${esc(it.credit)}">
 <div class="mact"><button type="button" data-mv="-1" aria-label="Pomjeri ranije" ${i === 0 ? 'disabled' : ''}>↑</button><button type="button" data-mv="1" aria-label="Pomjeri kasnije" ${i === n - 1 ? 'disabled' : ''}>↓</button><button type="button" class="del" data-del>Obriši</button></div></div></div>`;
 
+const isHeic = (f) => /^image\/hei[cf]/i.test(f.type) || /\.hei[cf]$/i.test(f.name);
 async function prepImage(file) {
-  if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.2 * 1024 * 1024) return file;
+  const heic = isHeic(file);
+  if (!heic && (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.2 * 1024 * 1024)) return file;
   try {
     const bm = await createImageBitmap(file, { imageOrientation: 'from-image' });
     const s = Math.min(1, 2000 / Math.max(bm.width, bm.height));
     const c = document.createElement('canvas'); c.width = Math.round(bm.width * s); c.height = Math.round(bm.height * s);
     c.getContext('2d').drawImage(bm, 0, 0, c.width, c.height);
     const blob = await new Promise((r) => c.toBlob(r, 'image/jpeg', 0.85));
+    if (heic) { if (!blob) throw new Error('x'); return new File([blob], 'foto.jpg', { type: 'image/jpeg' }); }
     return blob && blob.size < file.size ? new File([blob], 'foto.jpg', { type: 'image/jpeg' }) : file;
-  } catch { return file; }
+  } catch {
+    if (heic) throw new Error('HEIC fotografija se ne može pročitati u ovom pregledaču. Snimi kao JPG (iPhone: Podešavanja > Kamera > Formati > Najkompatibilnije) ili otvori admin u Safariju.');
+    return file;
+  }
 }
 function videoPoster(file) {
   return new Promise((res) => {
@@ -210,7 +216,8 @@ async function uploadFiles(files) {
     const row = document.createElement('div'); row.className = 'upi'; row.innerHTML = `<span>${i + 1}/${files.length}: ${esc(f0.name)}</span><div class="bar"><i></i></div>`; box.appendChild(row);
     try {
       let f = f0, poster = null;
-      if (f0.type.startsWith('image/')) f = await prepImage(f0); else if (f0.type.startsWith('video/')) poster = await videoPoster(f0);
+      if (f0.type.startsWith('video/') && f0.size > 90 * 1024 * 1024) throw new Error('Video je ' + Math.round(f0.size / 1048576) + ' MB, a limit je 90 MB. Snimi u 1080p ili skrati snimak (oko 40 s u 1080p).');
+      if (f0.type.startsWith('image/') || isHeic(f0)) f = await prepImage(f0); else if (f0.type.startsWith('video/')) poster = await videoPoster(f0);
       const fd = new FormData(); fd.append('ref', cur.ref); fd.append('file', f, f.name); if (poster) fd.append('poster', poster, 'poster.jpg');
       const m = await xhrUpload(fd, (p) => { row.querySelector('i').style.width = Math.round(p * 100) + '%'; });
       cur.media.push(m); ok++; row.remove();
