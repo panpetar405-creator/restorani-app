@@ -111,3 +111,38 @@ test('bez AI-ja pitanje o večeri daje samo restorane, o plaži samo plaže, o d
   const ev = await kinds('Šta ima ovaj vikend?');
   assert.ok(ev.length > 0 && ev.every((x) => x.type === 'item' && x.kind === 'event'));
 });
+test('svih 8 primjera pitanja dobija preporuku, a vrsta odgovara pitanju', async () => {
+  const ask = async (q) => (await (await post(base, { q, lang: 'sr' })).json()).results;
+  const rest = await ask('Najbolji restoran u Budvi');
+  assert.ok(rest.length > 0 && rest.every((x) => x.type === 'rest'));
+  const ev = await ask('Koncerti i festivali');
+  assert.ok(ev.length > 0 && ev.every((x) => x.kind === 'event'));
+  const cult = await ask('Muzeji i znamenitosti');
+  assert.ok(cult.length > 0);
+  const rain = await ask('Šta raditi kad pada kiša?');
+  assert.ok(rain.length > 0);
+  const ski = await ask('Skijanje i zimske aktivnosti');
+  assert.ok(ski.length > 0 && ski[0].slug.startsWith('skij'));
+});
+test('parking: odgovor su napomene iz vodiča Korisno, bez kartica i bez AI-ja', async () => {
+  let called = false;
+  const AI = { run: async () => { called = true; return {}; } };
+  for (const [q, lang] of [['Gdje parkirati?', 'sr'], ['Where can I park?', 'en'], ['Wo kann ich parken?', 'de'], ['Где припарковаться?', 'ru'], ['Dove parcheggiare?', 'it']]) {
+    const r = await (await post({ ...base, AI }, { q, lang })).json();
+    assert.equal(r.guide, 'parking', q);
+    assert.deepEqual(r.results, []);
+  }
+  assert.equal(called, false);
+});
+test('pitanje o djeci dobija preporuku (stop riječi ne prave šum)', async () => {
+  const r = await (await post(base, { q: 'Šta raditi s djecom?', lang: 'sr' })).json();
+  assert.ok(r.results.length > 0);
+  assert.ok(r.reply.length > 0);
+});
+test('ruska i ćirilična pitanja pogađaju namjeru (norm prevodi ćirilicu u latinicu)', async () => {
+  const kinds = async (q, lang) => (await (await post(base, { q, lang })).json()).results;
+  const food = await kinds('Ужин у моря?', 'ru');
+  assert.ok(food.length > 0 && food.every((x) => x.type === 'rest'));
+  const ev = await kinds('Что на этих выходных?', 'ru');
+  assert.ok(ev.length > 0 && ev.every((x) => x.kind === 'event'));
+});
